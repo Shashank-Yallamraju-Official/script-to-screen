@@ -1,0 +1,11 @@
+skin: "#a8693f"
+hair: "#23404a"
+hair_style: bob
+top: "#d95f43"
+stripe: "#f2c14e"
+pants: "#3d4a5c"
+shoes: "#fbf6ea"
+color: "#d95f43"   # backing card of her speech bubbles
+voice: 560         # blip pitch in Hz
+scale: 1.0
+phase: 0.0         # offsets her breathing and blinking from other characters

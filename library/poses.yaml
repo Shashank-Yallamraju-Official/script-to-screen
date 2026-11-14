@@ -1,0 +1,25 @@
+# Poses set the body; expressions set the face. Unlisted values fall back to the rest position.
+# Arms: sh = shoulder angle away from the body, el = elbow bend (negative folds across the chest).
+# _l is the arm away from where the character faces, _r the arm toward it.
+# lean and head: positive tips toward where the character faces.
+poses:
+  idle: {}
+  arms_crossed:  {sh_l: 10, el_l: -112, sh_r: 12, el_r: -108}
+  hands_on_hips: {sh_l: 50, el_l: -72, sh_r: 50, el_r: -72}
+  shrug:         {sh_l: 22, el_l: 100, sh_r: 22, el_r: 100, head: -6}
+  point:         {sh_r: 78, el_r: 8, lean: 3}
+  slump:         {lean: 5, head: 9, sh_l: 2, sh_r: 2}
+  lean_in:       {lean: 7, head: -3}
+  flinch:        {lean: -6, head: -5, sh_l: 20, el_l: 30, sh_r: 20, el_r: 30}
+# brow: positive lowers the inner end (stern), negative raises it (worried). brow_y lifts both.
+# eye: openness. look_x: 1 looks where the body faces, -1 looks away. mouth: smile, grin, flat,
+# frown, smirk, open, wobble.
+expressions:
+  neutral:   {}
+  happy:     {brow_y: 4, mouth: grin}
+  smug:      {brow: 8, eye: 0.6, mouth: smirk}
+  annoyed:   {brow: 18, brow_y: -3, eye: 0.75, mouth: frown}
+  surprised: {brow_y: 9, eye: 1.25, mouth: open}
+  guilty:    {brow: -16, eye: 0.9, look_x: -0.9, look_y: 0.3, mouth: wobble, blush: true}
+  sad:       {brow: -14, eye: 0.8, look_y: 0.5, mouth: frown}
+  deadpan:   {eye: 0.55, mouth: flat}

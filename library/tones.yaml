@@ -1,0 +1,12 @@
+# A tone is how a line is delivered. It drives three things at once:
+#   the note on the bubble (color, motion, double = beamed pair),
+#   how fast the text types (cps = characters per second),
+#   the voice blips (pitch multiplier, vol, contour = rise | fall | wobble).
+neutral:  {color: "#3a3531", motion: still,   cps: 20, pitch: 1.00, vol: 0.50}
+deadpan:  {color: "#6f6a63", motion: still,   cps: 16, pitch: 0.92, vol: 0.45, contour: fall}
+cheerful: {color: "#e08a1e", motion: bounce,  cps: 24, pitch: 1.25, vol: 0.60, contour: rise, double: true}
+teasing:  {color: "#d6457a", motion: sway,    cps: 17, pitch: 1.12, vol: 0.50, contour: rise}
+sad:      {color: "#4a6fa5", motion: droop,   cps: 12, pitch: 0.80, vol: 0.40, contour: fall}
+angry:    {color: "#c8372d", motion: shake,   cps: 26, pitch: 0.90, vol: 0.80}
+nervous:  {color: "#7b5ea7", motion: tremble, cps: 14, pitch: 1.18, vol: 0.40, contour: wobble}
+whisper:  {color: "#9a948c", motion: float,   cps: 13, pitch: 1.00, vol: 0.20}
