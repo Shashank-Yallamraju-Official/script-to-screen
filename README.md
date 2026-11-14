@@ -38,6 +38,7 @@ the saved scene to `out/`. What the editor does not change: text, poses, tones, 
 are edits to the scene file.
 
 ## Render
+
     python -m toon.render episodes/pilot/scene01.yaml              # whole scene
     python -m toon.render episodes/pilot/scene01.yaml --shots 2    # one shot, then rejoin
     python -m toon.render episodes/pilot/scene01.yaml --still 2:40 # shot 2, frame 40, as a PNG
