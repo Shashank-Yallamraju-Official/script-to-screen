@@ -9,7 +9,7 @@ shots:
     length: 105
     camera: {framing: wide}
     beats:
-      - {frame: 0,  juno: {pose: idle, expression: neutral}, otis: {pose: idle, expression: neutral}}
+      - {frame: 0, juno: {pose: idle, expression: neutral}, otis: {pose: idle, expression: neutral}}
       - {frame: 12, juno: {pose: hands_on_hips, expression: smug}}
       - {frame: 20, say: {who: juno, text: "Someone ate the last dumpling.", tone: teasing}}
       - {frame: 62, otis: {expression: surprised, pose: flinch}}
@@ -17,24 +17,24 @@ shots:
   - id: 2
     length: 125
     camera:                       # slow push from medium to close as he squirms
-      - {frame: 0,  framing: medium, subject: otis}
+      - {frame: 0, framing: medium, subject: otis}
       - {frame: 110, framing: close, subject: otis}
     beats:
       - {frame: 10, otis: {expression: guilty, pose: idle}}
-      - {frame: 24, say: {who: otis, text: "It was like that when I got here.", tone: nervous}}
+      - {frame: 24, say: {who: otis, text: "It was like that when I got here.", tone: nervous, hold: 45}}
 
   - id: 3
     length: 85
     camera: {framing: close, subject: juno}
     beats:
-      - {frame: 0,  juno: {expression: deadpan, pose: arms_crossed}}
+      - {frame: 0, juno: {expression: deadpan, pose: arms_crossed}}
       - {frame: 14, say: {who: juno, text: "There's sauce on your chin.", tone: deadpan}}
 
   - id: 4
     length: 90
     camera: {framing: two, subject: [juno, otis]}
     beats:
-      - {frame: 0,  otis: {pose: slump, expression: sad}}
+      - {frame: 0, otis: {pose: slump, expression: sad}}
       - {frame: 28, otis: {pose: shrug, expression: happy}}
       - {frame: 32, say: {who: otis, text: "Worth it.", tone: cheerful}}
       - {frame: 50, juno: {expression: annoyed}}

@@ -20,13 +20,17 @@ from .paper import col, draw_grain, make_grain
 from .puppet import EXPR_DEFAULT, EXPR_KEYS, HEAD_MID, HEAD_TOP, POSE_DEFAULT, POSE_KEYS, draw_puppet
 
 
+_GRAIN = {}
+
+
 def load_yaml(p):
     with open(p) as fh:
         return yaml.safe_load(fh)
 
 
 class Scene:
-    def __init__(self, path):
+    def __init__(self, path, script=None):
+        """`script` overrides the file's contents: the editor passes its unsaved working copy."""
         path = Path(path).resolve()
         root = next(p for p in path.parents if (p / "show.yaml").exists())
         self.root, self.path = root, path
@@ -35,7 +39,7 @@ class Scene:
         self.tones = load_yaml(root / "library/tones.yaml")
         lib = load_yaml(root / "library/poses.yaml")
         self.poses, self.exprs = lib["poses"], lib["expressions"]
-        self.script = load_yaml(path)
+        self.script = script if script is not None else load_yaml(path)
         self.set = load_yaml(root / "sets" / (self.script["set"] + ".yaml"))
         self.cast = {}
         for who, place in self.script["cast"].items():
@@ -65,7 +69,10 @@ class Scene:
         self.total = start
         for a, b in zip(self.lines, self.lines[1:]):
             a["end"] = min(a["end"], b["start"])
-        self.grain = make_grain(self.W, self.H)
+        key = (self.W, self.H)
+        if key not in _GRAIN:
+            _GRAIN[key] = make_grain(self.W, self.H)
+        self.grain = _GRAIN[key]
 
     def line_at(self, F):
         for ln in self.lines:
@@ -129,6 +136,15 @@ class Scene:
             canvas.drawRoundRect(skia.Rect.MakeXYWH(14, 12, font.measureText(label) + 20, 26), 6, 6,
                                  skia.Paint(AntiAlias=True, Color=skia.Color(30, 25, 20, 150)))
             canvas.drawString(label, 24, 31, font, skia.Paint(AntiAlias=True, Color=skia.Color(250, 245, 235, 230)))
+
+
+def frame_jpeg(scene, F, scale=1.0, quality=82, slate=False):
+    """One frame as JPEG bytes, optionally at reduced size for fast preview."""
+    surface = skia.Surface(int(scene.W * scale), int(scene.H * scale))
+    canvas = surface.getCanvas()
+    canvas.scale(scale, scale)
+    scene.draw(canvas, F, slate)
+    return bytes(surface.makeImageSnapshot().encodeToData(skia.kJPEG, quality))
 
 
 def encode_shot(scene, shot, out, slate):

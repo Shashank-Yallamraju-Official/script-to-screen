@@ -15,9 +15,29 @@ the notes become edits to a scene script; the renderer turns the script into vid
 | `toon/` | The renderer | Rarely |
 | `out/` | Rendered video (not committed) | Every render |
 
-## Render
+## Tune timings yourself
 
-    pip install skia-python pyyaml numpy      # plus ffmpeg on the PATH
+    pip install -r requirements.txt           # plus ffmpeg on the PATH
+    python -m toon.editor episodes/pilot/scene01.yaml
+
+This opens a timeline editor in your browser, served from this machine only.
+
+| Do this | To |
+|---|---|
+| Click or drag on the ruler, or use the arrow keys | Move through the scene one frame at a time |
+| Drag a coloured dot | Move a pose or expression change |
+| Drag a dialogue bar, or its right edge | Move a line, or change how long it holds |
+| Drag a filled diamond | Move a camera key |
+| Drag the right edge of a shot | Change the shot's length; later shots shift along |
+| Click a marker and type a number, or Alt+arrow | Set an exact frame |
+| Space, L | Play or pause, loop the current shot |
+| Ctrl/Cmd+Z, Ctrl/Cmd+S | Undo, save to the scene file |
+
+Saving changes only the numbers you moved and keeps the file's comments. The film icon renders
+the saved scene to `out/`. What the editor does not change: text, poses, tones, framing. Those
+are edits to the scene file.
+
+## Render
     python -m toon.render episodes/pilot/scene01.yaml              # whole scene
     python -m toon.render episodes/pilot/scene01.yaml --shots 2    # one shot, then rejoin
     python -m toon.render episodes/pilot/scene01.yaml --still 2:40 # shot 2, frame 40, as a PNG
