@@ -205,6 +205,41 @@ tell. After three it counts as learned. Two rules:
 
 A changed tell (an arc step) starts its count again.
 
+## Values tuned by hand
+
+A value tuned by hand is kept apart from what was written, in a `tune:` block at the scope it
+applies to. Where a value is stored says who set it.
+
+    - id: 2
+      who: juno
+      say: I saw. You took it.
+      hold: 3                                         # written
+      tune: {for: "I saw. You took it.", hold: 14, length: {2: 3}, pitch: {5: 9}}     # set by hand
+      why: She has waited all day to say this.
+
+A value is looked for from the narrowest scope outward, and the first one found wins; at the
+same scope, hand-set beats written. Taking a hand-set value off restores what was written or
+worked out.
+
+| Scope | Address | Holds |
+|---|---|---|
+| A syllable | `the-vase:2.s3.length` | length, pitch, stress |
+| A featured reaction | `the-vase:2.r1.beat` | how long it holds the scene |
+| A turn | `the-vase:2.hold` | pause, hold |
+| A scene | `the-vase.hold` | pause, hold for every turn in it |
+| The show | `show.hold`, `feel.overshoot` | timings, motion, the indicator, the voice |
+| An entity, a tone, a sound | `@otis.reflex`, `~angry.rate`, `sounds.thud.vol` | their own settings |
+
+    s2s tune get the-vase:2.hold          # the value, and every scope's say on it
+    s2s tune set the-vase:2.hold 14
+    s2s tune reset the-vase:2.hold        # take the hand-set value off
+    s2s tune widen the-vase:2.hold        # move it out to the scene (then the show); says how many turns change
+    s2s tune list                         # everything set by hand, beside what it replaced
+
+Per-syllable values belong to the words they were tuned against (`for:`). If the line is
+reworded they are set aside, not applied and not deleted, and `s2s check` and
+`s2s tune list --orphans` say so. The editor writes every nudge this way.
+
 ## The editor
 
     s2s edit the-thermostat
@@ -262,6 +297,7 @@ command takes `--json`; a command that changes something also takes `--dry-run`,
 | Change a line, a feeling, a timing, a reason | `set-line`, `set-feeling`, `set-timing`, `set-why` |
 | Add or remove | `add-scene`, `add-turn`, `add-reaction`, `remove-turn` |
 | Reorder, or mark how finished a scene is | `move`, `set-status` |
+| Tune a value by hand, at any scope | `s2s tune set the-vase:2.hold 14` (also `get`, `reset`, `widen`, `list`) |
 | Set any other field of a turn | `s2s put thermostat:2 do '{juno: {orient: otis}}'` |
 | See and reverse changes | `s2s history`, `s2s undo`, `s2s redo` |
 | Bring an older show up to date | `s2s migrate` |
@@ -272,5 +308,5 @@ an error is refused and says which error; a refusal says what would work ("no wo
 errors does not render: a turn with no `why`, a feeling with no tell, a rhythm or melody
 that does not match the syllable count, or a payoff the audience cannot decode yet.
 
-Not yet reachable by command: entity sheets, the library and show settings, which are still
-edited as files.
+Entity sheets, the library and show settings can be tuned by command (`s2s tune`), but their
+written values and a character's tells are still edited as files.

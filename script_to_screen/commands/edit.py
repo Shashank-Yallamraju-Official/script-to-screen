@@ -130,12 +130,12 @@ def apply(a, root, path, mutate, series_file=False):
     return out
 
 
-def record(root, command, because, path, changes, before_text, after_text, by="command"):
+def record(root, command, because, path, changes, before_text, after_text, by="command", group=None):
     """Append a change to the journal. -> its number. `by` is who made it: a command, or a hand in the editor."""
     n = len(entries(root)) + 1
     journal(root).parent.mkdir(exist_ok=True)
     with open(journal(root), "a") as fh:
-        fh.write(json.dumps(dict(id=n, at=time.strftime("%Y-%m-%dT%H:%M:%S"), by=by, command=command, because=because,
+        fh.write(json.dumps(dict(id=n, at=time.strftime("%Y-%m-%dT%H:%M:%S"), by=by, command=command, because=because, group=group,
                                  path=str(Path(path).relative_to(root)), changes=changes,
                                  before=before_text, after=after_text), ensure_ascii=False) + "\n")
     return n
@@ -179,6 +179,8 @@ def undo(root, by=None):
                       hint="undo by hand, or make the opposite change")
     write(path, e["before"])
     _mark(root, "undoes", e["id"])
+    if e.get("group") and any(x.get("group") == e["group"] for x in done[:-1]):     # one command that touched two files
+        undo(root, by)
     return e
 
 
@@ -193,4 +195,6 @@ def redo(root, by=None):
         raise Refused(f"{e['path']} has changed since change {e['id']} was undone, so redoing it would lose that work")
     write(path, e["after"])
     _mark(root, "redoes", e["id"])
+    if e.get("group") and any(x.get("group") == e["group"] for x in undone[:-1]):
+        redo(root, by)
     return e

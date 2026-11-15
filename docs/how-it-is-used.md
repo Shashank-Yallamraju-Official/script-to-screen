@@ -132,12 +132,12 @@ project's oldest habit, hand-set values becoming derived ones, turned into a rou
 | Before and after | No |
 | Undo anything | Yes. Timings, notes and sliders, across restarts |
 | The real thing | Yes. The editor draws with the renderer and plays the same sound |
-| Every tunable value reachable | Partly. Timings, notes, stress, motion and sounds are. A tone's rate and contour, and a character's voice and reflex, are not |
-| Scope is visible | No. Sliders are silently show-wide; timings are silently per turn |
+| Every tunable value reachable | By command, yes: all 31 declared parameters. In the editor: timings, notes, stress, motion and sounds; tones and entities come with the knob in N3 |
+| Scope is visible | On the command line, yes (`tune get`, `tune widen` with a count of turns changed). In the editor, not yet: the scope chip is slice N3 |
 | A pin | No |
 | **Where they meet** | |
-| Who set each value | No |
-| Warning before discarding tuned values | Partly, by accident: a rhythm that no longer fits its line is an error |
+| Who set each value | Yes. Hand-set values live in `tune:` blocks; `s2s tune get` shows every scope's say and `s2s tune list` shows all of them |
+| Warning before discarding tuned values | Yes. Rewording a line sets its per-syllable tunes aside and says so; they are kept until the new wording is tuned |
 | Locking | Yes. `set-status <scene> locked`; every change command then refuses |
 | Editor follows the files | Yes. There is no Save; each release is applied on top of the file as it stands, and outside changes appear within half a second |
 

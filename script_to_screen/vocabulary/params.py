@@ -37,13 +37,19 @@ class Param:
     def name(self):
         return self.key.split(".", 1)[1]
 
+    @property
+    def scopes(self):
+        """Where this value can be set by hand, narrowest first. The first scope that has a value wins."""
+        return WIDER.get(self.key, (self.scope,))
+
     def clamp(self, v):
         return min(max(float(v), self.lo), self.hi)
 
     def describe(self):
-        return dict(asdict(self), scope=self.scope, fine=self.fine if self.fine is not None else self.step / 4)
+        return dict(asdict(self), scope=self.scope, scopes=list(self.scopes), fine=self.fine if self.fine is not None else self.step / 4)
 
 
+WIDER = {"turn.pause": ("turn", "scene", "show"), "turn.hold": ("turn", "scene", "show")}
 MOVES = ("move", "turn", "look", "posture", "enter", "exit")
 _ = Param
 PARAMS = {p.key: p for p in [
@@ -129,6 +135,6 @@ def check_library(feel):
         elif not p.lo <= float(feel[name]) <= p.hi:
             out.append(("warn", f"library/feel.yaml `{name}` is {feel[name]}; it is meant to lie between {p.lo:g} and {p.hi:g}"))
     for name in feel:
-        if name not in known:
+        if name not in known and name != "tune":
             out.append(("warn", f"library/feel.yaml has `{name}`, which nothing reads; known settings: {', '.join(known)}"))
     return out

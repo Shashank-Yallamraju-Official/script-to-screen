@@ -88,9 +88,13 @@ def semi_of(degree, scale):
     return 12 * (degree // len(scale)) + scale[degree % len(scale)]
 
 
-def plan(text, tone, scale, rhythm=None, melody=None, stress=None, breaks=(), gap=2):
+def plan(text, tone, scale, rhythm=None, melody=None, stress=None, breaks=(), gap=2, tune=None):
     """-> [{text, at, len, semi, stress, rest}]: each syllable's start and length in steps, its pitch
     in semitones, its stress, and how much of its length is the breath after punctuation.
+
+    `tune` holds hand-set values for single syllables, by number from 1: {length: {4: 3}, pitch: {5: 9},
+    stress: {5: 2}}. Each is laid over what was written or worked out, and each syllable keeps the
+    value it would have had (`base`), so a tune can be seen and taken off.
 
     Anything not given is worked out. Stress comes from the words. Rhythm is the tone's `rate`
     (steps for a strong syllable), halved for weak ones and half as long again for a phrase's
@@ -105,6 +109,11 @@ def plan(text, tone, scale, rhythm=None, melody=None, stress=None, breaks=(), ga
     if stress is not None:
         for s, v in zip(syl, stress):
             s["stress"] = max(0, min(2, int(v)))
+    tune = tune or {}
+    base_stress = [s["stress"] for s in syl]
+    for k, v in (tune.get("stress") or {}).items():           # stress first: length and pitch follow from it
+        if 1 <= k <= n:
+            syl[k - 1]["stress"] = max(0, min(2, int(v)))
     if rhythm is None:
         rhythm = [max(0.5, tone.get("rate", 2) * STRETCH[s["stress"]]) + s["rest"] for s in syl]
         rhythm[-1] *= tone.get("stretch", 1)
@@ -121,8 +130,16 @@ def plan(text, tone, scale, rhythm=None, melody=None, stress=None, breaks=(), ga
             elif span >= 2:                               # a little wander among the weak ones
                 d += (0, 0, 0, -1)[(seed >> ((k % 16) * 2)) & 3]
             melody.append(semi_of(round(d), scale))
+    rhythm, melody = list(rhythm), list(melody)
+    base = [dict(length=ln, pitch=m, stress=st) for ln, m, st in zip(rhythm, melody, base_stress)]
+    for k, v in (tune.get("length") or {}).items():
+        if 1 <= k <= n:
+            rhythm[k - 1] = max(0.25, float(v))
+    for k, v in (tune.get("pitch") or {}).items():
+        if 1 <= k <= n:
+            melody[k - 1] = int(round(v))
     out, at = [], 0
-    for s, ln, m in zip(syl, rhythm, melody):                 # `rest` is the silent part at the end of `len`
-        out.append(dict(text=s["text"], at=at, len=ln, semi=m, stress=s["stress"], rest=max(0, min(s["rest"], ln - 0.5))))
+    for s, ln, m, b in zip(syl, rhythm, melody, base):        # `rest` is the silent part at the end of `len`
+        out.append(dict(text=s["text"], at=at, len=ln, semi=m, stress=s["stress"], rest=max(0, min(s["rest"], ln - 0.5)), base=b))
         at += ln
     return out

@@ -13,6 +13,8 @@ import argparse
 import json
 import sys
 
+import yaml
+
 from ..script import ScriptError
 
 OK, REFUSED, FAILED = 0, 2, 3
@@ -67,7 +69,7 @@ def parser():
 
 
 def run(argv=None):
-    from . import change, look, read, structure  # noqa: F401  (declares the commands)
+    from . import change, look, read, structure, tune  # noqa: F401  (declares the commands)
     top = parser()
     a = top.parse_args(argv)
     if not a.command:
@@ -82,6 +84,10 @@ def run(argv=None):
         code = REFUSED
     except (ScriptError, FileNotFoundError) as e:
         out, code = dict(ok=False, command=a.command, refused=str(e)), REFUSED
+    except yaml.YAMLError as e:                              # a file that does not parse: say which, and where
+        mark = getattr(e, "problem_mark", None)
+        where = f"{mark.name}, line {mark.line + 1}" if mark else "a file"
+        out, code = dict(ok=False, command=a.command, refused=f"{where} is not valid YAML: {getattr(e, 'problem', e)}"), REFUSED
     else:
         code = out.pop("exit", OK)
     text = out.pop("text", None)

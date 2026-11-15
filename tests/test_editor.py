@@ -28,22 +28,45 @@ def test_a_drag_previews_without_touching_the_file_and_letting_go_writes_it(sess
     before_text, before = sess.path.read_text(), sess.scene.turns[1]["length"]
     sess.patch(HOLD)                                                   # still dragging
     assert sess.scene.turns[1]["length"] == before + 4 and sess.path.read_text() == before_text
-    sess.patch(HOLD + [dict(path=["turns", 1, "melody"], value=[0, 2, 4, 7, 9, 7, 4])], commit=True)
+    melody = [s["semi"] for s in sess.clean[1].turns[1]["sylls"]]
+    melody[2] = 12
+    sess.patch(HOLD + [dict(path=["turns", 1, "melody"], value=melody)], commit=True)
     text = sess.path.read_text()
-    assert "# a comment that must survive" in text and "hold: 12" in text and "melody: [0, 2, 4, 7, 9, 7, 4]" in text
-    assert [s["semi"] for s in Scene(sess.path).turns[1]["sylls"]] == [0, 2, 4, 7, 9, 7, 4]
+    assert "# a comment that must survive" in text
+    assert 'tune: {for: "Someone ate the last dumpling.", hold: 12, pitch: {3: 12}}' in text   # only what was touched, as hand-set values
+    again = Scene(sess.path)
+    assert [s["semi"] for s in again.turns[1]["sylls"]] == melody and again.turns[1]["hold"] == 12
 
 
-def test_a_value_set_back_to_the_shows_default_leaves_no_line_in_the_file(sess):
+def test_a_value_dragged_back_to_what_it_would_be_anyway_leaves_no_trace(sess):
     sess.patch(HOLD, commit=True)
+    assert "tune: {hold: 12}" in sess.path.read_text()
     sess.patch([dict(path=["turns", 1, "hold"], value=8)], commit=True)
-    assert "hold:" not in sess.path.read_text()
+    assert "tune" not in sess.path.read_text() and "hold" not in sess.path.read_text()
+
+
+def test_a_hand_set_value_outranks_a_written_one_and_taking_it_off_restores_the_written_one(show):
+    path = show.scene("s01/e01/01", [ENTER, dict(LINE, hold=3)])
+    s = Session(path)
+    s.patch(HOLD, commit=True)
+    assert "hold: 3" in path.read_text() and "tune: {hold: 12}" in path.read_text() and Scene(path).turns[1]["hold"] == 12
+    s.patch([dict(path=["turns", 1, "hold"], value=3)], commit=True)
+    assert "tune" not in path.read_text() and Scene(path).turns[1]["hold"] == 3
 
 
 def test_every_change_by_hand_is_journaled_with_its_address(sess):
     sess.patch(HOLD, commit=True)
     done, _ = edit.stacks(sess.root, by="hand")
-    assert done[-1]["changes"] == [dict(address="s01/e01/01:2", field="hold", before=None, after=12)]
+    assert done[-1]["changes"] == [dict(address="s01/e01/01:2.hold", field="hold", before=8, after=12)]
+
+
+def test_a_slider_is_written_as_a_hand_set_value_beside_the_written_one(sess):
+    feel = sess.root / "library" / "feel.yaml"
+    sess.tune("feel", None, "ease", 0.4, commit=True)
+    assert "ease: 0.26" in feel.read_text() and "tune: {ease: 0.4}" in feel.read_text()
+    assert sess.stage.look.feel["ease"] == 0.4 and sess.state()["feel"][0]["value"] == 0.4
+    sess.tune("feel", None, "ease", 0.26, commit=True)
+    assert "tune" not in feel.read_text()
 
 
 def test_undo_and_redo_cover_timings_and_sliders_and_survive_a_restart(sess):
@@ -52,7 +75,7 @@ def test_undo_and_redo_cover_timings_and_sliders_and_survive_a_restart(sess):
     feel_before = feel.read_text()
     sess.patch(HOLD, commit=True)
     sess.tune("feel", None, "ease", 0.4, commit=True)
-    assert "ease: 0.4" in feel.read_text() and "#" in feel.read_text()          # the library keeps its comments too
+    assert "tune: {ease: 0.4}" in feel.read_text() and "#" in feel.read_text()  # the library keeps its comments too
     again = Session(sess.path)                                         # the editor was closed and opened
     again.step("undo")
     assert feel.read_text() == feel_before

@@ -512,7 +512,7 @@ Each slice is usable on its own and ends with something the writer can feel.
 | # | Slice | Done when |
 |---|---|---|
 | 1 ✓ | **Fast and safe.** (built: see [phases.md](phases.md)) Take the ledger and earlier scenes off the nudge path. Autosave by command, journal undo, follow the files | A nudge is under 40 ms. Editing the file in another window while the editor is open loses nothing. Sliders undo |
-| 2 | **Registry and cascade.** `params.py`, `resolve`, `tune:` blocks, the three commands, addresses, schema 2 | `s2s tune set the-thermostat:2.hold 9 --dry-run --json` works; every value in 4.1 is settable |
+| 2 ✓ | **Registry and cascade.** (built) `params.py`, `resolve`, `tune:` blocks, the three commands, addresses, schema 2 | `s2s tune set the-thermostat:2.hold 9 --dry-run --json` works; every value in 4.1 is settable |
 | 3 | **Ownership.** Breath as its own value, stretches, the strip, the knob and scope chip | The worked example in section 1 can be done up to step 3 without touching the piano roll |
 | 4 | **Audition and compare.** Spans, auto-replay, loop, A/B | Steps 3 and 4 of the worked example |
 | 5 | **In play, widen, anchors.** The candidate row, W with its count, orphans | Steps 5 and 6. "How he turns is wrong" finds flip, ease and overshoot |

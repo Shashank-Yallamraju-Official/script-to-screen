@@ -10,7 +10,7 @@ All times inside `_build` are in steps; the score is in seconds.
 import re
 from pathlib import Path
 
-from ..script import ScriptError, Show, find_root, load_yaml, scene_key, scene_paths
+from ..script import ScriptError, Show, find_root, load_yaml, scene_key, scene_paths, tuning
 from ..world import World
 from . import speech
 from .expression import observe
@@ -95,7 +95,8 @@ class Scene:
                 else:
                     feel(e, f)
             a = self._observe(tid)
-            pause, hold = float(raw.get("pause", T["pause"])), float(raw.get("hold", T["hold"]))
+            pause, hold = (tuning.turn_value(raw, self.script, k, T[k]) for k in ("pause", "hold"))
+            hand = raw.get("tune") or {}
             say_at = reveal = react = 0.0
             line, sylls = None, []
             if say:
@@ -123,7 +124,16 @@ class Scene:
                 melody = list(melody) if melody is not None and len(melody) == n else None
                 stress = list(stress) if stress is not None and len(stress) == n else None
                 gap = float(T.get("bubble_break", 2))
-                sylls = speech.plan(say, self.show.tones[tone], self.show.cfg["scale"], rhythm, melody, stress, cuts, gap)
+                tunes, orphaned = tuning.syllable_tunes(raw)
+                if orphaned:                              # tuned for words that have since changed: set aside, and said so
+                    count = sum(len(v) for v in orphaned.values())
+                    self.flag("warn", tid, f"{count} hand-tuned syllable value(s) were tuned for an earlier wording and are not applied; "
+                                           f"see `s2s tune list --orphans`")
+                for name, vals in tunes.items():
+                    for k in vals:
+                        if not 1 <= k <= n:
+                            self.flag("error", tid, f"a hand-tuned {name} is set for syllable {k}, but the line has {n}")
+                sylls = speech.plan(say, self.show.tones[tone], self.show.cfg["scale"], rhythm, melody, stress, cuts, gap, tunes)
                 say_at = pause + a[who]["latency"]
                 reveal = sum(s["len"] for s in sylls)
                 react = say_at + reveal
@@ -156,7 +166,7 @@ class Scene:
                         world.take(e, r["do"], keep=bool(r.get("keep")))
 
                 if "beat" in r:                              # featured: the reaction takes the floor and the scene waits
-                    n = float(r["beat"])
+                    n = float((hand.get("beat") or {}).get(j + 1, r["beat"]))
                     ops.append((cursor, apply))
                     if "do" in r and not r.get("keep"):
                         ops.append((cursor + n, lambda e=e: world.drop_take(e)))

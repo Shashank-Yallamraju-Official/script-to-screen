@@ -17,9 +17,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from ruamel.yaml.comments import CommentedSeq
 
-from ..commands import Refused, address, edit
+from ..commands import Refused, address, edit, tune
 from ..performance import Scene, carry_into
 from ..presentation import sound
 from ..presentation.render import frame_jpeg, out_path
@@ -38,48 +37,56 @@ FEEL = [(p.name, p.lo, p.hi, p.step, p.meaning.rstrip(".")) for p in params.grou
 SOUND = [(p.name, p.lo, p.hi, p.step, p.meaning.rstrip(".")) for p in params.group("sound")]
 
 
-def tidy(v):
-    v = round(float(v), 3)
-    return int(v) if v == int(v) else v
+LIST_OF = {"rhythm": ("length", "len"), "melody": ("pitch", "semi"), "stress": ("stress", "stress")}
 
 
-def apply_ops(doc, ops, timing):
-    """Apply timeline edits to a scene document. -> the lowest turn position touched.
+def hand(doc, t, value, changes, was):
+    """Put a hand-set value on, or take it off if it only repeats what the value would be anyway."""
+    value = tune.tidy(t.param.clamp(value))
+    if value == tune.inherited(t, doc):
+        tune.reset_in(doc, t)
+    else:
+        tune.set_in(doc, t, value)
+    if value != was:
+        changes.append(dict(address=t.address, field=t.name, before=was, after=value))
 
-    An op is {path, value}: ["turns", i, "pause" | "hold" | "rhythm" | "melody" | "stress"], or
-    ["turns", i, "react", j, "beat"] for how long a featured reaction holds the scene."""
-    first = None
+
+def apply_ops(root, path, sid, doc, score, ops):
+    """Apply timeline edits to a scene document as hand-set values (`tune:` blocks).
+    -> (the lowest turn position touched, the changes made).
+
+    An op is {path, value}: ["turns", i, "pause" | "hold"], ["turns", i, "rhythm" | "melody" | "stress"] with a
+    value per syllable, or ["turns", i, "react", j, "beat"]. `score` is the scene as `doc` stands before the edit."""
+    first, changes = None, []
     for op in ops:
-        path, value = op["path"], op["value"]
-        if len(path) == 5 and path[0] == "turns" and path[2] == "react" and path[4] == "beat":
-            doc["turns"][int(path[1])]["react"][int(path[3])]["beat"] = tidy(params.PARAMS["reaction.beat"].clamp(max(float(value), 0.25)))
-        elif len(path) == 3 and path[0] == "turns" and path[2] in tuple(NUMBERS) + LISTS:
-            key, turn = path[2], doc["turns"][int(path[1])]
-            if key in NUMBERS:
-                value = tidy(min(max(float(value), 0), NUMBERS[key]))
-                if value == timing[key]:
-                    value = None                         # the show default needs no line in the file
-            elif value is not None:
-                seq = CommentedSeq(tidy(max(v, 0.25)) if key == "rhythm" else max(0, min(2, int(v))) if key == "stress" else int(round(v)) for v in value)
-                seq.fa.set_flow_style()
-                value = seq
-            if value is None:
-                turn.pop(key, None)
-            else:
-                edit.put(turn, key, value)               # a new line goes above `why`, which stays last
+        where, value = op["path"], op["value"]
+        if where[0] != "turns":
+            raise ValueError("that value is not editable here")
+        i = int(where[1])
+        turn, played = doc["turns"][i], score.turns[i]
+        tid = turn.get("id", i + 1)
+        if len(where) == 5 and where[2] == "react" and where[4] == "beat":
+            n = int(where[3]) + 1
+            was = next(r["beat"] for r in played["reacts"] if r["index"] == n - 1)
+            hand(doc, tune.Target(root, "reaction.beat", "reaction", path, scene=sid, turn=tid, n=n), max(float(value), 0.25), changes, tune.tidy(was))
+        elif len(where) == 3 and where[2] in NUMBERS:
+            hand(doc, tune.Target(root, "turn." + where[2], "turn", path, scene=sid, turn=tid), value, changes, tune.tidy(played[where[2]]))
+        elif len(where) == 3 and where[2] in LISTS and value is not None:
+            name, field = LIST_OF[where[2]]
+            for k, (syl, v) in enumerate(zip(played["sylls"], value)):
+                t = tune.Target(root, "syllable." + name, "syllable", path, scene=sid, turn=tid, n=k + 1)
+                v = tune.tidy(t.param.clamp(max(v, 0.25) if name == "length" else round(v)))
+                if v == tune.tidy(syl[field]):
+                    continue
+                if v == tune.tidy(syl["base"][name]):        # back to what it would be anyway: the tune comes off
+                    tune.reset_in(doc, t)
+                else:
+                    tune.set_in(doc, t, v)
+                changes.append(dict(address=t.address, field=name, before=tune.tidy(syl[field]), after=v))
         else:
             raise ValueError("that value is not editable here")
-        first = int(path[1]) if first is None else min(first, int(path[1]))
-    return first
-
-
-def value_at(doc, path):
-    v = doc
-    for k in path:
-        v = v.get(k) if isinstance(v, dict) else v[k]
-        if v is None:
-            return None
-    return edit.plain(v)
+        first = i if first is None else min(first, i)
+    return first, changes
 
 
 class Session:
@@ -117,6 +124,7 @@ class Session:
             self.carry = {}
         self.stamps = self.stamp()
         self.work()
+        self.clean = (self.path.read_text(), self.scene)         # the file's text, and the scene as that text plays
         self.inform()
 
     def sync(self):
@@ -170,7 +178,7 @@ class Session:
             turns.append(dict(id=t["id"], index=t["index"], start=t["start"], length=t["length"], why=t["why"], who=t["who"],
                               pause=t["pause"], hold=t["hold"], say=say, lanes=lanes, reacts=t["reacts"]))
         mine = [p for p in self.problems if p["scene"] == sc.id]
-        feel, sounds = self.lib["feel"], self.lib["sounds"]
+        feel, sounds = look.feel, look.sounds                    # as in force: hand-set values laid over written ones
         done, undone = edit.stacks(self.root, by="hand")
         return dict(rev=self.rev, info_rev=self.info_rev, can_undo=bool(done), can_redo=bool(undone), status=self.seg["status"], fps=stage.fps, step=sc.step, tempo=sc.tempo,
                     spb=sc.grid["steps_per_beat"], scale=list(sc.grid["scale"]),
@@ -196,60 +204,51 @@ class Session:
 
     def patch(self, ops, commit=False):
         """A timeline edit. While dragging it is a preview in memory; on release (`commit`) it is
-        applied on top of the file as it now stands, written, and journaled."""
+        applied on top of the file as it now stands, written as hand-set values, and journaled."""
         self._locked()
-        timing = self.scene.grid["timing"]
         if not commit:
-            first = apply_ops(self.doc, ops, timing)
+            first, _ = apply_ops(self.root, self.path, self.seg["id"], self.doc, self.scene, ops)
             dirty = self.frame_of(first)
             self.work()
             return dirty
         before_text = self.path.read_text()
         doc = edit.yaml().load(before_text)                      # the file as it is now, not as it was when opened
-        before = [value_at(doc, op["path"]) for op in ops]
-        first = apply_ops(doc, ops, timing)
+        if self.clean[0] != before_text:                         # it changed underneath: work it out as it now stands
+            self.clean = (before_text, Scene(self.path, script=doc, carry=self.carry).score)
+        first, changes = apply_ops(self.root, self.path, self.seg["id"], doc, self.clean[1], ops)
         after_text = edit.dump(doc)
-        dirty = self.frame_of(first)
         self.doc = doc
         if after_text != before_text:
             edit.write(self.path, after_text)
-            changes = []
-            for op, was in zip(ops, before):
-                turn = doc["turns"][int(op["path"][1])]
-                tid = turn.get("id", int(op["path"][1]) + 1)
-                field = op["path"][2] if len(op["path"]) == 3 else f"react[{int(op['path'][3]) + 1}].beat"
-                changes.append(dict(address=f"{self.seg['id']}:{tid}", field=field, before=was, after=value_at(doc, op["path"])))
             edit.record(self.root, "nudge", None, self.path, changes, before_text, after_text, by="hand")
             self.stale = time.monotonic()
         self.stamps = self.stamp()
         self.work()
-        return dirty
+        self.clean = (after_text, self.scene)
+        return self.frame_of(first)
 
     def tune(self, group, name, key, value, commit=False):
         """One slider: a feel setting, or one setting of one sound. -> the first frame to redraw, or None."""
-        p = params.PARAMS[("feel." if group == "feel" else "sound.") + key]
-        value = tidy(p.clamp(value))
         file = self.root / "library" / f"{group}.yaml"
+        t = (tune.Target(self.root, "feel." + key, "feel", file) if group == "feel" else
+             tune.Target(self.root, "sound." + key, "sound", file, sound=name))
         if commit:
             before_text = file.read_text()
             lib = edit.yaml().load(before_text)
-            target = lib if group == "feel" else lib[name]
-            was = edit.plain(target.get(key))
-            target[key] = value
+            changes = []
+            hand(lib, t, value, changes, tune.resolve(t, lib)["value"])
             after_text = edit.dump(lib)
             self.lib[group] = lib
             if after_text != before_text:
                 edit.write(file, after_text)
-                where = f"feel.{key}" if group == "feel" else f"sounds.{name}.{key}"
-                edit.record(self.root, "nudge", None, file, [dict(address=where, field="value", before=was, after=value)],
-                            before_text, after_text, by="hand")
+                edit.record(self.root, "nudge", None, file, changes, before_text, after_text, by="hand")
             self.stamps = self.stamp()
         else:
-            (self.lib["feel"] if group == "feel" else self.lib["sounds"][name])[key] = value
-        if p.rebuild == "look":
+            hand(self.lib[group], t, value, [], None)
+        if t.param.rebuild == "look":
             self.cache = {}
         self.work(score=False)                                   # the score does not depend on the look
-        return 0 if p.rebuild == "look" else None
+        return 0 if t.param.rebuild == "look" else None
 
     def step(self, which):
         """Undo or redo the writer's own last change (never the assistant's)."""

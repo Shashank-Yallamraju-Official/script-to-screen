@@ -4,7 +4,7 @@ The score says what happens. The look says how that appears and sounds: frame si
 the small motions, each tone's lettering, each sound, each emotion's colour, and each
 entity's colour and voice. A change to the look never needs the scene worked out again.
 """
-from ..script import Show, load_yaml
+from ..script import Show, load_yaml, tuning
 
 
 class Look:
@@ -19,7 +19,7 @@ class Look:
         cfg = show.cfg
         cast = {}
         for e in entities:
-            sheet = load_yaml(root / "entities" / f"{e}.yaml")
+            sheet = tuning.overlay(load_yaml(root / "entities" / f"{e}.yaml"))
             cast[e] = {k: sheet[k] for k in ("color", "voice", "timbre", "kind") if k in sheet}
         return cls(cfg["width"], cfg["height"], cfg["fps"], show.feel, show.tones, show.sounds, show.emotions, cast)
 

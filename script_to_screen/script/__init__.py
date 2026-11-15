@@ -7,6 +7,8 @@ from pathlib import Path
 
 import yaml
 
+from . import tuning
+
 LIBRARY = ("tones", "sounds", "feel")
 SCHEMA = 2                                  # the file format this engine reads; see docs/architecture.md
 
@@ -119,8 +121,10 @@ class Show:
         self.cfg = load_yaml(root / "show.yaml")
         if self.cfg.get("schema", 1) != SCHEMA:
             raise ScriptError(f"this show is written for schema {self.cfg.get('schema', 1)}, and this engine reads schema {SCHEMA}; run `s2s migrate`")
-        for name in LIBRARY:                 # the editor passes its unsaved copies in `lib`
-            setattr(self, name, (lib or {}).get(name) or load_yaml(root / "library" / f"{name}.yaml"))
+        self.cfg["timing"] = {**self.cfg["timing"], **{k: v for k, v in (self.cfg.get("tune") or {}).items() if k in tuning.TIMING}}
+        for name in LIBRARY:                 # the editor passes its copies in `lib`, to preview a value before it is written
+            raw = (lib or {}).get(name) or load_yaml(root / "library" / f"{name}.yaml")
+            setattr(self, name, tuning.overlay(raw) if name == "feel" else tuning.each(raw))     # hand-set values laid over written ones
         self.emotions = self.cfg["emotions"]
 
     def known(self):
@@ -132,7 +136,7 @@ class Show:
         p = self.root / "entities" / f"{eid}.yaml"
         if not p.exists():
             raise ScriptError(f"no entity file entities/{eid}.yaml")
-        ent = load_yaml(p)
+        ent = tuning.overlay(load_yaml(p))
         ent["id"] = eid
         tells = dict(ent.get("tells") or {})
         order = {sg["id"]: sg["index"] for sg in series(self.root).segments}
