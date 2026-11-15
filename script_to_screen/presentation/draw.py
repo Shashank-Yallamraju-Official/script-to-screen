@@ -176,7 +176,8 @@ def bubble_box(stage, line, o):
     f, size, tw, rows, chunks = layout(line, tone)
     W, H, pad = stage.W, stage.H, 22
     lift, rad = float(feel["cursor_lift"]), float(feel["cursor_size"])
-    lane = lift + 2 * rad * WEIGHT[2] + 4                        # room under each row for the indicator
+    marked = stage.look.style.get("indicator", "fill") in ("dot", "trace")
+    lane = lift + 2 * rad * WEIGHT[2] + 4 if marked else 8       # room under each row, for the styles that draw something there
     lh = size + 6 + lane
     w, h = max(150, tw + 2 * pad), len(rows) * lh + 2 * pad - 14
     hx, top = slot_x(o["slot"], W), ground(H) - BODY_H * o["sy"] - 24
@@ -209,7 +210,7 @@ def draw_bubble(c, stage, line, t, o, ent):
         c.translate(-hx, -top)
     c.drawPath(shape, fill("#ffffff"))
     c.drawPath(shape, stroke(ent["color"], 4))
-    style = stage.look.style.get("indicator", "dot")             # how the voice is shown moving through the words
+    style = stage.look.style.get("indicator", "fill")            # how the voice is shown moving through the words
     ink = fill(INK)
     end = line["sylls"][-1]["start"] + line["sylls"][-1]["voiced"]
     fade = 1 - smooth((t - end) / 0.3) if t > end else 1.0       # it leaves once the line is said

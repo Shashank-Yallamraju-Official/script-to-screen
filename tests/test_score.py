@@ -58,7 +58,7 @@ def test_changing_the_look_does_not_change_the_score(show):
     assert json.dumps(Scene(path).score.to_data(), sort_keys=True) == before
 
 
-def test_each_way_of_showing_the_voice_draws_and_the_default_is_unchanged():
+def test_each_way_of_showing_the_voice_draws_and_filling_with_ink_is_the_default():
     """`style: {indicator: ...}` in show.yaml chooses how the voice is shown moving through a bubble."""
     path = series(DEMO).by_id["the-vase"]["path"]
     plain = Stage.of(Scene(path))
@@ -69,4 +69,4 @@ def test_each_way_of_showing_the_voice_draws_and_the_default_is_unchanged():
         stage = Stage.of(Scene(path))
         stage.look.style = dict(indicator=style)
         seen[style] = picture(stage, [F])
-    assert len(set(seen.values())) == 4 and seen["dot"] == picture(plain, [F])
+    assert len(set(seen.values())) == 4 and seen["fill"] == picture(plain, [F])        # ink filling the words is the default

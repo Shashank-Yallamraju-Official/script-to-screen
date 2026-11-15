@@ -155,23 +155,23 @@ a list, one item per bubble; each break gets a pause:
     say: [Ha, ha, ha]                                # three bubbles, without the full stops
     say: [Michael. Get in here.]                     # one bubble, despite the full stop
 
-A bubble's text appears all at once. It is split into syllables, each syllable is one note,
-and an **indicator** travels under the text in time with the voice:
+A bubble's text is all there from the start, in grey. It is split into syllables, each
+syllable is one note, and **the words take ink as they are said**: the ink moves through a
+syllable for exactly as long as it is voiced, and waits during a breath. So the rhythm of
+the line can be read off the bubble, and a viewer who looks late can still read all of it.
 
-| What the indicator does | What it shows |
-|---|---|
-| How fast it crosses a syllable | Rhythm: it takes exactly as long as the syllable is voiced |
-| How high it rides | Pitch, scaled to the line's own highest and lowest notes |
-| How big it is | Stress |
-| Stopping and shrinking | The breath after punctuation |
+Other ways of showing the voice are kept as a choice in `show.yaml`: `style: {indicator: fill}`
+is the default; `dot` (a dot that rides under the words, higher for higher notes and larger
+on stress), `trace` (the voice draws a line under the words) and `pill` (a block behind the
+syllable being said) are the others.
 
 Each syllable has a **stress**, which is what stops speech sounding like a drum pattern:
 
-| Stress | Length | Loudness | Pitch | Indicator |
-|---|---|---|---|---|
-| 0 weak | Half the tone's rate | Quiet | On the contour | Small |
-| 1 strong | The tone's rate | Louder | A note higher | Medium |
-| 2 main accent of the phrase | Half as long again | Loudest | A note higher (lower on a falling line) | Large |
+| Stress | Length | Loudness | Pitch |
+|---|---|---|---|
+| 0 weak | Half the tone's rate | Quiet | On the contour |
+| 1 strong | The tone's rate | Louder | A note higher |
+| 2 main accent of the phrase | Half as long again | Loudest | A note higher (lower on a falling line) |
 
 Stress, rhythm and melody are worked out from the words and the tone; a line can set its own:
 

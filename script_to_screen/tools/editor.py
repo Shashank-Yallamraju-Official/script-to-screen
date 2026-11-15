@@ -248,7 +248,10 @@ class Session:
         """The values at work at frame F, most likely first, each with what it is now."""
         steps = F / self.stage.fps / self.scene.step
         out = []
+        marked = self.stage.look.style.get("indicator", "fill") in ("dot", "trace")
         for c in inplay.in_play(self.scene, steps):
+            if c["address"].startswith("feel.cursor_") and not marked:      # settings of a mark this show's bubbles do not draw
+                continue
             try:
                 t = tune.parse(c["address"], self.root)
                 r = tune.resolve(t)
