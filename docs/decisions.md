@@ -148,6 +148,66 @@ shows what changed between versions.
 
 **Costs.** YAML has traps (`on` is read as `true`). The schemas in decision 8 are the guard.
 
+## 12. Every change is a command, and an AI assistant is the first operator
+
+**Decision.** There is one set of typed, validated, undoable commands. The MCP server, the
+editor and the command line all use it and nothing else. Commands are proposed as a change
+set and applied on approval, and each records who asked and in what words.
+
+**Instead of** an assistant editing the show's files as text, which is how the whole
+prototype was written.
+
+**Because** the stated way of working is "I type, and the AI handles the rest". Text edits
+fail silently (a key YAML read as `true` did nothing), and an author who never opens a file
+cannot catch that. A command either applies or says exactly why not.
+
+**Costs.** Every capability must be given a command before anyone can use it, including the
+assistant. That is slower than editing a file, and it is the point.
+
+## 13. No model inside the engine
+
+**Decision.** The engine is deterministic and has no AI dependency. It serves MCP; any
+assistant that speaks MCP can operate it.
+
+**Instead of** a chat box in the editor wired to one model.
+
+**Because** the engine has to be testable, reproducible and usable by other writers with
+whatever assistant they have. A built-in model would tie rendering a show to a service.
+
+**Costs.** There is no single app to open and type into. The author needs an assistant
+connected to the server. A chat panel in the editor can come later as one more client.
+
+## 14. An episode is an ordered list of segments, and things have identities
+
+**Decision.** A manifest lists an episode's segments in order. A scene is one kind; a title
+card is another. Seasons, episodes and segments each have an ID, a title, a logline and a
+status. References (an arc starting at a scene) use IDs, not paths.
+
+**Instead of** a folder of scene files read in filename order, where the path is the name.
+
+**Because** title screens showed that an episode holds things that are not scenes, and
+tracking and comparing need every unit to be describable and to survive being renamed.
+
+**Costs.** One more file per episode, and IDs that must stay unique. Reordering becomes an
+edit to the manifest and not a rename.
+
+## 15. The engine names what happened before deciding how it sounds or looks
+
+**Decision.** A derivation step writes a track of dramatic events, each with a kind, a
+subject, a valence, an expectedness and a weight. Music scoring reads that track. So can a
+camera and the series index.
+
+**Instead of** placing every music cue by hand, or wiring music directly to feelings.
+
+**Because** the ask was for music that tells surprising-and-bad from surprising-and-good,
+which is a statement about the story. Placing cues by hand would drift the way hand-written
+poses did. One description of what happened, shared by every consumer, keeps music, camera
+and overview telling the same story.
+
+**Costs.** Emotions must declare a valence, and "expected by whom" must be answered; the
+audience ledger is the first answer. A wrong reading of an event is now wrong in three
+places at once, which is also what makes it noticeable.
+
 ## Open questions
 
 These are not decided, because the conversation has not yet produced the evidence.
@@ -158,3 +218,10 @@ These are not decided, because the conversation has not yet produced the evidenc
 - **Does a background sighting count toward the audience learning a tell?** It does today.
 - **Is there ever more than one stage in view?** Cross-cutting between two rooms would make
   "the scene" a weaker unit than it is now.
+- **Expected by whom?** A stinger for a surprise can follow what the audience expected or
+  what a character expected. They differ exactly when the audience knows more than the
+  character, which is the root of dramatic irony.
+- **Is music heard by the characters?** A title card's theme is not. A character singing is.
+  The `sing:` line already sits on this boundary.
+- **How much may the assistant do without asking?** Today nothing is applied without
+  approval. Routine changes ("tighten every hold by a step") may deserve a faster path.

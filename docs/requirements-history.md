@@ -5,6 +5,9 @@ rounds as data: what was asked, what each ask revealed, the patterns across them
 those patterns predict will be asked next. The architecture in
 [architecture.md](architecture.md) is designed against the predictions, not just the present.
 
+The predictions were tested once already. Rounds 18 to 21 arrived after the first version of
+this document, and [How the first predictions did](#how-the-first-predictions-did) scores them.
+
 ## The rounds
 
 | # | The ask | What it revealed |
@@ -26,6 +29,10 @@ those patterns predict will be asked next. The architecture in
 | 15 | Non-verbal reactions: can they be codified? | The author wants rules, and asks before assuming |
 | 16 | Some reactions are the moment; others are in passing | Attention is a resource, and directing it is part of the script |
 | 17 | Design it for real, anticipating what comes next | This document |
+| 18 | Title screens | An episode contains things that are not scenes |
+| 19 | Music scoring that knows surprising-and-bad from surprising-and-good | The engine must know what happened dramatically, not only what moved |
+| 20 | Track scenes, episodes and seasons so they are easy to compare | The author needs to see the series from above |
+| 21 | AI and MCP are first-class: I type, the AI handles the rest | The primary operator is an assistant, and the author may never open a file |
 
 ## Five patterns
 
@@ -56,6 +63,42 @@ new one is an addition and not a rewrite.*
 The audience ledger (6). No render with errors. "Is this codifiable?" (15). *Consequence:
 checks are a first-class, extensible part of the engine, not a list inside one function.*
 
+**6. The author works from above.** Carry-over and arcs (9), a known scene as a yardstick
+(10), comparing units of the series (20). *Consequence: the series needs an index built from
+the same resolved data the renderer uses, with descriptions and stable identities for every
+unit.*
+
+**7. The operator is an assistant.** "Claude does the work while I explain the scenes" (1),
+"I type and the AI handles the rest" (21). Between those rounds the assistant edited files by
+hand, and one such edit failed silently. *Consequence: every change goes through typed,
+validated commands, and the engine's replies are written to be read by an assistant: what
+changed, what is wrong, how to look.*
+
+## How the first predictions did
+
+The first version of this document ranked eleven likely asks. Four new requirements then
+arrived:
+
+| What was asked | Predicted? | Verdict |
+|---|---|---|
+| AI does the rest | Yes, as "authoring at scale", ranked tenth of eleven | Right idea, badly under-weighted. Round 1 said it plainly and it was the premise of the whole project |
+| Music scoring by dramatic meaning | Partly: "a backing track, recorded effects" | Predicted the plumbing and missed the point. The ask is for music that understands the story |
+| Title screens | No | Missed. Nothing in the list imagined an episode holding anything but scenes |
+| Tracking and comparing | No | Missed. The list was all about what is on screen, none about the author's view of the whole |
+
+And the design, which matters more than the ranking:
+
+| What was asked | Did it land in one place? |
+|---|---|
+| AI does the rest | Yes. "The editor sends commands" generalised to "every operator sends commands" |
+| Music scoring | Mostly. It is a derivation step and a track, as designed, but it needed a new idea: a track of dramatic events |
+| Tracking and comparing | Yes, as a new reader of the score, but it exposed that units had no descriptions or stable identities |
+| Title screens | **No.** The design assumed a scene was the only thing in an episode. It needed the segment |
+
+The lesson taken: the first list extrapolated the last few rounds, which were all about
+on-screen detail, and under-read the first round and the author's position outside the show.
+The list below is rebuilt with that corrected.
+
 ## What is likely next
 
 Ranked by how strongly the conversation points at each. The last column is what the
@@ -67,14 +110,18 @@ architecture must already allow, so that the ask is an addition.
 | **Camera and cutting**: framing, cuts, reaction shots | "I've been paying very close attention to how TV is shot, edited, directed"; featured reactions already carry focus | Framing is a track like any other. Focus exists in the model, separate from how it is shown |
 | **Masking**: showing a feeling other than the one felt | It is a puzzle show; a `take` already outranks tells | Felt and shown are separate values, with a step between them |
 | **Decoration, on purpose**: sets, props, richer bodies | "We can add the decoration later"; the paper look was parked, not rejected | A body is a skin over abstract channels. A prop is an entity that cannot feel |
-| **Real sound**: a backing track, recorded effects, export to a music tool | "Match the text to the music"; the tempo grid exists for it | Audio is a track on the same grid. Sounds are assets with a synthesised fallback |
+| **Review of what the AI did**: approve, reject, see a change next to its reason, go back | Round 21, and "I like to be very particular" | Changes are proposed as sets and applied on approval; every change keeps the words that caused it |
+| **The rest of an episode's furniture**: cold open, recap, credits, act breaks | Round 18 | An episode is a list of segments of different kinds |
+| **Themes**: a motif for a character or an idea, recurring and varied | Round 19; the running-gag structure of the shows cited | Music is written as notes on the show's scale, and a cue can quote a theme |
+| **Recorded sound and export to a music tool** | "Match the text to the music"; the tempo grid exists for it | Audio is a track on the same grid. Sounds are assets with a synthesised fallback |
+| **Other writers using it** | "I assume many writers would want this too" | The engine and a show are separate; no step requires reading code or YAML |
 | **Per-character exceptions to universal rules** | "Some people get louder when outnumbered" was left open in round 5 | A universal rule can be overridden per entity, like a tell |
 | **Relationships**: state between two entities | A feeling already records who it is about; status is still one number | World state can be keyed by a pair, not only by one entity |
 | **Richer audience model**: background sightings count less; setups and payoffs; running gags | Round 16; the references to Whedon and Hurwitz | The ledger reads the same resolved timeline as the renderer, including prominence |
 | **Feelings that fade, and mixed feelings** | Carry-over made a feeling permanent until changed | Felt state is a set with a time behaviour, not a single slot |
-| **Authoring at scale**: a series bible, scene drafts from a description, review of changes | The original division of labour in round 1 | The script format has a published schema, stable across engine versions |
 | **A different stage**: depth, levels, entrances and exits | Position is one line of nine slots | Position is a channel with a type, not an integer baked into the renderer |
 
-Two things the conversation suggests will *not* be asked for, and so are not designed for:
-real-time interactivity (round 11: "this isn't a game"), and photorealism or generated
-video (rejected at the start for lack of control).
+Three things the conversation suggests will *not* be asked for, and so are not designed for:
+real-time interactivity (round 11: "this isn't a game"), photorealism or generated video
+(rejected at the start for lack of control), and a model built into the engine (the author
+wants an assistant to operate the tool, not a tool that is an assistant).

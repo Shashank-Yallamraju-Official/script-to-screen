@@ -14,7 +14,7 @@ because the script says so, and every turn has to say why.
 | `toon/` | The engine |
 | `shows/demo/` | A small show used for development: one episode of three scenes, plus a staging study |
 | `tests/` | What the engine promises, as tests |
-| [docs/architecture.md](docs/architecture.md) | The target design, and the order to build it in |
+| [docs/architecture.md](docs/architecture.md) | The target design, AI-first, and the order to build it in |
 | [docs/requirements-history.md](docs/requirements-history.md) | How the requirements evolved, and what is likely to be asked next |
 | [docs/decisions.md](docs/decisions.md) | The choices that would be expensive to reverse |
 
