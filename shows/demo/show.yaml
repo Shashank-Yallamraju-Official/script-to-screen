@@ -1,5 +1,5 @@
 # Settings for the whole show.
-schema: 1           # the file format; the engine refuses a show written for a different one
+schema: 2           # the file format; the engine refuses a show written for a different one
 width: 1280
 height: 720
 fps: 60

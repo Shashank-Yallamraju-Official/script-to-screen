@@ -8,7 +8,7 @@ because the script says so, and every turn has to say why.
     pip install -e ".[dev]"        # plus ffmpeg on the PATH, for rendering
     s2s edit shows/demo/episodes/s01/e01/01-the-last-dumpling.yaml
     s2s list                       # run from the repository or a show's folder
-    s2s render --episode s01/e01
+    s2s render --episode s01e01
     s2s parity check righteous
     pytest
 
@@ -89,9 +89,26 @@ listed reacts as the line ends".
 
 ## A series
 
-    episodes/<season>/<episode>/<scene>.yaml      e.g. episodes/s01/e01/02-the-vase.yaml
+`series.yaml` is the show from above: seasons, episodes and their segments, in order.
 
-Scenes run in path order, so number them. Each level of the hierarchy has its own clock:
+    seasons:
+      - id: s01
+        title: Season one
+        episodes:
+          - id: s01e01
+            title: The kitchen
+            logline: Three small accusations in one room.
+            segments:
+              - {id: the-last-dumpling, scene: episodes/s01/e01/01-the-last-dumpling.yaml}
+              - {id: the-vase, scene: episodes/s01/e01/02-the-vase.yaml, status: tuned}
+
+A segment's `id` is its identity: arcs, addresses, references and output files use it, so a
+file can be renamed or moved without breaking anything, and reordering is moving a line
+(`s2s move the-vase --before the-last-dumpling`). A scene's `status` is draft, staged, tuned
+or locked; a locked scene refuses every change. Today every segment is a scene; a title
+card will be another kind. `s2s list` prints this view with each scene's length and problems.
+
+Scenes run in the order listed. Each level of the hierarchy has its own clock:
 
 | Level | What changes | Written as |
 |---|---|---|
@@ -117,7 +134,7 @@ effects, which is the point.
 An `arc` changes an entity's tells from a given scene onward:
 
     arc:
-      - from: s01/e03/02-the-apology
+      - from: the-apology            # a scene's id
         tells: {shame: [{attention: source}]}
 
 ## Time and music
@@ -228,11 +245,13 @@ command takes `--json`; a command that changes something also takes `--dry-run`,
 | Ask why someone looks the way they do | `s2s explain thermostat:2 otis` |
 | List problems | `s2s check` |
 | Look at a moment, or a whole scene at a glance | `s2s still thermostat:2 --xray`, `s2s sheet thermostat` |
-| Render | `s2s render thermostat`, `s2s render --episode s01/e01`, `s2s render --all` |
+| Render | `s2s render thermostat`, `s2s render --episode s01e01`, `s2s render --all` |
 | Change a line, a feeling, a timing, a reason | `set-line`, `set-feeling`, `set-timing`, `set-why` |
-| Add or remove | `add-turn`, `add-reaction`, `remove-turn` |
+| Add or remove | `add-scene`, `add-turn`, `add-reaction`, `remove-turn` |
+| Reorder, or mark how finished a scene is | `move`, `set-status` |
 | Set any other field of a turn | `s2s put thermostat:2 do '{juno: {orient: otis}}'` |
 | See and reverse changes | `s2s history`, `s2s undo` |
+| Bring an older show up to date | `s2s migrate` |
 
 A change is checked against the whole show before it is written. One that would introduce
 an error is refused and says which error; a refusal says what would work ("no word

@@ -124,7 +124,7 @@ project's oldest habit, hand-set values becoming derived ones, turned into a rou
 | Read, change, rehearse, explain through commands | Mostly. Scenes are read, explained and changed by command, with dry runs and undo. Entity sheets, the library and show settings are still edited as files |
 | Check with precise messages | Mostly. A refused command says what would work; check messages name the turn but not always the fix |
 | Look at stills | Yes. `still` and `sheet` |
-| Stable addresses | Partly. `scene:turn` addresses exist; they follow the file's name until scenes get IDs (phase 3) |
+| Stable addresses | Yes for scenes: `scene:turn`, by an id that survives renaming and moving. A turn is still named by its `id` or number |
 | See what the writer did by hand | No |
 | **Tuning loop** | |
 | Replay at once after a change | Partly. Changing a note replays its line. Moving a slider discards every frame of the scene and waits |
@@ -138,7 +138,7 @@ project's oldest habit, hand-set values becoming derived ones, turned into a rou
 | **Where they meet** | |
 | Who set each value | No |
 | Warning before discarding tuned values | Partly, by accident: a rhythm that no longer fits its line is an error |
-| Locking | No |
+| Locking | Yes. `set-status <scene> locked`; every change command then refuses |
 | Editor follows the files | **No. The editor keeps its own copy and overwrites the file on save.** |
 
 The entry in bold is the one that can lose work today.

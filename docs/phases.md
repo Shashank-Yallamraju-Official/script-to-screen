@@ -11,7 +11,7 @@ the phase before. A phase that does mean to change it re-records the reference a
 | 0 | **Parity gate.** `s2s parity record|check`; references for every demo scene | Recorded | Done (`phase-0`) |
 | 1 | **Four layers.** `script`, `world`, `performance`, `presentation` as packages that only import downward, enforced by a test. The world changes only through its methods and logs every change with its cause | Identical | Done (`phase-1`), byte-identical video |
 | 2 | **Commands and the command line.** 22 commands declared once: read, state, explain, check, still, contact sheet, render, eight changes to a scene, history and undo. JSON out, dry run, addresses, a journal with the writer's words. Changes to entity sheets, the library and show settings are not yet commands | Identical | Done (`phase-2`), byte-identical video |
-| 3 | **Identities and manifests.** Seasons, episodes and segments with IDs; an episode is an ordered list; schema 2 with a migration | Identical | |
+| 3 | **Identities and the series manifest.** `series.yaml` lists seasons, episodes and segments in order; a scene's id is its identity, wherever its file is. Arcs, addresses, references and output files use ids. Status per scene, with locking. `move`, `add-scene`, `set-status`, and `migrate` (schema 1 to 2) | Identical | Done (`phase-3`), byte-identical video |
 | 4 | **The score as the contract.** Presentation, sound, ledger and editor read named tracks and nothing else | Identical | |
 | 5 | **Registries.** Channels and parameters declared once | Identical | |
 | N1 | Nudging: fast and safe (see [lld-nudging.md](lld-nudging.md) section 10) | Identical | |

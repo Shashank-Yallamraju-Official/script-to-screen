@@ -1,0 +1,20 @@
+# The series from above: seasons, episodes and their segments, in order.
+# A segment's id is its identity; its file can be renamed or moved without changing it.
+seasons:
+  - id: s01
+    title: Season one
+    episodes:
+      - id: s01e01
+        title: The kitchen
+        logline: Three small accusations in one room; the audience learns how Otis carries shame.
+        segments:
+          - {id: the-last-dumpling, scene: episodes/s01/e01/01-the-last-dumpling.yaml}
+          - {id: the-vase, scene: episodes/s01/e01/02-the-vase.yaml}
+          - {id: the-thermostat, scene: episodes/s01/e01/03-the-thermostat.yaml}
+  - id: studies
+    title: Staging studies
+    episodes:
+      - id: study
+        title: Scenes staged from television, to test the engine
+        segments:
+          - {id: the-morally-righteous-location, scene: episodes/study/the-morally-righteous-location.yaml}

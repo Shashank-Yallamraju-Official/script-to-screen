@@ -8,7 +8,7 @@ from pathlib import Path
 import yaml
 
 LIBRARY = ("tones", "sounds", "feel")
-SCHEMA = 1                                  # the file format this engine reads; see docs/architecture.md
+SCHEMA = 2                                  # the file format this engine reads; see docs/architecture.md
 
 
 class ScriptError(Exception):
@@ -28,12 +28,87 @@ def find_root(path):
     raise ScriptError("no show.yaml above " + str(path))
 
 
+STATUSES = ("draft", "staged", "tuned", "locked")
+_override = {}                              # root -> series data being rehearsed (see `rehearsing`)
+
+
+class Series:
+    """The series from above: seasons, episodes and their segments, in order (series.yaml).
+
+    A segment has an identity that does not depend on where its file is or what it is called.
+    Today every segment is a scene; a title card will be another kind.
+    """
+
+    def __init__(self, root, data=None):
+        self.root = Path(root)
+        if data is None:
+            f = self.root / "series.yaml"
+            if not f.exists():
+                raise ScriptError(f"no series.yaml in {self.root}: a show lists its seasons, episodes and scenes there")
+            data = load_yaml(f) or {}
+        self.seasons, self.segments, self.by_id, self.by_path = [], [], {}, {}
+        for se in data.get("seasons") or []:
+            season = dict(id=str(se["id"]), title=se.get("title"), episodes=[])
+            self.seasons.append(season)
+            for ep in se.get("episodes") or []:
+                episode = dict(id=str(ep["id"]), title=ep.get("title"), logline=ep.get("logline"), status=ep.get("status"),
+                               season=season["id"], segments=[])
+                season["episodes"].append(episode)
+                for sg in ep.get("segments") or []:
+                    kind = next((k for k in ("scene",) if k in sg), None)
+                    if kind is None:
+                        raise ScriptError(f"series.yaml: segment '{sg.get('id')}' has no kind; write `scene: <file>`")
+                    seg = dict(id=str(sg["id"]), kind=kind, path=(self.root / str(sg[kind])).resolve(), file=str(sg[kind]),
+                               status=sg.get("status", "draft"), logline=sg.get("logline"),
+                               season=season["id"], episode=episode["id"], index=len(self.segments))
+                    if seg["id"] in self.by_id:
+                        raise ScriptError(f"series.yaml: two segments are called '{seg['id']}'")
+                    if seg["status"] not in STATUSES:
+                        raise ScriptError(f"series.yaml: '{seg['id']}' has status '{seg['status']}'; it must be one of {', '.join(STATUSES)}")
+                    self.segments.append(seg)
+                    episode["segments"].append(seg)
+                    self.by_id[seg["id"]] = self.by_path[seg["path"]] = seg
+
+    def of(self, path):
+        seg = self.by_path.get(Path(path).resolve())
+        if seg is None:
+            raise ScriptError(f"{Path(path).name} is not listed in series.yaml, so it has no place in the series")
+        return seg
+
+    def episode(self, eid):
+        for se in self.seasons:
+            for ep in se["episodes"]:
+                if ep["id"] == eid:
+                    return ep
+        raise ScriptError(f"no episode '{eid}'; episodes are: " + ", ".join(ep["id"] for se in self.seasons for ep in se["episodes"]))
+
+
+def series(root):
+    root = Path(root).resolve()
+    return Series(root, _override.get(root))
+
+
+class rehearsing:
+    """While inside, the show at `root` is read as if series.yaml held `data`. For dry runs."""
+
+    def __init__(self, root, data):
+        self.root, self.data = Path(root).resolve(), data
+
+    def __enter__(self):
+        _override[self.root] = self.data
+
+    def __exit__(self, *exc):
+        _override.pop(self.root, None)
+
+
 def scene_paths(root):
-    return sorted((Path(root) / "episodes").rglob("*.yaml"))
+    """Every scene's file, in series order."""
+    return [sg["path"] for sg in series(root).segments if sg["kind"] == "scene"]
 
 
 def scene_key(path, root):
-    return Path(path).relative_to(Path(root) / "episodes").with_suffix("").as_posix()
+    """A scene's identity: its segment id in series.yaml."""
+    return series(root).of(path)["id"]
 
 
 class Show:
@@ -42,8 +117,8 @@ class Show:
     def __init__(self, root, lib=None):
         self.root = root
         self.cfg = load_yaml(root / "show.yaml")
-        if self.cfg.get("schema", SCHEMA) != SCHEMA:
-            raise ScriptError(f"this show is written for schema {self.cfg['schema']}, and this engine reads schema {SCHEMA}")
+        if self.cfg.get("schema", 1) != SCHEMA:
+            raise ScriptError(f"this show is written for schema {self.cfg.get('schema', 1)}, and this engine reads schema {SCHEMA}; run `s2s migrate`")
         for name in LIBRARY:                 # the editor passes its unsaved copies in `lib`
             setattr(self, name, (lib or {}).get(name) or load_yaml(root / "library" / f"{name}.yaml"))
         self.emotions = self.cfg["emotions"]
@@ -56,8 +131,12 @@ class Show:
         ent = load_yaml(p)
         ent["id"] = eid
         tells = dict(ent.get("tells") or {})
+        order = {sg["id"]: sg["index"] for sg in series(self.root).segments}
         for step in ent.get("arc") or []:          # the slow clock: the map itself changes
-            if str(step["from"]) <= key:
+            start = str(step["from"])
+            if start not in order:
+                raise ScriptError(f"{eid}'s arc starts at '{start}', which is not a scene in series.yaml")
+            if order[start] <= order[key]:
                 tells.update(step.get("tells") or {})
         ent["tells"] = tells
         return ent

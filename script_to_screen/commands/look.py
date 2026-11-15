@@ -2,7 +2,7 @@
 from ..performance import Scene
 from ..presentation import render as R
 from ..readers import ledger
-from ..script import scene_key, scene_paths
+from ..script import scene_key, scene_paths, series
 from . import A, FAILED, Refused, address, command
 from .read import built
 
@@ -25,7 +25,7 @@ def still(a):
     root, path, tid, steps = address.turn(a.turn, a.show)
     sc, t = built(root, path, tid)
     steps = steps if "+" in a.turn else landed(t)
-    png = R.out_path(sc).with_name(f"{sc.path.stem}_t{t['id']}_{steps:g}.png")
+    png = R.out_path(sc).with_name(f"{R.out_path(sc).stem}_t{t['id']}_{steps:g}.png")
     R.still(sc, frame_of(sc, t, steps), png, a.xray, a.slate)
     return dict(file=str(png), address=address.of(root, path, t["id"]), steps=steps, text=str(png))
 
@@ -35,26 +35,26 @@ def still(a):
 def sheet(a):
     root, path = address.scene(a.scene, a.show)
     sc, _ = built(root, path)
-    png = R.out_path(sc).with_name(sc.path.stem + "_sheet.png")
+    png = R.out_path(sc).with_name(R.out_path(sc).stem + "_sheet.png")
     R.sheet(sc, [frame_of(sc, t, landed(t)) for t in sc.turns], png, a.cols, xray=a.xray)
     return dict(file=str(png), frames=[address.of(root, path, t["id"]) for t in sc.turns], text=str(png))
 
 
 @command("render", "Render to video: one scene, an episode (its scenes joined), or everything. Refuses while the show has errors.",
-         [A("scene", "a scene", nargs="?"), A("--episode", "a folder under episodes/, e.g. s01/e01"), A("--all", "every scene", action="store_true"),
+         [A("scene", "a scene", nargs="?"), A("--episode", "an episode's id, e.g. s01e01: render its scenes and join them"), A("--all", "every scene", action="store_true"),
           XRAY, A("--slate", "label every frame with its turn and step", action="store_true")],
-         "s2s render --episode s01/e01", group="look")
+         "s2s render --episode s01e01", group="look")
 def render(a):
     if a.scene:
         root, path = address.scene(a.scene, a.show)
         paths = [path]
     else:
         root = address.show_root(a.show)
-        paths = sorted((root / "episodes" / a.episode).rglob("*.yaml")) if a.episode else scene_paths(root) if a.all else []
+        paths = [sg["path"] for sg in series(root).episode(a.episode)["segments"] if sg["kind"] == "scene"] if a.episode else scene_paths(root) if a.all else []
     if not paths:
         raise Refused("nothing to render", hint="name a scene, or use --episode <folder> or --all")
     _, problems = ledger.build(root)
-    mine = {scene_key(p, root) for p in paths} | {p.stem for p in paths}
+    mine = {scene_key(p, root) for p in paths}
     problems = [p for p in problems if a.all or p["scene"] in mine]
     if any(p["level"] == "error" for p in problems):
         return dict(ok=False, problems=problems, exit=FAILED,

@@ -25,7 +25,12 @@ def show(tmp_path):
         path = tmp_path / "episodes" / f"{name}.yaml"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(yaml.safe_dump(dict(scene=name, turns=turns, **top), allow_unicode=True))
+        names.add(name)                                  # the scene's id is the name it was given; order is by name
+        segments = [dict(id=n, scene=f"episodes/{n}.yaml") for n in sorted(names)]
+        (tmp_path / "series.yaml").write_text(yaml.safe_dump(dict(seasons=[dict(id="s", episodes=[dict(id="e", segments=segments)])])))
         return path
+
+    names = set()
 
     for name in ("a", "b", "c"):
         entity(name)

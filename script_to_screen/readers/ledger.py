@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 
 from ..performance import Scene
-from ..script import ScriptError, load_yaml, scene_paths
+from ..script import ScriptError, load_yaml, scene_key, scene_paths
 
 
 def build(root, override=None, lib=None):
@@ -26,7 +26,7 @@ def build(root, override=None, lib=None):
         try:
             sc = Scene(path, script=override.get(path), lib=lib, carry=carry)
         except (ScriptError, KeyError, TypeError) as e:
-            problems.append(dict(level="error", scene=path.stem, turn=None, msg=str(e)))
+            problems.append(dict(level="error", scene=scene_key(path, root), turn=None, msg=str(e)))
             continue
         carry = sc.carry_out                                 # feelings and standing carry into the next scene
         for p in sc.problems:

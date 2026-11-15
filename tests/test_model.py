@@ -114,11 +114,30 @@ def test_an_entity_that_sits_a_scene_out_keeps_its_state(show):
 def test_an_arc_changes_how_a_feeling_shows_from_a_scene_onward(show):
     show.entity("b", arc=[{"from": "s01/e01/02", "tells": {"shame": [{"posture": "contracted"}]}}])
     turns = [ENTER, dict(id=2, feel={"b": {"shame": 1}}, why="x")]
-    before, after = Scene(show.scene("s01/e01/01", turns)), Scene(show.scene("s01/e01/02", turns))
+    first, second = show.scene("s01/e01/01", turns), show.scene("s01/e01/02", turns)
+    before, after = Scene(first), Scene(second)
     assert before.keys["b"][-1][1]["ly"] == 1 and after.keys["b"][-1][1]["sy"] < 1
 
 
 def test_a_show_written_for_another_schema_is_refused(show):
-    (show.root / "show.yaml").write_text((show.root / "show.yaml").read_text().replace("schema: 1", "schema: 99"))
+    (show.root / "show.yaml").write_text((show.root / "show.yaml").read_text().replace("schema: 2", "schema: 99"))
     with pytest.raises(ScriptError, match="schema"):
         Scene(show.scene("s01/e01/01", [ENTER]))
+
+
+def test_an_arc_follows_series_order_not_file_names(show):
+    """The scene called z comes first in series.yaml, so an arc that starts at it applies to a."""
+    import yaml
+    show.entity("b", arc=[{"from": "z", "tells": {"shame": [{"posture": "contracted"}]}}])
+    turns = [ENTER, dict(id=2, feel={"b": {"shame": 1}}, why="x")]
+    a, z = show.scene("a", turns), show.scene("z", turns)
+    order = [dict(id="z", scene="episodes/z.yaml"), dict(id="a", scene="episodes/a.yaml")]
+    (show.root / "series.yaml").write_text(yaml.safe_dump(dict(seasons=[dict(id="s", episodes=[dict(id="e", segments=order)])])))
+    assert Scene(a).keys["b"][-1][1]["sy"] < 1 and Scene(z).keys["b"][-1][1]["sy"] < 1
+
+
+def test_a_scene_that_is_not_in_the_series_is_refused(show):
+    path = show.scene("s01/e01/01", [ENTER])
+    (show.root / "series.yaml").write_text("seasons: []\n")
+    with pytest.raises(ScriptError, match="not listed in series.yaml"):
+        Scene(path)

@@ -6,7 +6,7 @@ from script_to_screen.performance import Scene
 from script_to_screen.presentation.draw import draw_frame
 from script_to_screen.presentation.render import frame_jpeg
 from script_to_screen.readers import ledger
-from script_to_screen.script import scene_paths
+from script_to_screen.script import scene_paths, series
 from script_to_screen.tools.editor import Session
 
 DEMO = Path(__file__).resolve().parents[1] / "shows" / "demo"
@@ -79,7 +79,7 @@ def test_the_reference_scenes_have_not_changed():
     from script_to_screen.readers import parity
     for ref in sorted((DEMO / "reference").glob("*.json")):
         was = json.loads(ref.read_text())
-        path = DEMO / "episodes" / (was["scene"] + ".yaml")
+        path = series(DEMO).by_id[was["scene"]]["path"]
         sc = Scene(path)
         now = __import__("hashlib").sha256(json.dumps(parity.score_of(sc), sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16]
         assert now == was["score"], f"{was['scene']} no longer produces the recorded score"

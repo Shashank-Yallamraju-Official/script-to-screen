@@ -1,15 +1,14 @@
 """Addresses: short names for places in a show, the same for a person and an assistant.
 
-    s01/e01/03-the-thermostat      a scene, by its key
-    thermostat                     the same scene, by any part of its name that is unique
+    the-thermostat                 a scene, by its id in series.yaml
+    thermostat                     the same scene, by any part of its id that is unique
     thermostat:2                   turn 2 of it (a turn's `id`, or its number if it has none)
     thermostat:2+6                 six steps into that turn
     path/to/scene.yaml             a file path works wherever a scene is expected
 """
-import re
 from pathlib import Path
 
-from ..script import ScriptError, find_root, scene_key, scene_paths
+from ..script import ScriptError, find_root, scene_key, series
 from . import Refused
 
 
@@ -32,11 +31,10 @@ def scene(ref, show=None):
         p = Path(ref).resolve()
         return find_root(p), p
     root = show_root(show)
-    keys = {scene_key(p, root): p for p in scene_paths(root)}
+    keys = {sg["id"]: sg["path"] for sg in series(root).segments if sg["kind"] == "scene"}
     if ref in keys:
         return root, keys[ref]
-    bare = lambda k: re.sub(r"^\d+-", "", k.rsplit("/", 1)[-1])
-    for test in (lambda k: k.endswith("/" + ref) or bare(k) == ref, lambda k: ref in k):
+    for test in (lambda k: k.endswith(("/" + ref, "-" + ref)), lambda k: ref in k):
         hits = [k for k in keys if test(k)]
         if len(hits) == 1:
             return root, keys[hits[0]]
@@ -47,6 +45,7 @@ def scene(ref, show=None):
 
 def turn(ref, show=None):
     """-> (root, path, turn id as written, steps into the turn) for `scene:turn[+steps]`."""
+    import re
     m = re.fullmatch(r"(.+):([^:+]+)(?:\+([\d.]+))?", str(ref))
     if not m:
         raise Refused(f"'{ref}' is not a turn", hint="write it as scene:turn, e.g. thermostat:2")

@@ -96,3 +96,43 @@ def test_a_still_and_a_contact_sheet_say_where_they_went(s2s):
     from pathlib import Path
     assert Path(s2s("still", "kitchen:2")[1]["file"]).exists()
     assert Path(s2s("sheet", "kitchen")[1]["file"]).exists()
+
+
+def test_a_locked_scene_refuses_changes_until_unlocked(s2s):
+    assert s2s("set-status", "kitchen", "locked")[0] == 0
+    code, out = s2s("set-timing", "kitchen:2", "hold", "14")
+    assert code == commands.REFUSED and "locked" in out["refused"] and "set-status" in out["hint"]
+    assert s2s("set-status", "kitchen", "tuned")[0] == 0
+    assert s2s("set-timing", "kitchen:2", "hold", "14")[0] == 0
+
+
+def test_a_new_scene_gets_a_file_and_a_place_and_moving_it_changes_the_order(s2s):
+    code, out = s2s("add-scene", "hallway", "--episode", "e", "--title", "The hallway", "--enter", "{a: {slot: 2}}", "--why", "She waits.")
+    assert code == 0
+    ids = lambda: [r["scene"] for r in s2s("list")[1]["scenes"]]
+    assert ids() == ["s01/01-kitchen", "hallway"]
+    assert s2s("move", "hallway", "--before", "kitchen")[0] == 0
+    assert ids() == ["hallway", "s01/01-kitchen"]
+    assert s2s("undo")[0] == 0 and ids() == ["s01/01-kitchen", "hallway"]
+
+
+def test_moving_a_scene_is_refused_if_the_new_order_breaks_a_payoff(s2s, show):
+    """Three scenes teach b's shame; a fourth relies on it. Moving the fourth to the front must be refused."""
+    for n in (2, 3):
+        show.scene(f"s01/0{n}-more", TURNS)
+    show.scene("s01/04-payoff", [TURNS[0], dict(id=2, who="a", say="You.", feel={"b": {"shame": 2}}, relies_on={"b": "shame"}, why="It lands.")])
+    assert s2s("check")[0] == 0
+    code, out = s2s("move", "payoff", "--before", "kitchen")
+    assert code == commands.REFUSED and any("relies on" in p for p in out["introduces"])
+
+
+def test_migrate_turns_a_schema_1_show_into_schema_2(s2s, show):
+    import yaml
+    (show.root / "series.yaml").unlink()
+    cfg = show.root / "show.yaml"
+    cfg.write_text(cfg.read_text().replace("schema: 2", "schema: 1"))
+    show.entity("b", arc=[{"from": "s01/01-kitchen", "tells": {"shame": [{"posture": "contracted"}]}}])
+    code, out = s2s("migrate")
+    assert code == 0 and out["ids"] == {"s01/01-kitchen": "kitchen"}
+    assert yaml.safe_load((show.root / "entities" / "b.yaml").read_text())["arc"][0]["from"] == "kitchen"
+    assert s2s("check")[0] == 0 and s2s("migrate")[1]["did"] == []

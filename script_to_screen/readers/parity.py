@@ -17,7 +17,7 @@ import skia
 from ..performance import Scene
 from ..presentation import sound
 from ..presentation.draw import draw_frame
-from ..script import find_root
+from ..script import find_root, scene_key
 
 
 def _plain(v):
@@ -53,4 +53,5 @@ def digests(path):
 
 def ref_path(path):
     path = Path(path).resolve()
-    return find_root(path) / "reference" / (path.stem + ".json")
+    root = find_root(path)
+    return root / "reference" / (scene_key(path, root) + ".json")

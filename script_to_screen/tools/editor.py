@@ -122,7 +122,7 @@ class Session:
                            stress=list(t["stress"]) if t["stress"] is not None else None)
             turns.append(dict(id=t["id"], index=t["index"], start=t["start"], length=t["length"], why=t["why"], who=t["who"],
                               pause=t["pause"], hold=t["hold"], say=say, lanes=lanes, reacts=t["reacts"]))
-        mine = [p for p in self.problems if p["scene"] in (sc.key, sc.path.stem)]
+        mine = [p for p in self.problems if p["scene"] == sc.key]
         feel, sounds = self.lib["feel"], self.lib["sounds"]
         return dict(rev=self.rev, dirty=self.dirty, fps=sc.fps, step=sc.step, tempo=sc.tempo,
                     spb=sc.show.cfg["steps_per_beat"], scale=list(sc.show.cfg["scale"]),

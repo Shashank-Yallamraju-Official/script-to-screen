@@ -284,6 +284,21 @@ a full mix takes 12 ms; 70 of a nudge's 78 ms was work a nudge cannot affect.
 **Costs.** The numbers hold for tokens and short scenes. Richer skins or long scenes will
 reopen this, which is why the cache is designed now.
 
+## 21. One series.yaml, not a manifest per episode
+
+**Decision.** Decision 14 stands, in one file: `series.yaml` at the top of a show lists
+seasons, episodes and segments in order, with each segment's id, file and status. A scene
+file does not know its own id or place.
+
+**Instead of** a manifest in every episode folder, or an id written inside each scene file.
+
+**Because** the manifest is also the view from above, and one file can be read, reordered
+and diffed at a glance. Keeping the id out of the scene file means a scene can be moved
+between episodes, or reused, without being edited.
+
+**Costs.** Two people adding episodes at once will touch the same file. A scene file on its
+own no longer says where it belongs.
+
 ## Open questions
 
 These are not decided, because the conversation has not yet produced the evidence.

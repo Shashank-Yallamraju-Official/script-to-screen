@@ -3,7 +3,7 @@ import json
 
 from ..performance import Scene
 from ..readers import ledger, parity
-from ..script import ScriptError, scene_key, scene_paths
+from ..script import ScriptError, series
 from . import A, COMMANDS, FAILED, Refused, address, command, describe, edit
 
 
@@ -32,22 +32,32 @@ def commands(a):
 def list_(a):
     root = address.show_root(a.show)
     _, problems = ledger.build(root)
-    rows, carry = [], {}
-    for p in scene_paths(root):
-        key = scene_key(p, root)
-        mine = [x for x in problems if x["scene"] in (key, p.stem)]
-        row = dict(scene=key, errors=sum(x["level"] == "error" for x in mine), warnings=sum(x["level"] == "warn" for x in mine))
+    rows, carry, ser = [], {}, series(root)
+    for sg in ser.segments:
+        mine = [x for x in problems if x["scene"] == sg["id"]]
+        row = dict(scene=sg["id"], season=sg["season"], episode=sg["episode"], status=sg["status"], file=sg["file"], logline=sg["logline"],
+                   errors=sum(x["level"] == "error" for x in mine), warnings=sum(x["level"] == "warn" for x in mine))
         try:
-            sc = Scene(p, carry=carry)
+            sc = Scene(sg["path"], carry=carry)
             carry = sc.carry_out
-            row.update(title=sc.title, seconds=round(sc.dur, 1), turns=len(sc.turns), entities=sorted(sc.ents))
-        except (ScriptError, KeyError, TypeError) as e:
+            row.update(title=sc.title, seconds=round(sc.dur, 1), turns=len(sc.turns), lines=sum(1 for t in sc.turns if t["line"]),
+                       entities=sorted(sc.ents))
+        except (ScriptError, KeyError, TypeError, FileNotFoundError) as e:
             row.update(title=None, broken=str(e))
         rows.append(row)
-    text = [f"{r['scene']:34} {r.get('seconds', '?'):>6}s {r.get('turns', '?'):>3} turns  "
-            f"{', '.join(r.get('entities', []))}" + (f"   {r['errors']} errors" if r["errors"] else "") +
-            (f"   {r['warnings']} warnings" if r["warnings"] else "") for r in rows]
-    return dict(show=str(root), scenes=rows, text="\n".join(text))
+    text = []
+    for se in ser.seasons:
+        text.append(f"{se['id']}" + (f"  {se['title']}" if se["title"] else ""))
+        for ep in se["episodes"]:
+            mine = [r for r in rows if r["episode"] == ep["id"]]
+            text.append(f"  {ep['id']}" + (f"  {ep['title']}" if ep["title"] else "") + f"   {sum(r.get('seconds', 0) for r in mine):.1f}s")
+            for r in mine:
+                text.append(f"    {r['scene']:32} {r.get('seconds', '?'):>6}s {r.get('turns', '?'):>3} turns  {r['status']:7} "
+                            f"{', '.join(r.get('entities', []))}" + (f"   {r['errors']} errors" if r["errors"] else "") +
+                            (f"   {r['warnings']} warnings" if r["warnings"] else "") + (f"   BROKEN: {r['broken']}" if r.get("broken") else ""))
+    seasons = [dict(id=se["id"], title=se["title"], episodes=[dict(id=ep["id"], title=ep["title"], logline=ep["logline"], status=ep["status"],
+                                                                  scenes=[sg["id"] for sg in ep["segments"]]) for ep in se["episodes"]]) for se in ser.seasons]
+    return dict(show=str(root), seasons=seasons, scenes=rows, text="\n".join(text))
 
 
 @command("read", "A scene's script as written, turn by turn, with each turn's address and timing.",
@@ -145,7 +155,7 @@ def check(a):
     else:
         root, only = address.show_root(a.show), None
     _, problems = ledger.build(root)
-    problems = [p for p in problems if only is None or p["scene"] in (only, only.rsplit("/", 1)[-1])]
+    problems = [p for p in problems if only is None or p["scene"] == only]
     nerr = sum(p["level"] == "error" for p in problems)
     text = [f"{p['level']:5} {p['scene']}" + (f":{p['turn']}" if p.get("turn") is not None else "") + f"  {p['msg']}" for p in problems]
     return dict(ok=nerr == 0, errors=nerr, warnings=len(problems) - nerr, problems=problems,
