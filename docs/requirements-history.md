@@ -81,7 +81,7 @@ arrived:
 
 | What was asked | Predicted? | Verdict |
 |---|---|---|
-| AI does the rest | Yes, as "authoring at scale", ranked tenth of eleven | Right idea, badly under-weighted. Round 1 said it plainly and it was the premise of the whole project |
+| A writer works through an assistant | Yes, as "authoring at scale", ranked tenth of eleven | Right idea, badly under-weighted. Round 1 said it plainly and it was the premise of the whole project |
 | Music scoring by dramatic meaning | Partly: "a backing track, recorded effects" | Predicted the plumbing and missed the point. The ask is for music that understands the story |
 | Title screens | No | Missed. Nothing in the list imagined an episode holding anything but scenes |
 | Tracking and comparing | No | Missed. The list was all about what is on screen, none about the author's view of the whole |
@@ -90,7 +90,7 @@ And the design, which matters more than the ranking:
 
 | What was asked | Did it land in one place? |
 |---|---|
-| AI does the rest | Yes. "The editor sends commands" generalised to "every operator sends commands" |
+| A writer works through an assistant | Yes. "The editor sends commands" generalised to "every operator sends commands" |
 | Music scoring | Mostly. It is a derivation step and a track, as designed, but it needed a new idea: a track of dramatic events |
 | Tracking and comparing | Yes, as a new reader of the score, but it exposed that units had no descriptions or stable identities |
 | Title screens | **No.** The design assumed a scene was the only thing in an episode. It needed the segment |

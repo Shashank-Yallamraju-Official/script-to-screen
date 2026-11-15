@@ -57,7 +57,7 @@ breaks in four ways:
   the middle of it.
 - **State is trapped inside a scene.** Opening one scene replays every scene before it.
 - **Hand-edited files fail silently.** A reaction keyed `on:` was read by YAML as `true` and
-  did nothing. An author who "types, and the AI handles the rest" never sees the file, so a
+  did nothing. A writer who works through an assistant never sees the file, so a
   silent failure is invisible to everyone.
 
 ## Operating it: commands, and AI first
