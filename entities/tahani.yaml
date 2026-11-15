@@ -1,0 +1,8 @@
+kind: study figure   # a stand-in for staging a scene I know; colour is a guess at the outfit
+color: "#e56b9f"
+voice: 440
+timbre: sine
+status: 1
+tells:      # my reading of how this one leaks each feeling; change freely
+  anger: [{tone: deadpan}, {posture: lean_back}, {orient: away}]
+  fear:  [{posture: lean_back}, {orient: away}]

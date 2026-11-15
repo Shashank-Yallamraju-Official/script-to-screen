@@ -1,0 +1,7 @@
+kind: study figure   # a stand-in for staging a scene I know; colour is a guess at the outfit
+color: "#4a6fa5"
+voice: 196
+timbre: tri
+status: 1
+tells:      # my reading of how this one leaks each feeling; change freely
+  joy: [{tone: cheerful}, {posture: lean_back}, {distance: -1}]

@@ -1,0 +1,84 @@
+# A staging study: the beats of the season-one finale reveal in "The Good Place", to test
+# whether bare tokens can carry a scene you already know. The blocking, feelings and timing
+# follow the scene. The lines are stand-ins in my own words, not the show's dialogue.
+# Left out: Shawn and Janet, and the explanations that follow the reveal.
+scene: The reveal (study)
+turns:
+  - id: 1
+    enter: {eleanor: {slot: 4, orient: chidi}, chidi: {slot: 5, orient: tahani}, tahani: {slot: 6, orient: chidi}, jason: {slot: 7, orient: tahani}}
+    side: {eleanor: one, chidi: one, tahani: two, jason: two}
+    why: Four people left alone to pick which two of them are sent away. They stand packed together because the argument is already going.
+
+  - id: 2
+    who: chidi
+    say: Send me. I can't choose, so it should be me.
+    feel: {chidi: {fear: 2, at: tahani}}
+    why: His way out of a decision is to volunteer for the worst outcome.
+    hold: 3
+
+  - id: 3
+    who: tahani
+    say: Of course you'd make this about you.
+    feel: {tahani: {anger: 2, at: chidi}}
+    why: She hears his offer as a bid for attention, and pulls back from it.
+    hold: 3
+
+  - id: 4
+    who: jason
+    say: Why is everybody yelling?
+    feel: {jason: {surprise: 1}}
+    why: He has lost the thread, which is his usual state.
+    hold: 4
+
+  - id: 5
+    do: {eleanor: {slot: 3, orient: out}}
+    feel: {eleanor: {surprise: 2}}
+    why: She steps out of the knot and goes still. She has stopped listening to the fight and started noticing that there is one.
+    hold: 14
+
+  - id: 6
+    who: eleanor
+    do: {eleanor: {attention: up}}
+    say: Michael. Get in here.
+    feel: {eleanor: calm}
+    why: The thought has finished. She looks up and calls him back.
+    hold: 6
+
+  - id: 7
+    enter: {michael: {slot: 0, orient: eleanor}}
+    side: {eleanor: humans, chidi: humans, tahani: humans, jason: humans, michael: architect}
+    status: {michael: 5}
+    do: {eleanor: {orient: michael, attention: michael}, chidi: {orient: michael}, tahani: {orient: michael}, jason: {orient: michael}}
+    feel: {tahani: calm, jason: calm}
+    why: He comes back in. It is now four against one, but he runs the place, so the one outweighs the four.
+    hold: 6
+
+  - id: 8
+    who: eleanor
+    do: {eleanor: {move: {toward: michael, zone: personal}}}
+    say: We're not being sent anywhere. We're already there.
+    feel: {eleanor: {joy: 2}}
+    why: She walks up to him to say it. She is enjoying being right more than she fears what it means.
+
+  - id: 9
+    who: eleanor
+    say: You built this so we'd torture each other.
+    feel: {chidi: {fear: 3, at: michael}, tahani: {fear: 1, at: michael}, jason: {surprise: 2, at: michael}}
+    why: The accusation, plainly. Behind her the other three take it in.
+
+  - id: 10
+    why: He does not answer. He could deny it, and everyone waits to see if he will.
+    hold: 20
+
+  - id: 11
+    who: michael
+    say: Ha. Ha ha. Ha ha ha ha ha!
+    feel: {michael: {joy: 3, at: eleanor}, eleanor: calm, tahani: {fear: 2, at: michael}}
+    why: The mask comes off as a laugh. He stops pretending and leans back into it, and closes in on her.
+    pause: 0
+
+  - id: 12
+    who: michael
+    say: Oh, that took you long enough.
+    why: He is delighted, not caught. That is the worst part.
+    hold: 16

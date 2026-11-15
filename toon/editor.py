@@ -125,7 +125,7 @@ class Session:
                     title=sc.title, file=str(self.path.relative_to(self.root)), index=self.i, count=len(self.paths),
                     entities=[dict(id=e, color=ent["color"], kind=str(ent.get("kind", ""))) for e, ent in sc.ents.items()],
                     emotions=sc.show.emotions, turns=turns, problems=mine,
-                    carried=[f"{e} still feels {f[0]} {f[1]}" + (f" about {f[2]}" if f[2] else "") for e, f in sc.carried.items()],
+                    carried=[f"{e} still feels {f[0]} {f[1]}" + (f" about {f[2]}" if f[2] else "") for e, f in sc.carried.items() if e in sc.ents],
                     offscreen=list(sc.offscreen),
                     ledger={e: {emo: {k: c[k] for k in ("seen", "need", "learned", "positions", "hidden")}
                                 for emo, c in row.items()} for e, row in self.table.items()},
