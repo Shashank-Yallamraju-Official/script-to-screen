@@ -37,7 +37,9 @@ FEEL = [("ease", 0.05, 0.8, 0.01, "Seconds a change takes to settle"),
         ("cursor_tail", 0, 0.4, 0.01, "Seconds of trail the indicator leaves behind it"),
         ("voice_attack", 0.001, 0.08, 0.001, "Seconds a syllable's note takes to swell. Short is percussive, long is soft"),
         ("voice_ring", 0, 1, 0.05, "How much of its level a note keeps to its end. 0 is plucked, 1 is held so syllables run together"),
-        ("bubble_pop", 0, 0.5, 0.01, "Seconds a bubble takes to pop open")]
+        ("bubble_pop", 0, 0.5, 0.01, "Seconds a bubble takes to pop open"),
+        ("focus_dim", 0, 0.8, 0.05, "How far everyone else fades while a featured reaction holds the scene"),
+        ("aside_volume", 0, 1, 0.05, "How loud a background reaction's sounds are, next to a featured one")]
 SOUND = [("vol", 0, 1, 0.01, "Volume (0 is off)"), ("freq", 40, 2000, 5, "Starting pitch in Hz"),
          ("to", 40, 2000, 5, "Pitch it glides to, in Hz"), ("dur", 0.01, 0.6, 0.01, "Length in seconds")]
 
@@ -117,7 +119,7 @@ class Session:
                            melody=list(t["melody"]) if t["melody"] is not None else None,
                            stress=list(t["stress"]) if t["stress"] is not None else None)
             turns.append(dict(id=t["id"], index=t["index"], start=t["start"], length=t["length"], why=t["why"], who=t["who"],
-                              pause=t["pause"], hold=t["hold"], say=say, lanes=lanes))
+                              pause=t["pause"], hold=t["hold"], say=say, lanes=lanes, reacts=t["reacts"]))
         mine = [p for p in self.problems if p["scene"] in (sc.key, sc.path.stem)]
         feel, sounds = self.lib["feel"], self.lib["sounds"]
         return dict(rev=self.rev, dirty=self.dirty, fps=sc.fps, step=sc.step, tempo=sc.tempo,
@@ -139,6 +141,13 @@ class Session:
         dirty_from = self.scene.total
         for op in ops:
             path, value = op["path"], op["value"]
+            if len(path) == 5 and path[0] == "turns" and path[2] == "react" and path[4] == "beat":
+                i = int(path[1])                         # how long a featured reaction holds the scene
+                self.doc["turns"][i]["react"][int(path[3])]["beat"] = tidy(min(max(float(value), 0.25), 200))
+                dirty_from = min(dirty_from, round(self.scene.turns[i]["start"] * self.scene.step * self.scene.fps))
+                self.scene_dirty = True
+                self.rebuild()
+                continue
             if len(path) != 3 or path[0] != "turns" or path[2] not in tuple(NUMBERS) + LISTS:
                 raise ValueError("that value is not editable here")
             i, key = int(path[1]), path[2]

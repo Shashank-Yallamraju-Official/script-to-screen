@@ -18,7 +18,10 @@ turns:
   - id: 3
     who: otis
     say: Vases fall.
-    why: Outnumbered, he gives away less. His eyes drop but his voice stays level.
+    react:
+      - {who: bix, word: fall, do: {attention: juno}}
+      - {who: juno, do: {attention: viewer}, beat: 8}
+    why: Outnumbered, he gives away less. Bix glances at Juno in passing. Then Juno looks straight out at us, and the scene waits for her.
 
   - id: 4
     who: bix

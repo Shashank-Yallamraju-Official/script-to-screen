@@ -30,6 +30,30 @@ What an observer can see of a token:
 | Its shape | Posture: upright, contracted, leaning in, leaning back |
 | Bubble | The line. A music note appears on it only when the line is sung (`sing:` in place of `say:`) |
 
+## Reactions
+
+A reaction is what someone who is not speaking does about a line. There are two kinds, and
+the difference is who holds the scene's attention.
+
+| | In passing | Featured |
+|---|---|---|
+| Written as | `{who: otis, word: dumpling, feel: {shame: 2}}` | `{who: juno, do: {attention: viewer}, beat: 8}` |
+| When | On a word of the line, plus the entity's `reflex` | After the line, in order |
+| Time | Takes none; the line carries on | The scene waits `beat` steps |
+| Everyone else | Unaffected | Fades back a little; the speaker's bubble closes |
+| Sound | Quieter | Full, with a soft marker |
+
+Both go in a turn's `react:` list. A reaction can change what the entity feels (`feel:`), in
+which case its own tells decide what shows, or be a deliberate action (`do:`). A `do` inside
+a reaction is a **take**: it outranks the tells while it lasts and is then dropped, at the
+end of the beat for a featured one and at the end of the turn for one in passing. Add
+`keep: true` to make it stick.
+
+`reflex` in an entity's file is how many steps it takes to react to something said. The
+trigger is `word:` (a word of the line) or `syllable:` (its number); with neither, the
+reaction fires as the line ends. The older `feel:` on a turn still works and means "everyone
+listed reacts as the line ends".
+
 ## A series
 
     episodes/<season>/<episode>/<scene>.yaml      e.g. episodes/s01/e01/02-the-vase.yaml
@@ -112,7 +136,7 @@ to break a word (some·one) or a caret before the syllable that should be strong
 |---|---|
 | `library/tones.yaml` | Per tone: rhythm, melody contour, voice, letter size, and the note shown on sung lines |
 | `library/sounds.yaml` | One synthesised sound per kind of event: enter, exit, move, turn, look, posture, bubble, feel |
-| `library/feel.yaml` | The small motions (settle time, overshoot, paper flip, stretch, the bubble's pop), the speech indicator, and how voiced or plucked a syllable sounds |
+| `library/feel.yaml` | The small motions (settle time, overshoot, paper flip, stretch, the bubble's pop), the speech indicator, how voiced or plucked a syllable sounds, and how strongly a featured reaction is set apart |
 
 A turn can also place a sound by hand: `sfx: [{at: 4, sound: thud}]`.
 
@@ -140,6 +164,7 @@ A changed tell (an arc step) starts its count again.
 | Click or drag the ruler; arrow keys (Shift for a whole step) | Move through the scene |
 | Drag a turn's right edge | Change its hold |
 | Drag a line | Change the pause before it starts |
+| Drag the right edge of an outlined box in an entity's lane | Change how long a featured reaction holds the scene |
 | Drag a note up or down | Change a syllable's pitch (Alt for notes outside the scale) |
 | Drag a note's right edge | Change a syllable's length |
 | Double-click a note | Cycle its stress: weak, strong, main accent |

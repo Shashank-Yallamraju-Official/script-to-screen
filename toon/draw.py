@@ -251,8 +251,14 @@ def draw_frame(c, scene, F, xray=False, slate=False):
     if xray:
         draw_xray(c, scene, states)
     line = scene.line_at(t)
+    focal, dim = None, 0.0
+    for a0, a1, who in scene.focus:                             # a featured reaction: everyone else recedes
+        if a0 - 0.15 <= t <= a1 + 0.15:
+            focal = who
+            dim = float(feel["focus_dim"]) * smooth((t - a0 + 0.15) / 0.15) * (1 - smooth((t - a1) / 0.15))
     for e in sorted(states, key=lambda e: bool(line and line["who"] == e)):
-        draw_token(c, scene.ents[e], states[e], W, H, feel)
+        o = states[e] if e == focal or not dim else dict(states[e], alpha=states[e]["alpha"] * (1 - dim))
+        draw_token(c, scene.ents[e], o, W, H, feel)
     if line and line["who"] in states:
         draw_bubble(c, scene, line, t, states[line["who"]], scene.ents[line["who"]])
     if slate:

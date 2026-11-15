@@ -9,3 +9,5 @@ cursor_tail: 0.12     # seconds of trail the indicator leaves behind it
 voice_attack: 0.015   # seconds a syllable's note takes to swell (short is percussive, long is soft)
 voice_ring: 0.7       # how much of its level a note keeps to its end (0 plucked, 1 held so syllables run together)
 bubble_pop: 0.14      # seconds a bubble takes to pop open
+focus_dim: 0.3        # how far everyone else fades while a featured reaction holds the scene (0 = not at all)
+aside_volume: 0.4     # how loud a background reaction's sounds are, next to a featured one

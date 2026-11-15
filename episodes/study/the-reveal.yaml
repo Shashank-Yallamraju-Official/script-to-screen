@@ -63,8 +63,11 @@ turns:
   - id: 9
     who: eleanor
     say: You built this so we'd torture each other.
-    feel: {chidi: {fear: 3, at: michael}, tahani: {fear: 1, at: michael}, jason: {surprise: 2, at: michael}}
-    why: The accusation, plainly. Behind her the other three take it in.
+    react:
+      - {who: chidi, word: torture, feel: {fear: 3, at: michael}}
+      - {who: tahani, word: torture, feel: {fear: 1, at: michael}}
+      - {who: jason, word: torture, feel: {surprise: 2, at: michael}}
+    why: The accusation, plainly. Behind her the other three take it in on the word, each at their own speed, without stopping her.
 
   - id: 10
     why: He does not answer. He could deny it, and everyone waits to see if he will.

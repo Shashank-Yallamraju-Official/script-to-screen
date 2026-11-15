@@ -111,6 +111,7 @@ class Scene:
         self.tempo = float(self.script.get("tempo", cfg["tempo"]))
         self.step = 60.0 / self.tempo / cfg["steps_per_beat"]          # seconds per step
         self.problems, self.ents, self.keys, self.turns, self.lines, self.events = [], {}, {}, [], [], []
+        self.focus, self.quiet = [], set()       # featured reactions (start, end, who); background ones (time, who)
         self._build()
 
     def flag(self, level, turn, msg):
@@ -155,7 +156,7 @@ class Scene:
         slots = {}
         for e, s in st.items():
             info, expr = out[e]
-            slot, src = s["slot"], info["at"]
+            slot, src = (s.get("take") or {}).get("slot", s["slot"]), info["at"]
             if expr.get("distance") and src in st and src != e:
                 away = sgn(slot - st[src]["slot"]) or 1
                 slot = max(0, min(SLOTS - 1, slot + expr["distance"] * away))
@@ -170,11 +171,12 @@ class Scene:
             info, expr = out[e]
             src = info["at"]
             # body orientation: -1 faces left, 0 faces out to the viewer, 1 faces right
-            o = s["orient"]
+            take = s.get("take") or {}               # a deliberate momentary action outranks the tells
+            o = take.get("orient", s["orient"])
             facing = 0 if o == "out" else -toward(e, o["away"]) if isinstance(o, dict) else toward(e, o)
-            if "orient" in expr:
+            if "orient" in expr and "orient" not in take:
                 facing = {"out": 0, "toward": toward(e, src), "away": -toward(e, src)}[expr["orient"]]
-            a = expr.get("attention", s["attention"])
+            a = take["attention"] if "attention" in take else expr.get("attention", s["attention"])
             if a == "ahead":
                 lx, ly = facing, 0
             elif a == "down":
@@ -191,8 +193,8 @@ class Scene:
                 lx, ly = -toward(e, a["away"]), 0
             else:
                 lx, ly = toward(e, a), 0
-            sx, sy, lean = POSTURE[expr.get("posture", s["posture"])]
-            lean *= (toward(e, src) or facing) if "posture" in expr else facing
+            sx, sy, lean = POSTURE[take.get("posture") or expr.get("posture", s["posture"])]
+            lean *= (toward(e, src) or facing) if "posture" in expr and "posture" not in take else facing
             obs[e] = dict(slot=slots[e], facing=facing, lx=lx, ly=ly, sx=sx, sy=sy, lean=lean,
                           alpha=1.0 if s["present"] else 0.0, tone=expr.get("tone"),
                           latency=expr.get("latency", 0), info=info)
@@ -223,6 +225,8 @@ class Scene:
                 self.flag("error", tid, "no `why`: every turn must say why it happens")
             who, say = raw.get("who"), raw.get("say") or raw.get("sing")      # `sing:` is a line that is sung
             bubbles = []
+            for s in st.values():
+                s.pop("take", None)                  # a background take ends with the turn it happened in
             for e, spec in (raw.get("enter") or {}).items():
                 self.ents[e] = self.show.entity(e, self.key)
                 self.keys.setdefault(e, [])
@@ -315,20 +319,56 @@ class Scene:
                                 sylls=[dict(text=s["text"], start=(t0 + say_at + s["at"]) * sec, dur=s["len"] * sec,
                                             voiced=(s["len"] - s["rest"]) * sec, semi=s["semi"], stress=s["stress"])
                                        for s in sylls if s["bubble"] == g]) for g in range(b + 1)]
-            length = (react if say else float(T["settle"])) + hold
-            for e, o in a.items():
-                self.keys[e].append((t0 * sec, o))
-            b = a
+            # Everything that changes after the turn opens, on one timeline (steps from the turn's start).
+            ops = []
             if late:
-                for e, f in late.items():
-                    feel(e, f)
-                b = self._observe(st, tid)
-                for e, o in b.items():
-                    self.keys[e].append(((t0 + react) * sec, o))
+                ops.append((react, lambda late=late: [feel(e, f) for e, f in late.items()]))
+            cursor, reacts = (react if say else float(T["settle"])), []
+            for j, r in enumerate(raw.get("react") or []):
+                e = r["who"]
+                need(e)
+
+                def apply(r=r, e=e):
+                    if "feel" in r:
+                        feel(e, r["feel"])
+                    if "do" in r:                            # a take: it lasts for the moment, then is dropped
+                        st[e].update(r["do"]) if r.get("keep") else st[e].__setitem__("take", dict(r["do"]))
+
+                if "beat" in r:                              # featured: the reaction takes the floor and the scene waits
+                    n = float(r["beat"])
+                    ops.append((cursor, apply))
+                    if "do" in r and not r.get("keep"):
+                        ops.append((cursor + n, lambda e=e: st[e].pop("take", None)))
+                    self.focus.append(((t0 + cursor) * sec, (t0 + cursor + n) * sec, e))
+                    self.events.append(((t0 + cursor) * sec, "beat", e))
+                    reacts.append(dict(who=e, at=cursor, beat=n, index=j, on=None))
+                    cursor += n
+                else:                                        # background: it happens inside the line and takes no time
+                    on = r.get("word", r.get("syllable"))    # (not `on:`, which YAML reads as the word "true")
+                    at = self._trigger(on, sylls, say_at, tid) + float(self.ents[e].get("reflex", 0))
+                    ops.append((at, apply))
+                    self.quiet.add((round((t0 + at) * sec, 4), e))
+                    reacts.append(dict(who=e, at=at, beat=0, index=j, on=on))
+            length = max([cursor] + [at for at, _ in ops]) + hold
+            snaps = [(0.0, a)]
+            for at in sorted({at for at, _ in ops}):
+                for when, fn in ops:
+                    if when == at:
+                        fn()
+                snap = (at, self._observe(st, tid))
+                if at == 0:
+                    snaps[0] = snap
+                else:
+                    snaps.append(snap)
+            for at, obs in snaps:
+                for e, o in obs.items():
+                    self.keys[e].append(((t0 + at) * sec, o))
             if line:
                 for g, bub in enumerate(bubbles):            # each bubble gives way to the next
                     bub["start"] = bub["sylls"][0]["start"]
                     bub["end"] = bubbles[g + 1]["sylls"][0]["start"] if g + 1 < len(bubbles) else (t0 + length) * sec
+                    if g + 1 == len(bubbles) and any(r["beat"] for r in reacts):     # a featured reaction is a new moment
+                        bub["end"] = (t0 + min(r["at"] for r in reacts if r["beat"])) * sec
                     self.lines.append(bub)
                     self.events.append((bub["start"], "bubble", who))
             for fx in raw.get("sfx") or []:          # explicit sounds: [{at: steps, sound: name}]
@@ -338,8 +378,8 @@ class Scene:
                                    reveal=reveal, react=react if late else 0, line=line, sylls=sylls,
                                    rhythm=raw.get("rhythm"), melody=raw.get("melody"), stress=raw.get("stress"),
                                    relies_on=raw.get("relies_on") or {},
-                                   info=[(0, {e: o["info"] for e, o in a.items()})] +
-                                        ([(react, {e: o["info"] for e, o in b.items()})] if late else [])))
+                                   reacts=reacts,
+                                   info=[(at, {e: o["info"] for e, o in obs.items()}) for at, obs in snaps]))
             t0 += length
         if not self.turns:
             raise ScriptError("the scene has no turns")
@@ -370,7 +410,29 @@ class Scene:
                     if f1["felt"] and (f1["felt"], f1["intensity"]) != (f0["felt"], f0["intensity"]):
                         self.events.append((t, "feel." + f1["felt"], e))
                 prev = o
-        self.events.sort(key=lambda ev: ev[0])
+        aside = float(self.show.feel["aside_volume"])            # background reactions are quieter
+        self.events = sorted(((t, n, e, aside if (round(t, 4), e) in self.quiet else 1.0) for t, n, e in self.events),
+                             key=lambda ev: ev[0])
+
+    def _trigger(self, on, sylls, say_at, tid):
+        """When a background reaction fires, in steps from the turn's start: on a word of the line
+        (`word: dumpling`), on a syllable by number (`syllable: 3`), or, with neither, as the line ends."""
+        end = say_at + sum(s["len"] for s in sylls)
+        if on is None or not sylls:
+            return end
+        if isinstance(on, int):
+            if 1 <= on <= len(sylls):
+                return say_at + sylls[on - 1]["at"]
+        else:
+            first, word = 0, ""
+            for k, s in enumerate(sylls):
+                word += s["text"]
+                if s["text"].endswith(" ") or k == len(sylls) - 1:
+                    if re.sub(r"[^a-z']", "", word.lower()) == re.sub(r"[^a-z']", "", str(on).lower()):
+                        return say_at + sylls[first]["at"]
+                    first, word = k + 1, ""
+        self.flag("error", tid, f"a reaction is set to fire on '{on}', which is not in the line")
+        return end
 
     # ---- reading it back (times in seconds) ----------------------------------------------------
     def turn_at(self, t):

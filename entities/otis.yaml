@@ -3,6 +3,7 @@ color: "#e0a92e"
 voice: 196
 timbre: tri
 status: 1
+reflex: 1           # steps it takes to react to something said (0 is instant)
 tells:
   shame: [{attention: down}, {tone: nervous, latency: 5}, {orient: away}]
   joy:   [{tone: cheerful}, {posture: lean_in}]

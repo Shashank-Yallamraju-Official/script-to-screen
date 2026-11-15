@@ -7,6 +7,10 @@
 #                  one bubble holds one beat: a line breaks into bubbles wherever there is a
 #                  pause (full stop, ? or !), or write a list to choose: say: [Ha, ha, ha]
 #   feel           what the turn makes entities feel: {entity: {emotion: 1-3}} or {entity: calm}
+#   react          reactions to the line, each {who, feel and/or do}. Two kinds:
+#                    in passing  {who: otis, word: dumpling, feel: {shame: 2}}   fires on that word; the scene runs on
+#                    featured    {who: otis, feel: {shame: 3}, beat: 6}         takes the floor; the scene waits 6 steps
+#                  a `do` inside a reaction is a take: it lasts for the moment, then is dropped
 #   pause, hold    steps before the line and after the turn (tune these in the editor)
 #   rhythm, melody one entry per syllable: its length in steps, its pitch in semitones
 #   stress         one entry per syllable: 0 weak, 1 strong, 2 the phrase's main accent
@@ -26,8 +30,10 @@ turns:
     who: juno
     do: {juno: {orient: otis}}
     say: Some·one ate the last dumpling.
-    feel: {juno: {joy: 1}, otis: {shame: 2}}
-    why: She already knows, and enjoys knowing. He hears it and knows he is caught.
+    feel: {juno: {joy: 1}}
+    react:
+      - {who: otis, word: dumpling, feel: {shame: 2}}
+    why: She already knows, and enjoys knowing. His eyes drop on the word itself, before she has finished.
 
   - id: 3
     who: otis
@@ -38,8 +44,9 @@ turns:
     who: juno
     do: {juno: {move: {toward: otis, zone: personal}}}
     say: There's sauce on your chin.
-    feel: {otis: {shame: 3}}
-    why: She closes the distance to apply pressure, then gives the proof.
+    react:
+      - {who: otis, feel: {shame: 3}, beat: 6}
+    why: She closes the distance to apply pressure, then gives the proof. His turning away is the moment, so the scene stops for it.
 
   - id: 5
     why: Nobody speaks. The silence is the verdict.

@@ -200,8 +200,8 @@ def mix(scene):
             hz = ent["voice"] * tone.get("pitch", 1) * 2 ** (s["semi"] / 12)
             add(s["start"], note(hz, min(s["voiced"], 0.6), tone.get("vol", 0.5) * LOUD[s["stress"]], ent.get("timbre", "sine"),
                                  float(feel["voice_attack"]), float(feel["voice_ring"])))
-    for at, name, _ in scene.events:
+    for at, name, _, gain in scene.events:
         p = sound_for(scene.show.sounds, name)
         if p and float(p.get("vol", 0)) > 0:
-            add(at, effect(p))
+            add(at, effect(p) * gain)
     return wav_bytes(audio)

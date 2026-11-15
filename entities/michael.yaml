@@ -3,5 +3,6 @@ color: "#4a6fa5"
 voice: 196
 timbre: tri
 status: 1
+reflex: 0           # steps it takes to react to something said (0 is instant)
 tells:      # my reading of how this one leaks each feeling; change freely
   joy: [{tone: cheerful}, {posture: lean_back}, {distance: -1}]

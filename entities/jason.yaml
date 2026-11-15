@@ -3,5 +3,6 @@ color: "#35a39b"
 voice: 330
 timbre: square
 status: 1
+reflex: 3           # steps it takes to react to something said (0 is instant)
 tells:      # my reading of how this one leaks each feeling; change freely
   surprise: [{attention: up}, {posture: lean_back}]

@@ -60,6 +60,8 @@
   .cut { position: absolute; width: 1px; background: var(--line); pointer-events: none; }
   .beat { position: absolute; width: 1px; background: #ffffff0a; pointer-events: none; }
   .felt { position: absolute; height: 14px; margin-top: -7px; border-radius: 4px; display: flex; align-items: center; padding-left: 5px; overflow: hidden; }
+  .rx { position: absolute; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; transform: rotate(45deg); border-radius: 2px; z-index: 3; box-shadow: 0 0 0 2px var(--panel); }
+  .rx.hold { height: 20px; margin: -10px 0 0 0; transform: none; border: 2px solid; border-radius: 5px; background: #ffffff14; box-shadow: none; }
   .say { position: absolute; height: 20px; margin-top: -10px; border-radius: 6px; cursor: ew-resize; overflow: hidden; z-index: 2; }
   .say b { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px 0 0 6px; }
   .say span { position: absolute; left: 18px; right: 6px; top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #111; font-weight: 500; font-size: 11px; pointer-events: none; }
@@ -191,7 +193,7 @@ let rollLo = -5, rollHi = 12, rollTop = 0;
 const ySemi = v => rollTop + 8 + (rollHi - v) / (rollHi - rollLo) * (ROLL - 16);
 function build() {
   const lanes = [['turns', ICON.turns, 'Turns: hover one to read why it happens. Drag its right edge to change how long it holds.', ROW],
-    ...S.entities.map(e => [e.id, `<i style="background:${e.color}"></i>`, `${e.id}${e.kind ? ' (' + e.kind + ')' : ''}: what it feels. Filled pips show; hollow pips are held in.`, ROW]),
+    ...S.entities.map(e => [e.id, `<i style="background:${e.color}"></i>`, `${e.id}${e.kind ? ' (' + e.kind + ')' : ''}: what it feels. Filled pips show; hollow pips are held in. A diamond is a reaction in passing; an outlined box is a reaction that holds the scene.`, ROW]),
     ['say', ICON.say, 'Lines: drag one to change the pause before it starts. A gap marks where one bubble gives way to the next.', ROW],
     ['roll', ICON.roll, 'Every syllable is one note. Brightness is stress: faint is weak, solid is strong, ringed is the phrase\'s main accent. Double-click a note to change its stress. Drag it up or down for pitch (Alt for notes outside the scale), or drag its right edge for length. Hold Shift for quarter steps. A white outline marks a line you have set by hand.', ROLL]];
   const y = {}; let top = RULER + 8;
@@ -199,7 +201,7 @@ function build() {
   const H = top + 8;
   $('gutter').innerHTML = lanes.map(l => `<div style="top:${y[l[0]] - l[3] / 2}px;height:${l[3]}px" title="${l[2]}">${l[1]}</div>`).join('');
   $('gutter').style.height = H + 'px';
-  track.querySelectorAll('.turn,.cut,.beat,.felt,.say,.note').forEach(d => d.remove());
+  track.querySelectorAll('.turn,.cut,.beat,.felt,.say,.note,.rx').forEach(d => d.remove());
   track.style.width = x(S.steps) + PAD + 'px'; track.style.height = H + 'px'; $('head').style.height = H + 'px';
   const all = S.turns.flatMap(t => t.say ? t.say.sylls.map(s => s.semi) : []);
   rollLo = Math.min(-3, ...all) - 2; rollHi = Math.max(9, ...all) + 2;
@@ -217,6 +219,14 @@ function build() {
       const d = el('felt', { left: x(t.start + s.at) + 'px', top: y[e] + 'px', width: Math.max((to - s.at) * pps - 1, 4) + 'px', background: c + '33' }, s.tip);
       d.innerHTML = pips(Math.max(s.intensity, s.level), s.level, c);
     });
+    for (const r of t.reacts) {                           // reactions: a box holds the scene, a diamond happens in passing
+      const c = S.entities.find(e => e.id === r.who).color;
+      if (r.beat) {
+        const d = el('rx hold', { left: x(t.start + r.at) + 'px', top: y[r.who] + 'px', width: Math.max(r.beat * pps - 1, 6) + 'px', borderColor: c }, `Featured reaction: ${r.who} takes the floor and the scene waits ${num(r.beat)} steps. Drag the right edge to change how long.`);
+        const g = document.createElement('div'); g.className = 'grip'; d.appendChild(g);
+        mark(g, ['turns', t.index, 'react', r.index, 'beat'], 200, r.beat, c);
+      } else el('rx', { left: x(t.start + r.at) + 'px', top: y[r.who] + 'px', background: c }, `Background reaction: ${r.who} reacts ${r.on != null ? 'on "' + r.on + '"' : 'as the line ends'}, without stopping the scene.`);
+    }
     if (t.say) {
       const q = t.say, c = S.entities.find(e => e.id === q.who).color, at = t.start + q.at;
       const d = el('say', { left: x(at) + 'px', top: y.say + 'px', width: Math.max((t.length - q.at) * pps - 2, 10) + 'px', background: c + '66' },

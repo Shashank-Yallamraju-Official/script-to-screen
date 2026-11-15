@@ -2,6 +2,7 @@ kind: person        # free text, never drawn. An entity is anything that can thi
 color: "#d95f43"
 voice: 392          # the pitch of its voice in Hz; add `timbre: sine | tri | square`
 status: 1           # standing in a room; a scene can override it
+reflex: 0           # steps it takes to react to something said (0 is instant)
 # How each feeling leaks out, in order. The first entry is the last to be suppressed.
 # Channels: attention (down, up, viewer, source, away), orient (toward, away, out),
 # distance (slots: negative approaches, positive retreats), posture (contracted, lean_in,
