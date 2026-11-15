@@ -212,9 +212,9 @@ def draw_bubble(c, scene, line, t, o, ent):
             past = indicator(line, chunks, min(t, end) - span * k / n) if span > 0 else None
             if past and past[0] == here[0]:
                 x, y, r = place(past)
-                c.drawCircle(x, y, r * (1 - 0.6 * k / n), fill(ent["color"], 150 * fade * (1 - k / n)))
+                c.drawCircle(x, y, r * (1 - 0.6 * k / n), fill(INK, 110 * fade * (1 - k / n)))
         x, y, r = place(here)
-        c.drawCircle(x, y, r, fill(ent["color"], 255 * fade))
+        c.drawCircle(x, y, r, fill(INK, 255 * fade))                # dark, so it reads on any speaker's bubble
     if line["sung"]:
         draw_note(c, bx + w - 2, by + 2, tone, max(age, 0), ent["color"])
     c.restore()
