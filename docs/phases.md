@@ -1,8 +1,8 @@
 # Build phases
 
 The restructure and the nudging loop are built in phases. **Every phase ends the same way:**
-the reference scene (`shows/demo/episodes/study/the-reveal.yaml`, the staging study of a
-scene from The Good Place) is rendered and compared with `s2s parity check`. Unless a
+the reference scene, "The morally righteous location"
+(`shows/demo/episodes/study/the-morally-righteous-location.yaml`), is rendered and compared with `s2s parity check`. Unless a
 phase says it means to change the scene, its score, picture and sound must be identical to
 the phase before. A phase that does mean to change it re-records the reference and says why.
 

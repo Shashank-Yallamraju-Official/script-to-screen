@@ -9,7 +9,7 @@ because the script says so, and every turn has to say why.
     s2s edit shows/demo/episodes/s01/e01/01-the-last-dumpling.yaml
     s2s list                       # run from the repository or a show's folder
     s2s render --episode s01/e01
-    s2s parity check the-reveal
+    s2s parity check righteous
     pytest
 
 | | |

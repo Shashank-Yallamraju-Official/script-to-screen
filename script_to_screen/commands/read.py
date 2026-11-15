@@ -167,7 +167,7 @@ def ledger_(a):
 
 @command("parity", "Has a scene's score, picture or sound changed since its reference was recorded?",
          [A("action", "record a new reference, or check against it", choices=["record", "check"]), A("scene", "the scene")],
-         "s2s parity check the-reveal")
+         "s2s parity check righteous")
 def parity_(a):
     root, path = address.scene(a.scene, a.show)
     now, ref = parity.digests(path), parity.ref_path(path)
