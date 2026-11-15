@@ -1,0 +1,8 @@
+kind: person
+color: "#e0a92e"
+voice: 300
+status: 1
+tells:
+  shame: [{attention: down}, {tone: nervous, latency: 18}, {orient: away}]
+  joy:   [{tone: cheerful}, {posture: lean_in}]
+  fear:  [{distance: 1}, {posture: lean_back}]

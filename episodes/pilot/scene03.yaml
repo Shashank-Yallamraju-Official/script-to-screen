@@ -1,0 +1,28 @@
+scene: The thermostat
+turns:
+  - id: 1
+    enter: {juno: {slot: 2}, otis: {slot: 5}, bix: {slot: 6}}
+    side: {juno: owner, otis: suspects, bix: suspects}
+    why: Bix now stands beside Otis. They are both in trouble, so it is two against one the other way.
+
+  - id: 2
+    who: juno
+    do: {juno: {orient: otis}}
+    say: Which of you touched the thermostat?
+    feel: {otis: {shame: 2}, bix: {shame: 1}}
+    why: The same accusation again. This time Otis has company, and Bix has something to hide too.
+
+  - id: 3
+    who: otis
+    say: Not me.
+    why: With backing he can afford to sulk openly. He turns his back on her.
+
+  - id: 4
+    who: juno
+    say: It is eighty degrees in here.
+    feel: {juno: {anger: 2}}
+    why: She is angry, but alone against two she keeps it flat.
+
+  - id: 5
+    why: Nobody answers her.
+    hold: 45

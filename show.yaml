@@ -1,4 +1,18 @@
-# Global settings for the whole show.
+# Settings for the whole show.
 width: 1280
 height: 720
 fps: 30
+
+# The felt states every entity shares. Colours appear only in the director's x-ray view.
+emotions: {fear: "#7b5ea7", anger: "#c8372d", sadness: "#4a6fa5", joy: "#e0a01e", shame: "#d6457a", surprise: "#2f9e8f"}
+
+# Position in the room. weight = status on my side / status of everyone who has taken a side.
+# How many tells show = felt intensity x gain, where gain = slope x weight, kept within min..max.
+# At equal weight (0.5) the gain is 1: what is felt is what shows.
+gain: {slope: 2.0, min: 0.34, max: 1.5}
+
+# Frames. pause = before a line starts; hold = after a turn finishes; ease = how fast a change settles.
+timing: {pause: 6, hold: 30, settle: 12, ease: 10}
+
+# A tell counts as learned by the audience once it has shown in this many separate scenes.
+ledger: {learn_after: 3}

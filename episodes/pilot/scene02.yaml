@@ -1,0 +1,28 @@
+scene: The vase
+turns:
+  - id: 1
+    enter: {juno: {slot: 2}, bix: {slot: 3}, otis: {slot: 6}}
+    side: {juno: owners, bix: owners, otis: suspect}
+    why: Juno and Bix arrive as a pair; Otis is across the room. It is two against one before anyone speaks.
+
+  - id: 2
+    who: juno
+    do: {juno: {orient: otis}, bix: {orient: otis}}
+    say: The vase was fine this morning.
+    feel: {otis: {shame: 2}}
+    why: The same accusation at the same strength as the dumpling. The only new thing is that he is outnumbered.
+
+  - id: 3
+    who: otis
+    say: Vases fall.
+    why: Outnumbered, he gives away less. His eyes drop but his voice stays level.
+
+  - id: 4
+    who: bix
+    say: I saw.
+    feel: {otis: {shame: 3}}
+    why: The witness speaks. There is nowhere left for the lie to go.
+
+  - id: 5
+    why: He holds still. With two watching, even full shame does not turn him away.
+    hold: 45

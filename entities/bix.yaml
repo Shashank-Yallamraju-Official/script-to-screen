@@ -1,0 +1,8 @@
+kind: robot vacuum
+color: "#4f7cac"
+voice: 780
+status: 1
+tells:
+  shame: [{distance: 1}, {orient: away}, {attention: down}]
+  joy:   [{distance: -1}, {tone: cheerful}]
+  fear:  [{posture: contracted}, {distance: 1}]

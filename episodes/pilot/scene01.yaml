@@ -1,40 +1,35 @@
-# Frames inside a shot count from that shot's first frame. 30 frames = 1 second.
+# A turn changes as little as possible and says why. Everything else holds.
+#   enter / exit   who is present, and at which of the nine slots (0 left .. 8 right)
+#   side, status   who stands with whom, and how much standing they have
+#   do             a deliberate action: slot, move, orient, attention, posture
+#   who, say       the speaker and the line; the tone comes from what the speaker feels
+#   feel           what the turn makes entities feel: {entity: {emotion: 1-3}} or {entity: calm}
+#   pause, hold    frames before the line and after the turn (tune these in the editor)
 scene: The last dumpling
-set: kitchen
-cast:
-  juno: {at: 420, facing: right}
-  otis: {at: 850, facing: left}
-shots:
+turns:
   - id: 1
-    length: 105
-    camera: {framing: wide}
-    beats:
-      - {frame: 0, juno: {pose: idle, expression: neutral}, otis: {pose: idle, expression: neutral}}
-      - {frame: 12, juno: {pose: hands_on_hips, expression: smug}}
-      - {frame: 20, say: {who: juno, text: "Someone ate the last dumpling.", tone: teasing}}
-      - {frame: 62, otis: {expression: surprised, pose: flinch}}
+    enter: {juno: {slot: 2}, otis: {slot: 5}}
+    why: Two entities share a room at social distance, both facing out. Nothing has happened yet.
 
   - id: 2
-    length: 125
-    camera:                       # slow push from medium to close as he squirms
-      - {frame: 0, framing: medium, subject: otis}
-      - {frame: 110, framing: close, subject: otis}
-    beats:
-      - {frame: 10, otis: {expression: guilty, pose: idle}}
-      - {frame: 24, say: {who: otis, text: "It was like that when I got here.", tone: nervous, hold: 45}}
+    who: juno
+    do: {juno: {orient: otis}}
+    say: Someone ate the last dumpling.
+    feel: {juno: {joy: 1}, otis: {shame: 2}}
+    why: She already knows, and enjoys knowing. He hears it and knows he is caught.
 
   - id: 3
-    length: 85
-    camera: {framing: close, subject: juno}
-    beats:
-      - {frame: 0, juno: {expression: deadpan, pose: arms_crossed}}
-      - {frame: 14, say: {who: juno, text: "There's sauce on your chin.", tone: deadpan}}
+    who: otis
+    say: It was like that when I got here.
+    why: The lie. He does not turn to her, because facing her would be answering her.
 
   - id: 4
-    length: 90
-    camera: {framing: two, subject: [juno, otis]}
-    beats:
-      - {frame: 0, otis: {pose: slump, expression: sad}}
-      - {frame: 28, otis: {pose: shrug, expression: happy}}
-      - {frame: 32, say: {who: otis, text: "Worth it.", tone: cheerful}}
-      - {frame: 50, juno: {expression: annoyed}}
+    who: juno
+    do: {juno: {move: {toward: otis, zone: personal}}}
+    say: There's sauce on your chin.
+    feel: {otis: {shame: 3}}
+    why: She closes the distance to apply pressure, then gives the proof.
+
+  - id: 5
+    why: Nobody speaks. The silence is the verdict.
+    hold: 45

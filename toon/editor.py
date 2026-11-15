@@ -19,16 +19,22 @@ from urllib.parse import parse_qs, urlparse
 
 from ruamel.yaml import YAML
 
-from . import dialogue
-from .render import Scene, frame_jpeg
+from . import ledger, speech
+from .model import Scene, find_root
+from .render import frame_jpeg, out_path
 
 HERE = Path(__file__).parent
-EDITABLE = {"frame", "length", "hold"}
+EDITABLE = {"pause": 600, "hold": 900}
+POSITION = {"unopposed": "nobody has taken sides", "even": "evenly matched", "alone": "alone against {others}",
+            "minority": "outnumbered, {mine} against {others}", "majority": "in the majority, {mine} against {others}"}
 
 
 class Session:
     def __init__(self, path):
-        self.path = Path(path).resolve()
+        first = Path(path).resolve()
+        self.root = find_root(first)
+        self.paths = ledger.scene_paths(self.root)
+        self.i = self.paths.index(first)
         self.yaml = YAML()
         self.yaml.preserve_quotes = True
         self.yaml.width = 4096
@@ -36,6 +42,10 @@ class Session:
         self.lock = threading.Lock()
         self.rev = 0
         self.load()
+
+    @property
+    def path(self):
+        return self.paths[self.i]
 
     def load(self):
         with open(self.path) as fh:
@@ -45,6 +55,7 @@ class Session:
 
     def rebuild(self):
         self.scene = Scene(self.path, script=self.doc)
+        self.table, self.problems = ledger.build(self.root, override={self.path: self.doc})
         self.rev += 1
         self.cache = {}
 
@@ -53,80 +64,68 @@ class Session:
             self.yaml.dump(self.doc, fh)
         self.dirty = False
 
-    # -- the timeline model the browser draws ------------------------------------------------
     def state(self):
         sc = self.scene
-        lines = {ln["start"]: ln for ln in sc.lines}
-        shots = []
-        for i, shot in enumerate(sc.shots):
-            raw = self.doc["shots"][i]
-            cam = raw.get("camera", {"framing": "wide"})
-            keys = []
-            for k, key in enumerate(cam if isinstance(cam, list) else [cam]):
-                subject = key.get("subject", "")
-                subject = "+".join(subject) if isinstance(subject, list) else subject
-                keys.append(dict(frame=int(key.get("frame", 0)), label=f"{key.get('framing', 'wide')} {subject}".strip(),
-                                 path=["shots", i, "camera", k, "frame"] if isinstance(cam, list) else None))
-            beats, latest = [], max([k["frame"] for k in keys] + [0])
-            for j, beat in enumerate(raw.get("beats", [])):
-                f = int(beat["frame"])
-                latest = max(latest, f)
-                item = dict(frame=f, path=["shots", i, "beats", j, "frame"], who={})
-                for who in sc.cast:
-                    if who in beat:
-                        item["who"][who] = " · ".join(str(beat[who][k]) for k in ("pose", "expression", "facing") if k in beat[who])
-                if "say" in beat:
-                    ln, say = lines[shot["start"] + f], beat["say"]
-                    item["say"] = dict(who=say["who"], text=str(say["text"]), tone=ln["tone"],
-                                       tone_color=sc.tones[ln["tone"]]["color"],
-                                       reveal=round(ln["reveal_end"] - ln["start"]), hold=int(say.get("hold", 45)),
-                                       shown=ln["end"] - ln["start"], hold_path=["shots", i, "beats", j, "say", "hold"])
-                beats.append(item)
-            shots.append(dict(id=shot["id"], start=shot["start"], length=int(shot["length"]), min_length=latest + 1,
-                              path=["shots", i, "length"], camera=keys, beats=beats))
+        turns = []
+        for t in sc.turns:
+            lanes = {e: [] for e in sc.ents}
+            for at, infos in t["info"]:
+                for e, info in infos.items():
+                    if not info["felt"]:
+                        lanes[e].append(dict(at=at))
+                        continue
+                    where = POSITION[info["klass"]].format(mine=info["mine"], others=info["others"])
+                    lanes[e].append(dict(at=at, felt=info["felt"], intensity=info["intensity"], level=info["level"],
+                                         tip=f"{e} feels {info['felt']} {info['intensity']}, shows {info['level']} · {where}"
+                                             + (f" (gain {info['gain']:.2f})" if info["weight"] is not None else "")))
+            say = None
+            if t["line"]:
+                tone = t["line"]["tone"]
+                say = dict(who=t["who"], text=t["line"]["text"], tone=tone, tone_color=sc.show.tones[tone]["color"],
+                           at=t["say_at"], reveal=t["reveal"], latency=t["latency"])
+            turns.append(dict(id=t["id"], start=t["start"], length=t["length"], why=t["why"], who=t["who"],
+                              pause=t["pause"], hold=t["hold"], react=t["react"], say=say, lanes=lanes,
+                              paths=dict(pause=["turns", t["index"], "pause"], hold=["turns", t["index"], "hold"])))
+        mine = [p for p in self.problems if p["scene"] in (sc.key, sc.path.stem)]
         return dict(rev=self.rev, dirty=self.dirty, fps=sc.fps, width=sc.W, height=sc.H, total=sc.total,
-                    title=str(self.doc.get("scene", self.path.stem)), file=str(self.path.relative_to(sc.root)),
-                    cast=[dict(id=w, color=ch["color"]) for w, (ch, _) in sc.cast.items()], shots=shots)
+                    title=sc.title, file=str(self.path.relative_to(self.root)), index=self.i, count=len(self.paths),
+                    entities=[dict(id=e, color=ent["color"], kind=str(ent.get("kind", ""))) for e, ent in sc.ents.items()],
+                    emotions=sc.show.emotions, turns=turns, problems=mine,
+                    ledger={e: {emo: {k: c[k] for k in ("seen", "need", "learned", "positions", "hidden")}
+                                for emo, c in row.items()} for e, row in self.table.items()})
 
-    # -- edits -------------------------------------------------------------------------------
     def patch(self, ops):
         """Apply [{path, value}] to the working copy. Only timing numbers can change."""
         dirty_from = self.scene.total
         for op in ops:
             path, value = op["path"], int(round(op["value"]))
-            if path[0] != "shots" or path[-1] not in EDITABLE:
+            if len(path) != 3 or path[0] != "turns" or path[2] not in EDITABLE:
                 raise ValueError("only timings are editable here")
             i = int(path[1])
-            shot = self.doc["shots"][i]
-            low = self.state()["shots"][i]["min_length"]
-            if path[-1] == "length":
-                value = max(value, low, 2)
-            elif path[-1] == "frame":
-                value = min(max(value, 0), int(shot["length"]) - 1)
-            else:
-                value = min(max(value, 0), 600)
-            node = self.doc
-            for part in path[:-1]:
-                node = node[part]
-            node[path[-1]] = value
-            dirty_from = min(dirty_from, self.scene.shots[i]["start"])
+            turn, key, value = self.doc["turns"][i], path[2], min(max(value, 0), EDITABLE[path[2]])
+            if value == self.scene.show.cfg["timing"][key]:
+                turn.pop(key, None)                      # the show default needs no line in the file
+            elif key in turn:
+                turn[key] = value
+            else:                                        # new lines go above `why`, which stays last
+                keys = list(turn)
+                turn.insert(keys.index("why") if "why" in keys else len(keys), key, value)
+            dirty_from = min(dirty_from, self.scene.turns[i]["start"])
             self.dirty = True
             self.rebuild()
         return dirty_from
 
-    def frame(self, F, full):
-        key = (F, full)
+    def frame(self, F, full, xray):
+        key = (F, full, xray)
         if key not in self.cache:
-            if len(self.cache) > 6000:
+            if len(self.cache) > 8000:
                 self.cache = {}
-            self.cache[key] = frame_jpeg(self.scene, F, 1.0 if full else 0.5, 88 if full else 80)
+            self.cache[key] = frame_jpeg(self.scene, F, 1.0 if full else 0.5, 90 if full else 82, xray)
         return self.cache[key]
 
     def audio(self):
-        sc = self.scene
-        buf = io.BytesIO()
-        dialogue.write_blips(sc.lines, sc.tones, {w: ch["voice"] for w, (ch, _) in sc.cast.items()},
-                             sc.fps, sc.total, buf)
+        sc, buf = self.scene, io.BytesIO()
+        speech.write_blips(sc.lines, sc.show.tones, {e: ent["voice"] for e, ent in sc.ents.items()}, sc.fps, sc.total, buf)
         return buf.getvalue()
 
 
@@ -148,6 +147,7 @@ def make_handler(sess):
         def do_GET(self):
             url = urlparse(self.path)
             q = parse_qs(url.query)
+            flag = lambda k: q.get(k, ["0"])[0] == "1"
             try:
                 with sess.lock:
                     if url.path == "/":
@@ -156,11 +156,11 @@ def make_handler(sess):
                         return self.send(sess.state())
                     if url.path == "/frame":
                         F = min(max(int(q["f"][0]), 0), sess.scene.total - 1)
-                        return self.send(sess.frame(F, q.get("full", ["0"])[0] == "1"), "image/jpeg")
+                        return self.send(sess.frame(F, flag("full"), flag("xray")), "image/jpeg")
                     if url.path == "/audio":
                         return self.send(sess.audio(), "audio/wav")
                     if url.path == "/video":
-                        return self.send(video_path(sess).read_bytes(), "video/mp4")
+                        return self.send(out_path(sess.scene).read_bytes(), "video/mp4")
                 self.send(dict(error="not found"), status=404)
             except BrokenPipeError:
                 pass
@@ -178,21 +178,24 @@ def make_handler(sess):
                 if self.path == "/render":
                     with sess.lock:
                         if sess.dirty:
-                            return self.send(dict(error="save first"), status=409)
-                    run = subprocess.run([sys.executable, "-m", "toon.render", str(sess.path), "--clean"],
-                                         cwd=sess.scene.root, capture_output=True, text=True)
+                            return self.send(dict(error="Save first, then render."), status=409)
+                        path, root = str(sess.path), sess.root
+                    run = subprocess.run([sys.executable, "-m", "toon.render", path], cwd=root, capture_output=True, text=True)
                     if run.returncode:
-                        return self.send(dict(error=run.stderr[-600:]), status=500)
-                    return self.send(dict(file=str(video_path(sess))))
+                        lines = [ln for ln in run.stderr.splitlines() if "Fontconfig" not in ln]
+                        return self.send(dict(error="\n".join(lines[-6:])), status=500)
+                    return self.send(dict(file=str(out_path(sess.scene))))
                 with sess.lock:
                     out = {}
                     if self.path == "/patch":
                         out["dirty_from"] = sess.patch(body["ops"])
                     elif self.path == "/save":
                         sess.save()
-                    elif self.path == "/revert":
+                    elif self.path == "/open":                # step to the previous or next scene
+                        if sess.dirty:
+                            return self.send(dict(error="Save first, then switch scenes."), status=409)
+                        sess.i = (sess.i + int(body.get("step", 1))) % len(sess.paths)
                         sess.load()
-                        out["dirty_from"] = 0
                     else:
                         return self.send(dict(error="not found"), status=404)
                     out["state"] = sess.state()
@@ -201,11 +204,6 @@ def make_handler(sess):
                 self.send(dict(error=str(e)), status=400)
 
     return Handler
-
-
-def video_path(sess):
-    rel = sess.path.relative_to(sess.scene.root / "episodes").with_suffix(".mp4")
-    return sess.scene.root / "out" / rel
 
 
 def main():
