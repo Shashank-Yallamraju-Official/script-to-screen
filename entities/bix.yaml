@@ -1,6 +1,7 @@
 kind: robot vacuum
 color: "#4f7cac"
-voice: 780
+voice: 523
+timbre: square
 status: 1
 tells:
   shame: [{distance: 1}, {orient: away}, {attention: down}]

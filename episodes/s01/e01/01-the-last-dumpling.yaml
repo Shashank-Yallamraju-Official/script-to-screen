@@ -4,7 +4,13 @@
 #   do             a deliberate action: slot, move, orient, attention, posture
 #   who, say       the speaker and the line; the tone comes from what the speaker feels
 #   feel           what the turn makes entities feel: {entity: {emotion: 1-3}} or {entity: calm}
-#   pause, hold    frames before the line and after the turn (tune these in the editor)
+#   pause, hold    steps before the line and after the turn (tune these in the editor)
+#   rhythm, melody one entry per syllable: its length in steps, its pitch in semitones
+#   sfx            sounds placed by hand: [{at: 4, sound: thud}]
+# Write a middle dot inside a word (some·one) to say where its syllables break.
+# Scenes run in path order: episodes/<season>/<episode>/<scene>.yaml. What entities feel, and
+# their status, carry into the next scene. To change that, the next scene opens with
+#   offscreen: [{feel: {otis: calm}, why: A night's sleep.}]
 scene: The last dumpling
 turns:
   - id: 1
@@ -14,7 +20,7 @@ turns:
   - id: 2
     who: juno
     do: {juno: {orient: otis}}
-    say: Someone ate the last dumpling.
+    say: Some·one ate the last dumpling.
     feel: {juno: {joy: 1}, otis: {shame: 2}}
     why: She already knows, and enjoys knowing. He hears it and knows he is caught.
 
@@ -32,4 +38,4 @@ turns:
 
   - id: 5
     why: Nobody speaks. The silence is the verdict.
-    hold: 45
+    hold: 12

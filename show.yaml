@@ -1,7 +1,14 @@
 # Settings for the whole show.
 width: 1280
 height: 720
-fps: 30
+fps: 60
+
+# The tempo grid. Every timing in a scene is counted in steps, so pauses, holds and syllables
+# land on the beat. At 120 beats per minute with 4 steps per beat, one step is an eighth of a
+# second. A scene can set its own `tempo`. Fractions of a step are allowed for fine nudges.
+tempo: 120
+steps_per_beat: 4
+scale: [0, 2, 4, 7, 9]      # the notes voices sing in, as semitones above the voice's own pitch
 
 # The felt states every entity shares. Colours appear only in the director's x-ray view.
 emotions: {fear: "#7b5ea7", anger: "#c8372d", sadness: "#4a6fa5", joy: "#e0a01e", shame: "#d6457a", surprise: "#2f9e8f"}
@@ -11,8 +18,8 @@ emotions: {fear: "#7b5ea7", anger: "#c8372d", sadness: "#4a6fa5", joy: "#e0a01e"
 # At equal weight (0.5) the gain is 1: what is felt is what shows.
 gain: {slope: 2.0, min: 0.34, max: 1.5}
 
-# Frames. pause = before a line starts; hold = after a turn finishes; ease = how fast a change settles.
-timing: {pause: 6, hold: 30, settle: 12, ease: 10}
+# Steps. pause = before a line starts; hold = after a turn finishes; settle = a turn with no line.
+timing: {pause: 2, hold: 8, settle: 4}
 
 # A tell counts as learned by the audience once it has shown in this many separate scenes.
 ledger: {learn_after: 3}

@@ -1,0 +1,11 @@
+# The micro-details. Tune these with the sliders in the editor.
+ease: 0.26            # seconds a change takes to settle
+overshoot: 0.6        # how far a move swings past its mark before settling (0 = none)
+flip: 1.0             # how thin a token gets mid-turn, like a sheet of paper flipping (0 = none)
+squash: 0.10          # stretch while travelling, as a fraction of size
+talk_hop: 5           # pixels the speaker hops on each syllable
+bubble_pop: 0.14      # seconds a bubble takes to pop open
+text_pop: 0.09        # seconds a syllable takes to pop in
+text_pop_scale: 1.25  # how big a syllable starts before settling to size
+wave: 4               # pixels of sway for wavy text
+shake: 2.5            # pixels of jitter for shaking text

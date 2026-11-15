@@ -11,27 +11,24 @@ import json
 import sys
 from pathlib import Path
 
-from .model import Scene, ScriptError, find_root, load_yaml
+from .model import Scene, ScriptError, find_root, load_yaml, scene_paths
 
 
-def scene_paths(root):
-    return sorted((Path(root) / "episodes").rglob("*.yaml"))
-
-
-def build(root, override=None):
+def build(root, override=None, lib=None):
     """Walk every scene in order. Returns (table, problems).
 
     table[entity][emotion] = dict(seen, need, learned, positions, hidden)
     """
     override = override or {}
     need = load_yaml(Path(root) / "show.yaml")["ledger"]["learn_after"]
-    seen, table, problems = {}, {}, []
+    seen, table, problems, carry = {}, {}, [], {}
     for path in scene_paths(root):
         try:
-            sc = Scene(path, script=override.get(path))
+            sc = Scene(path, script=override.get(path), lib=lib, carry=carry)
         except (ScriptError, KeyError, TypeError) as e:
             problems.append(dict(level="error", scene=path.stem, turn=None, msg=str(e)))
             continue
+        carry = sc.carry_out                                 # feelings and standing carry into the next scene
         for p in sc.problems:
             problems.append(dict(p, scene=sc.key))
         for t in sc.turns:                                   # payoffs must rest on learned tells

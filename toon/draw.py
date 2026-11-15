@@ -2,13 +2,13 @@
 
 A token shows only what the model says is observable: where it stands, which way its body
 faces (the toe at its base), where its attention is (the dot), and how it holds itself.
+The small motions on top (flip, stretch, hop, pops) are sized by library/feel.yaml.
 """
 import math
 
 import skia
 
-from . import speech
-from .model import SLOTS
+from .model import SLOTS, back
 
 BODY_W, BODY_H, MARGIN = 66, 156, 170
 INK, PAPER, RULE = "#1d1d1f", "#f5f3ee", "#c9c5bb"
@@ -40,14 +40,23 @@ def font(size=28, mono=False):
     return skia.Font(skia.Typeface("DejaVu Sans Mono" if mono else "DejaVu Sans", skia.FontStyle.Bold()), size)
 
 
-def draw_token(c, ent, o, W, H):
+def jitter(a, b):
+    """A steady pseudo-random pair in -1..1 for a given (time slice, index)."""
+    v = math.sin(a * 12.9898 + b * 78.233) * 43758.5453
+    w = math.sin(a * 39.3468 + b * 11.135) * 24634.6345
+    return (v - math.floor(v)) * 2 - 1, (w - math.floor(w)) * 2 - 1
+
+
+def draw_token(c, ent, o, W, H, feel, hop=0.0):
     a = 255 * o["alpha"]
     if a < 1:
         return
+    stretch = o["travel"] * float(feel["squash"])
+    thin = 1 - 0.9 * float(feel["flip"]) * o["flip"]
     c.save()
-    c.translate(slot_x(o["slot"], W), ground(H))
-    c.skew(math.tan(math.radians(9 * o["lean"])) * -1, 0)       # lean pivots at the base
-    c.scale(o["sx"], o["sy"])
+    c.translate(slot_x(o["slot"], W), ground(H) - hop)
+    c.skew(-math.tan(math.radians(9 * o["lean"])), 0)            # lean pivots at the base
+    c.scale(o["sx"] * (1 + stretch) * thin, o["sy"] * (1 - stretch))
     f = o["facing"]
     if abs(f) > 0.02:                                            # toe: which way the body faces
         toe = skia.Path()
@@ -93,25 +102,51 @@ def draw_note(c, x, y, tone, secs, ring):
         c.drawOval(skia.Rect.MakeLTRB(-7.5, -5.5, 7.5, 5.5), p)
         c.restore()
         c.drawRect(skia.Rect.MakeXYWH(hx + 4.5, hy - 23, 3.2, 23), p)
+    hx, hy = heads[0]
+    pts = [(-4.5, -14), (16.7, -18), (16.7, -12), (-4.5, -8)] if tone.get("double") else \
+          [(hx + 4.5, hy - 23), (hx + 16, hy - 15), (hx + 16, hy - 8), (hx + 7.7, hy - 15)]
     flag = skia.Path()
-    if tone.get("double"):
-        for q in [(-4.5, -14), (16.7, -18), (16.7, -12), (-4.5, -8)]:
-            flag.lineTo(*q) if flag.countPoints() else flag.moveTo(*q)
-    else:
-        hx, hy = heads[0]
-        for q in [(hx + 4.5, hy - 23), (hx + 16, hy - 15), (hx + 16, hy - 8), (hx + 7.7, hy - 15)]:
-            flag.lineTo(*q) if flag.countPoints() else flag.moveTo(*q)
+    flag.moveTo(*pts[0])
+    for q in pts[1:]:
+        flag.lineTo(*q)
     flag.close()
     c.drawPath(flag, p)
     c.restore()
 
 
-def draw_bubble(c, scene, line, F, o, ent):
-    W, H, pad, lh, f = scene.W, scene.H, 22, 38, font()
-    rows = speech.wrap(line["text"], f, 470)
-    w = max(150, max(f.measureText(r) for r in rows) + 2 * pad)
-    h = len(rows) * lh + 2 * pad - 8
-    hx, top = slot_x(o["slot"], W), ground(H) - BODY_H * o["sy"] - 24
+def layout(line, tone):
+    """Place every syllable once: which row it sits on and how far along."""
+    if "_layout" not in line:
+        size = 21 if tone.get("text") == "small" else 28
+        f, rows, chunks, row, word = font(size), [], [], "", []
+
+        def flush():
+            nonlocal row, word
+            text = "".join(word)
+            if row and f.measureText((row + text).rstrip()) > 470:
+                rows.append(row)
+                row = ""
+            for part in word:
+                chunks.append((len(rows), f.measureText(row), part, f.measureText(part.rstrip())))
+                row += part
+            word = []
+
+        for s in line["sylls"]:
+            word.append(s["text"])
+            if s["text"].endswith(" "):
+                flush()
+        flush()
+        rows.append(row)
+        line["_layout"] = (f, size, max(f.measureText(r.rstrip()) for r in rows), len(rows), chunks)
+    return line["_layout"]
+
+
+def draw_bubble(c, scene, line, t, o, ent, hop):
+    feel, tone = scene.show.feel, scene.show.tones[line["tone"]]
+    f, size, tw, nrows, chunks = layout(line, tone)
+    W, H, pad, lh = scene.W, scene.H, 22, size + 10
+    w, h = max(150, tw + 2 * pad), nrows * lh + 2 * pad - 8
+    hx, top = slot_x(o["slot"], W), ground(H) - BODY_H * o["sy"] - 24 - hop
     bx = min(max(hx - w / 2, 24), W - w - 40)
     by = top - h - 24
     tx = min(max(hx, bx + 36), bx + w - 36)
@@ -123,16 +158,37 @@ def draw_bubble(c, scene, line, F, o, ent):
     tail.lineTo(hx, top)
     tail.close()
     shape = skia.Op(box, tail, skia.PathOp.kUnion_PathOp)
+    age = t - line["start"]
+    pop = float(feel["bubble_pop"])
+    c.save()
+    if pop > 0 and age < pop:                                    # pops open from the speaker
+        s = 0.55 + 0.45 * back(age / pop, 1.0)
+        c.translate(hx, top)
+        c.scale(s, s)
+        c.translate(-hx, -top)
     c.drawPath(shape, fill("#ffffff"))
     c.drawPath(shape, stroke(ent["color"], 4))
-    age = F - line["start"]
-    shown, idx, ink = sum(1 for t in line["times"] if t <= age), 0, fill(INK)
-    for i, r in enumerate(rows):
-        n = max(0, min(len(r), shown - idx))
-        if n:
-            c.drawString(r[:n], bx + pad, by + pad + 24 + i * lh, f, ink)
-        idx += len(r) + 1
-    draw_note(c, bx + w - 2, by + 2, scene.show.tones[line["tone"]], max(age, 0) / scene.fps, ent["color"])
+    ink, style = fill(INK), tone.get("text", "still")
+    tp, ts = float(feel["text_pop"]), float(feel["text_pop_scale"])
+    for i, (row, cx, text, cw) in enumerate(chunks):
+        a = t - line["sylls"][i]["start"]
+        if a < -1e-6:
+            continue
+        s = 1 + (ts - 1) * (1 - a / tp) if tp > 0 and a < tp else 1.0      # each syllable lands on its note
+        dx = dy = 0.0
+        if style == "wave":
+            dy = math.sin(t * 7 + i * 0.8) * float(feel["wave"])
+        elif style in ("shake", "tremble"):
+            jx, jy = jitter(int(t * 30), i)
+            amp = float(feel["shake"]) * (1.0 if style == "shake" else 0.45)
+            dx, dy = jx * amp, jy * amp
+        c.save()
+        c.translate(bx + pad + cx + cw / 2 + dx, by + pad + size - 4 + row * lh + dy)
+        c.scale(s, s)
+        c.drawString(text.rstrip(), -cw / 2, 0, f, ink)
+        c.restore()
+    draw_note(c, bx + w - 2, by + 2, tone, max(age, 0), ent["color"])
+    c.restore()
 
 
 def draw_xray(c, scene, states):
@@ -159,17 +215,22 @@ def draw_xray(c, scene, states):
 
 
 def draw_frame(c, scene, F, xray=False, slate=False):
-    W, H = scene.W, scene.H
+    W, H, t, feel = scene.W, scene.H, F / scene.fps, scene.show.feel
     c.clear(col(PAPER))
     c.drawLine(0, ground(H), W, ground(H), stroke(RULE, 2))
-    states = {e: s for e in scene.keys if (s := scene.state(e, F)) is not None}
+    states = {e: s for e in scene.keys if (s := scene.state(e, t)) is not None}
     if xray:
         draw_xray(c, scene, states)
-    line = scene.line_at(F)
+    line = scene.line_at(t)
+    hop = 0.0
+    if line:                                                    # the speaker hops on each syllable
+        since = [t - s["start"] for s in line["sylls"] if s["start"] <= t + 1e-6]
+        if since and min(since) < 0.14:
+            hop = float(feel["talk_hop"]) * math.sin(math.pi * min(since) / 0.14)
     for e in sorted(states, key=lambda e: bool(line and line["who"] == e)):
-        draw_token(c, scene.ents[e], states[e], W, H)
+        draw_token(c, scene.ents[e], states[e], W, H, feel, hop if line and line["who"] == e else 0.0)
     if line and line["who"] in states:
-        draw_bubble(c, scene, line, F, states[line["who"]], scene.ents[line["who"]])
+        draw_bubble(c, scene, line, t, states[line["who"]], scene.ents[line["who"]], hop)
     if slate:
-        t = scene.turn_at(F)
-        c.drawString(f"T{t['id']} · {F - t['start']:03d}", 20, 32, font(16, mono=True), fill(INK, 150))
+        turn = scene.turn_at(t)
+        c.drawString(f"T{turn['id']} · {t / scene.step - turn['start']:.2f}", 20, 32, font(16, mono=True), fill(INK, 150))

@@ -1,0 +1,13 @@
+# One sound per kind of event. Tune these with the sliders in the editor; click a name to hear it.
+#   wave = sine, tri, square or noise;  freq glides to `to` (Hz);  dur in seconds;  vol 0 turns it off
+# `feel` plays when a feeling lands; add `feel.shame` and so on to give an emotion its own sound.
+# A turn can also place a sound by hand:  sfx: [{at: 4, sound: thud}]
+enter: {wave: sine, freq: 520, to: 780, dur: 0.12, vol: 0.45}
+exit: {wave: sine, freq: 620, to: 390, dur: 0.12, vol: 0.40}
+move: {wave: noise, freq: 900, to: 300, dur: 0.20, vol: 0.30}
+turn: {wave: tri, freq: 700, to: 440, dur: 0.07, vol: 0.40}
+look: {wave: sine, freq: 1250, to: 1250, dur: 0.03, vol: 0.18}
+posture: {wave: tri, freq: 230, to: 160, dur: 0.12, vol: 0.35}
+bubble: {wave: sine, freq: 680, to: 1040, dur: 0.06, vol: 0.32}
+feel: {wave: sine, freq: 392, to: 330, dur: 0.26, vol: 0.22}
+thud: {wave: sine, freq: 140, to: 60, dur: 0.18, vol: 0.70}

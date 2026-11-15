@@ -15,6 +15,16 @@
   #view { max-width: 100%; max-height: 100%; border-radius: 6px; background: #000; box-shadow: 0 8px 30px #0008; }
   #spin { position: absolute; width: 26px; height: 26px; border: 2px solid #0003; border-top-color: #000; border-radius: 50%; animation: sp .7s linear infinite; display: none; }
   @keyframes sp { to { transform: rotate(360deg); } }
+  #tune { position: absolute; top: 14px; right: 14px; bottom: 14px; width: 270px; background: #16171aee; border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px 10px; overflow-y: auto; display: none; }
+  #tune h4 { margin: 10px 0 4px; display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500; color: var(--mute); }
+  #tune h4 svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  #tune h4.snd { cursor: pointer; color: var(--text); } #tune h4.snd:hover { color: var(--accent); }
+  .row { display: grid; grid-template-columns: 88px 1fr 40px; align-items: center; gap: 8px; height: 20px; color: var(--mute); font-size: 11px; }
+  .row span { white-space: nowrap; }
+  .row span:last-child { text-align: right; font-family: ui-monospace, Menlo, monospace; color: var(--text); }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 3px; border-radius: 2px; background: var(--line); outline: none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 11px; height: 11px; border-radius: 50%; background: var(--text); cursor: pointer; }
+  input[type=range]::-moz-range-thumb { width: 11px; height: 11px; border: 0; border-radius: 50%; background: var(--text); cursor: pointer; }
   #bar { display: flex; align-items: center; gap: 4px; padding: 6px 10px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--panel); }
   #why { flex: 1; min-width: 0; padding: 0 12px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   button { all: unset; width: 28px; height: 28px; flex: none; display: grid; place-items: center; border-radius: 6px; color: var(--mute); cursor: pointer; position: relative; }
@@ -24,9 +34,10 @@
   button svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
   #play { color: var(--text); }
   #save.dirty::after { content: ""; position: absolute; top: 5px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
+  #carry { display: none; cursor: help; }
   #flag { display: none; color: var(--warn); } #flag.bad { color: var(--bad); }
   .sep { width: 1px; height: 16px; background: var(--line); margin: 0 4px; flex: none; }
-  #tc { font: 500 12px ui-monospace, "SF Mono", Menlo, monospace; padding: 0 8px; min-width: 76px; flex: none; }
+  #tc { font: 500 12px ui-monospace, "SF Mono", Menlo, monospace; padding: 0 8px; min-width: 84px; flex: none; }
   #sel { display: none; align-items: center; gap: 6px; padding: 2px 4px 2px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); flex: none; }
   #sel i { width: 8px; height: 8px; border-radius: 50%; background: var(--mute); }
   #sel input { all: unset; width: 44px; font: 500 12px ui-monospace, Menlo, monospace; color: var(--text); text-align: right; user-select: text; }
@@ -47,20 +58,25 @@
   .grip::after { content: ""; position: absolute; right: 2px; top: 5px; bottom: 5px; width: 2px; border-radius: 1px; background: var(--line); }
   .grip:hover::after, .grip.sel::after { background: var(--accent); }
   .cut { position: absolute; width: 1px; background: var(--line); pointer-events: none; }
+  .beat { position: absolute; width: 1px; background: #ffffff0a; pointer-events: none; }
   .felt { position: absolute; height: 14px; margin-top: -7px; border-radius: 4px; display: flex; align-items: center; padding-left: 5px; overflow: hidden; }
   .say { position: absolute; height: 20px; margin-top: -10px; border-radius: 6px; cursor: ew-resize; overflow: hidden; z-index: 2; }
   .say b { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px 0 0 6px; }
   .say span { position: absolute; left: 18px; right: 6px; top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #111; font-weight: 500; font-size: 11px; pointer-events: none; }
   .say u { position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 0 1.5px #fff9; pointer-events: none; }
+  .note { position: absolute; height: 11px; margin-top: -5.5px; border-radius: 3px; cursor: ns-resize; z-index: 2; font-size: 9px; line-height: 11px; color: #111; padding-left: 3px; overflow: hidden; white-space: nowrap; font-weight: 600; }
+  .note.set { box-shadow: inset 0 0 0 1.5px #fff8; }
+  .note .ng { position: absolute; top: 0; right: 0; width: 5px; height: 100%; cursor: col-resize; background: #0003; }
+  .note.live { outline: 2px solid #fff; }
   .sel { outline: 2px solid #fff; outline-offset: 1px; }
   #head { position: absolute; top: 0; width: 1px; background: var(--accent); pointer-events: none; z-index: 5; }
-  #toast { position: fixed; right: 14px; bottom: 14px; padding: 8px 12px; border-radius: 8px; background: var(--raise); border: 1px solid var(--line); display: none; cursor: pointer; max-width: 60vw; white-space: pre-line; }
+  #toast { position: fixed; left: 14px; bottom: 14px; padding: 8px 12px; border-radius: 8px; background: var(--raise); border: 1px solid var(--line); display: none; cursor: pointer; max-width: 60vw; white-space: pre-line; z-index: 9; }
   #toast.bad { border-color: var(--bad); color: var(--bad); }
 </style>
 </head>
 <body>
 <div id="app">
-  <div id="stage"><canvas id="view" width="1280" height="720"></canvas><div id="spin"></div></div>
+  <div id="stage"><canvas id="view" width="1280" height="720"></canvas><div id="spin"></div><div id="tune"></div></div>
   <div id="bar">
     <button id="prev"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5"/></svg></button>
     <button id="next"><svg viewBox="0 0 16 16"><path d="m6 3 5 5-5 5"/></svg></button>
@@ -68,15 +84,17 @@
     <button id="play" title="Play or pause (Space)"></button>
     <button id="loop" title="Loop the current turn (L)"><svg viewBox="0 0 16 16"><path d="M3 7V6a2 2 0 0 1 2-2h7M10 2l2 2-2 2M13 9v1a2 2 0 0 1-2 2H4M6 14l-2-2 2-2"/></svg></button>
     <button id="xray" title="X-ray (X): the director's view. Everything below the ground line is for you, not the audience. The bar is an entity's weight in the room. Ringed pips are what it feels; filled pips are what shows."><svg viewBox="0 0 16 16"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg></button>
-    <span id="tc" title="Turn · frame within the turn. Arrow keys step one frame, Shift+arrow ten."></span>
-    <div id="sel" title="Frames for the selected timing. Type a number, or Alt+arrow to nudge."><i></i><input id="selv" type="number"></div>
+    <button id="tuneb" title="Tune (T): sliders for the small details and for every sound. Click a sound's name to hear it."><svg viewBox="0 0 16 16"><path d="M2 4.5h7M12 4.5h2M2 11.5h2M7 11.5h7"/><circle cx="10.5" cy="4.5" r="1.5"/><circle cx="5.5" cy="11.5" r="1.5"/></svg></button>
+    <button id="carry"><svg viewBox="0 0 16 16"><path d="M2 8h8M7 5l3 3-3 3M13 3v10"/></svg></button>
+    <span id="tc"></span>
+    <div id="sel" title="Steps for the selected timing. Type a number, or Alt+arrow to nudge a quarter step."><i></i><input id="selv" type="number" step="0.25"></div>
     <span id="why" title="Why this turn happens"></span>
     <div id="ledger"></div>
     <button id="flag"><svg viewBox="0 0 16 16"><path d="M8 2.5 14.5 13h-13zM8 7v3M8 11.6v.1"/></svg></button>
     <span class="sep"></span>
     <button id="undo" title="Undo (Ctrl/Cmd+Z)"><svg viewBox="0 0 16 16"><path d="M5 3 2 6l3 3M2 6h7a4 4 0 0 1 0 8H6"/></svg></button>
     <button id="redo" title="Redo (Ctrl/Cmd+Shift+Z)"><svg viewBox="0 0 16 16"><path d="m11 3 3 3-3 3M14 6H7a4 4 0 0 0 0 8h3"/></svg></button>
-    <button id="save" title="Save to the scene file (Ctrl/Cmd+S)"><svg viewBox="0 0 16 16"><path d="M3 2h8l3 3v9H3zM5 2v4h5V2M5 14v-4h6v4"/></svg></button>
+    <button id="save" title="Save (Ctrl/Cmd+S): the scene, and any sliders you moved"><svg viewBox="0 0 16 16"><path d="M3 2h8l3 3v9H3zM5 2v4h5V2M5 14v-4h6v4"/></svg></button>
     <button id="render"><svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M5 3v10M11 3v10M2 6h3M2 10h3M11 6h3M11 10h3"/></svg></button>
   </div>
   <div id="tl">
@@ -88,14 +106,17 @@
 <script>
 const $ = id => document.getElementById(id);
 const view = $('view'), ctx = view.getContext('2d'), scroll = $('scroll'), track = $('track'), ruler = $('ruler');
-const PAD = 14, RULER = 24, ROW = 26;
+const PAD = 14, RULER = 24, ROW = 26, ROLL = 84;
 const ICON = {
   play: '<svg viewBox="0 0 16 16"><path d="M5 3v10l8-5z" fill="currentColor"/></svg>',
   pause: '<svg viewBox="0 0 16 16"><path d="M5 3v10M11 3v10" stroke-width="2.4"/></svg>',
   turns: '<svg viewBox="0 0 16 16"><rect x="2" y="4" width="5" height="8" rx="1"/><rect x="9" y="4" width="5" height="8" rx="1"/></svg>',
   say: '<svg viewBox="0 0 16 16"><path d="M3 3h10v7H8l-3 3v-3H3z"/></svg>',
+  roll: '<svg viewBox="0 0 16 16"><path d="M6 12.5V4l7-1.5V11"/><circle cx="4.2" cy="12.5" r="1.8"/><circle cx="11.2" cy="11" r="1.8"/></svg>',
+  feel: '<svg viewBox="0 0 16 16"><path d="M2 12c2 0 2-8 4-8s2 8 4 8 2-5 4-5"/></svg>',
+  snd: '<svg viewBox="0 0 16 16"><path d="M3 6h2l3-3v10l-3-3H3zM10.5 5.5a3.5 3.5 0 0 1 0 5M12.5 3.5a6.5 6.5 0 0 1 0 9"/></svg>',
 };
-let S = null, F = 0, ppf = 3, playing = false, loop = false, stalled = false, xray = false;
+let S = null, F = 0, pps = 12, playing = false, loop = false, stalled = false, xray = false;
 let frames = new Map(), selected = null, drag = null, undo = [], redo = [];
 let audio = new Audio(), audioRev = -1, muted = false, clock0 = 0, clockBase = 0, range = [0, 0];
 
@@ -109,32 +130,40 @@ const toast = (msg, bad, onclick) => {
   const t = $('toast'); t.textContent = msg; t.className = bad ? 'bad' : ''; t.style.display = 'block'; t.onclick = onclick || null;
   clearTimeout(toast.t); toast.t = setTimeout(() => t.style.display = 'none', bad ? 8000 : 5000);
 };
-const x = f => PAD + f * ppf;
-const turnAt = f => S.turns.find(t => f >= t.start && f < t.start + t.length) || S.turns[S.turns.length - 1];
+// time: the timeline is in steps of the tempo grid; the picture is in frames
+const fps = () => S.fps * S.step;                       // frames per step
+const stepsOf = f => f / fps(), frameOf = s => Math.round(s * fps());
+const x = s => PAD + s * pps;
+const turnAt = f => { const s = stepsOf(f) + 1e-6; return S.turns.find(t => s >= t.start && s < t.start + t.length) || S.turns[S.turns.length - 1]; };
+const turnFrames = t => [frameOf(t.start), Math.min(S.total, frameOf(t.start + t.length))];
 const el = (cls, style, title) => { const d = document.createElement('div'); d.className = cls; Object.assign(d.style, style); if (title) d.title = title; track.appendChild(d); return d; };
 const pips = (n, filled, color) => `<span class="pips">${Array.from({ length: n }, (_, i) => `<u style="border-color:${color};background:${i < filled ? color : 'none'}"></u>`).join('')}</span>`;
+const num = v => String(Math.round(v * 100) / 100);
 
 // ---- frames: the server renders, the browser keeps what it has seen --------------------------
 const loadImg = (f, full, rev) => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = `/frame?f=${f}&rev=${rev}&full=${full ? 1 : 0}&xray=${xray ? 1 : 0}`; });
 function nextNeeded() {
   if (!frames.has(F)) return F;
-  const end = playing ? range[1] : Math.min(S.total, F + 1500);
+  const end = playing ? range[1] : Math.min(S.total, F + 3000);
   for (let f = F + 1; f < end; f++) if (!frames.has(f)) return f;
-  for (let f = playing ? range[0] : Math.max(0, F - 90); f < F; f++) if (!frames.has(f)) return f;
+  for (let f = playing ? range[0] : Math.max(0, F - 180); f < F; f++) if (!frames.has(f)) return f;
   return -1;
 }
-let pumping = false, epoch = 0;
-async function pump() {
-  if (pumping) return; pumping = true;
+let pumps = 0, epoch = 0;
+async function pump() {                                  // a few loaders at once keep up with 60 frames a second
+  if (pumps >= 4) return; pumps++;
   for (;;) {
     const e = epoch, rev = S.rev, f = nextNeeded();
     if (f < 0) break;
+    frames.set(f, null);                                 // claimed
     try { const img = await loadImg(f, false, rev); if (e === epoch && rev === S.rev) { frames.set(f, img); if (f === F && !playing) paint(); drawRuler(); } }
-    catch (err) { await new Promise(r => setTimeout(r, 300)); }
+    catch (err) { if (e === epoch) frames.delete(f); await new Promise(r => setTimeout(r, 300)); }
   }
-  pumping = false;
+  pumps--;
 }
-const dropFrames = from => { epoch++; for (const f of [...frames.keys()]) if (f >= from) frames.delete(f); };
+const fill = () => { for (let i = 0; i < 4; i++) pump(); };
+const have = f => !!frames.get(f);
+const dropFrames = from => { epoch++; for (const f of [...frames.keys()]) if (f >= from || !frames.get(f)) frames.delete(f); };
 let sharpT = 0;
 function paint() {
   const img = frames.get(F);
@@ -147,46 +176,60 @@ function paint() {
 }
 function setF(f, keepView) {
   F = Math.min(Math.max(Math.round(f), 0), S.total - 1);
-  const t = turnAt(F);
-  $('tc').textContent = `T${t.id} · ${String(F - t.start).padStart(3, '0')}`;
+  const t = turnAt(F), s = stepsOf(F);
+  $('tc').textContent = `T${t.id} · ${Math.max(0, s - t.start).toFixed(2)}`;
   $('why').textContent = t.why;
-  $('head').style.left = x(F) + 'px';
+  $('head').style.left = x(s) + 'px';
   document.querySelectorAll('.turn').forEach(d => d.classList.toggle('cur', d.dataset.id == t.id));
-  if (!keepView) { const px = x(F) - scroll.scrollLeft; if (px < 30 || px > scroll.clientWidth - 30) scroll.scrollLeft = x(F) - scroll.clientWidth * (playing ? 0.15 : 0.5); }
-  paint(); drawRuler(); pump();
+  if (!keepView) { const px = x(s) - scroll.scrollLeft; if (px < 30 || px > scroll.clientWidth - 30) scroll.scrollLeft = x(s) - scroll.clientWidth * (playing ? 0.15 : 0.5); }
+  paint(); drawRuler(); fill();
 }
 
 // ---- timeline --------------------------------------------------------------------------------
+let rollLo = -5, rollHi = 12, rollTop = 0;
+const ySemi = v => rollTop + 8 + (rollHi - v) / (rollHi - rollLo) * (ROLL - 16);
 function build() {
-  const lanes = [['turns', ICON.turns, 'Turns: hover one to read why it happens. Drag its right edge to change how long it holds.'],
-    ...S.entities.map(e => [e.id, `<i style="background:${e.color}"></i>`, `${e.id}${e.kind ? ' (' + e.kind + ')' : ''}: what it feels. Filled pips show; hollow pips are held in.`]),
-    ['say', ICON.say, 'Lines: drag one to change the pause before it starts.']];
-  const y = {}; lanes.forEach((l, i) => y[l[0]] = RULER + 8 + i * ROW + ROW / 2);
-  const H = RULER + 8 + lanes.length * ROW + 8;
-  $('gutter').innerHTML = lanes.map(l => `<div style="top:${y[l[0]] - ROW / 2}px;height:${ROW}px" title="${l[2]}">${l[1]}</div>`).join('');
+  const lanes = [['turns', ICON.turns, 'Turns: hover one to read why it happens. Drag its right edge to change how long it holds.', ROW],
+    ...S.entities.map(e => [e.id, `<i style="background:${e.color}"></i>`, `${e.id}${e.kind ? ' (' + e.kind + ')' : ''}: what it feels. Filled pips show; hollow pips are held in.`, ROW]),
+    ['say', ICON.say, 'Lines: drag one to change the pause before it starts.', ROW],
+    ['roll', ICON.roll, 'Every syllable is one note. Drag a note up or down to change its pitch (Alt for notes outside the scale). Drag its right edge to change its length. Hold Shift for quarter steps. Notes you have set by hand have a white outline.', ROLL]];
+  const y = {}; let top = RULER + 8;
+  for (const l of lanes) { y[l[0]] = top + l[3] / 2; if (l[0] === 'roll') rollTop = top; top += l[3]; }
+  const H = top + 8;
+  $('gutter').innerHTML = lanes.map(l => `<div style="top:${y[l[0]] - l[3] / 2}px;height:${l[3]}px" title="${l[2]}">${l[1]}</div>`).join('');
   $('gutter').style.height = H + 'px';
-  track.querySelectorAll('.turn,.cut,.felt,.say').forEach(d => d.remove());
-  track.style.width = x(S.total) + PAD + 'px'; track.style.height = H + 'px'; $('head').style.height = H + 'px';
-  const mark = (d, path, lo, hi, value, color) => { d.dataset.key = JSON.stringify(path); d._m = { path, lo, hi, value, color }; if (selected === d.dataset.key) d.classList.add('sel'); };
+  track.querySelectorAll('.turn,.cut,.beat,.felt,.say,.note').forEach(d => d.remove());
+  track.style.width = x(S.steps) + PAD + 'px'; track.style.height = H + 'px'; $('head').style.height = H + 'px';
+  const all = S.turns.flatMap(t => t.say ? t.say.sylls.map(s => s.semi) : []);
+  rollLo = Math.min(-3, ...all) - 2; rollHi = Math.max(9, ...all) + 2;
+  if (S.spb * pps >= 18) for (let b = 0; b <= S.steps; b += S.spb) el('beat', { left: x(b) + 'px', top: RULER + 'px', height: H - RULER + 'px' });
+  const mark = (d, path, hi, value, color) => { d.dataset.key = JSON.stringify(path); d._m = { path, lo: 0, hi, value, color }; if (selected === d.dataset.key) d.classList.add('sel'); };
   for (const t of S.turns) {
-    const b = el('turn', { left: x(t.start) + 'px', top: y.turns - 12 + 'px', width: t.length * ppf - 2 + 'px' }, `Turn ${t.id} · ${(t.length / S.fps).toFixed(2)}s\n${t.why}`);
+    const b = el('turn', { left: x(t.start) + 'px', top: y.turns - 12 + 'px', width: t.length * pps - 2 + 'px' }, `Turn ${t.id} · ${num(t.length)} steps (${(t.length * S.step).toFixed(2)}s)\n${t.why}`);
     b.textContent = t.id; b.dataset.id = t.id;
-    const g = document.createElement('div'); g.className = 'grip'; g.title = `Hold: ${t.hold} frames after the turn finishes. Drag to change.`; b.appendChild(g);
-    mark(g, t.paths.hold, 0, 900, t.hold, '#6e79d6');
+    const g = document.createElement('div'); g.className = 'grip'; g.title = `Hold: ${num(t.hold)} steps after the turn finishes. Drag to change; hold Shift for quarter steps.`; b.appendChild(g);
+    mark(g, ['turns', t.index, 'hold'], 400, t.hold, '#6e79d6');
     if (t.start) el('cut', { left: x(t.start) - 1 + 'px', top: RULER + 'px', height: H - RULER + 'px' });
     for (const [e, segs] of Object.entries(t.lanes)) segs.forEach((s, j) => {
       if (!s.felt) return;
       const to = j + 1 < segs.length ? segs[j + 1].at : t.length, c = S.emotions[s.felt] || '#888';
-      const d = el('felt', { left: x(t.start + s.at) + 'px', top: y[e] + 'px', width: Math.max((to - s.at) * ppf - 1, 4) + 'px', background: c + '33' }, s.tip);
+      const d = el('felt', { left: x(t.start + s.at) + 'px', top: y[e] + 'px', width: Math.max((to - s.at) * pps - 1, 4) + 'px', background: c + '33' }, s.tip);
       d.innerHTML = pips(Math.max(s.intensity, s.level), s.level, c);
     });
     if (t.say) {
-      const q = t.say, c = S.entities.find(e => e.id === q.who).color;
-      const d = el('say', { left: x(t.start + q.at) + 'px', top: y.say + 'px', width: Math.max((t.length - q.at) * ppf - 2, 10) + 'px', background: c + '66' },
-        `${q.who} (${q.tone}): ${q.text}\nStarts after a pause of ${t.pause} frames` + (q.latency ? `, plus ${q.latency} of hesitation from what ${q.who} feels` : ''));
-      d.innerHTML = `<b style="width:${q.reveal * ppf}px;background:${c}"></b><u style="background:${q.tone_color}"></u><span></span>`;
+      const q = t.say, c = S.entities.find(e => e.id === q.who).color, at = t.start + q.at;
+      const d = el('say', { left: x(at) + 'px', top: y.say + 'px', width: Math.max((t.length - q.at) * pps - 2, 10) + 'px', background: c + '66' },
+        `${q.who} (${q.tone}): ${q.text}\nStarts after a pause of ${num(t.pause)} steps` + (q.latency ? `, plus ${num(q.latency)} of hesitation from what ${q.who} feels` : ''));
+      d.innerHTML = `<b style="width:${q.reveal * pps}px;background:${c}"></b><u style="background:${q.tone_color}"></u><span></span>`;
       d.querySelector('span').textContent = q.text;
-      mark(d, t.paths.pause, 0, 600, t.pause, c);
+      mark(d, ['turns', t.index, 'pause'], 200, t.pause, c);
+      q.sylls.forEach((s, i) => {
+        const n = el('note' + (q.melody || q.rhythm ? ' set' : ''), { left: x(at + s.at) + 'px', top: ySemi(s.semi) + 'px', width: Math.max(s.len * pps - 1, 4) + 'px', background: c },
+          `"${s.text.trim()}" · ${s.semi > 0 ? '+' : ''}${s.semi} semitones · ${num(s.len)} steps`);
+        n.textContent = s.len * pps > 26 ? s.text.trim() : '';
+        const ng = document.createElement('div'); ng.className = 'ng'; n.appendChild(ng);
+        n._n = { ti: t.index, i }; n.dataset.note = t.index + ':' + i;
+      });
     }
   }
   $('save').classList.toggle('dirty', S.dirty);
@@ -195,6 +238,10 @@ function build() {
   const where = `Scene ${S.index + 1} of ${S.count}: ${S.title} (${S.file})`;
   $('prev').title = 'Previous scene ([)\n' + where; $('next').title = 'Next scene (])\n' + where;
   $('prev').disabled = $('next').disabled = S.count < 2;
+  $('tc').title = `Turn · steps into the turn. One step is ${num(S.step * 1000)} ms at ${num(S.tempo)} beats per minute. Arrow keys move one frame, Shift+arrow one step.`;
+  const carry = $('carry'); carry.style.display = S.carried.length || S.offscreen.length ? 'grid' : 'none';
+  carry.title = 'What this scene inherits. Nothing resets between scenes unless something happens off-screen.' +
+    (S.carried.length ? '\n\nCarried in from the last scene:\n' + S.carried.join('\n') : '') + (S.offscreen.length ? '\n\nThen, off-screen:\n' + S.offscreen.join('\n') : '');
   const flag = $('flag'); flag.style.display = S.problems.length ? 'grid' : 'none';
   flag.className = S.problems.some(p => p.level === 'error') ? 'bad' : '';
   flag.title = S.problems.map(p => (p.turn != null ? `Turn ${p.turn}: ` : '') + p.msg).join('\n') + (flag.className ? '\nErrors stop the scene from rendering.' : '');
@@ -208,22 +255,21 @@ function drawRuler() {
   const w = scroll.clientWidth, dpr = devicePixelRatio || 1, g = ruler.getContext('2d');
   if (ruler.width !== w * dpr) { ruler.width = w * dpr; ruler.height = RULER * dpr; ruler.style.width = w + 'px'; ruler.style.height = RULER + 'px'; }
   g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, RULER); g.fillStyle = '#16171a'; g.fillRect(0, 0, w, RULER);
-  const off = scroll.scrollLeft, step = [1, 5, 10, 15, 30, 60, 150, 300, 900, 1800].find(s => s * ppf >= 56) || 3600;
+  const off = scroll.scrollLeft, every = [1, 2, 4, 8, 16, 32].find(n => n * S.spb * pps >= 44) || 64;      // label every n beats
   g.font = '10px Inter, system-ui, sans-serif'; g.fillStyle = '#7f8590'; g.strokeStyle = '#292b30'; g.beginPath();
-  for (let f = Math.max(0, Math.floor((off - PAD) / ppf / step) * step); x(f) - off < w && f <= S.total; f += step) {
-    const px = Math.round(x(f) - off) + .5; g.moveTo(px, 15); g.lineTo(px, RULER);
-    g.fillText(step < S.fps ? f : (f / S.fps) + 's', px + 3, 12);
+  for (let b = Math.max(0, Math.floor((off - PAD) / pps / S.spb / every) * every); x(b * S.spb) - off < w && b * S.spb <= S.steps; b += every) {
+    const px = Math.round(x(b * S.spb) - off) + .5; g.moveTo(px, 15); g.lineTo(px, RULER); g.fillText(b + 1, px + 3, 12);
   }
   g.stroke();
   g.fillStyle = '#6e79d688';                                  // which frames are ready to play
-  let a = -1;
-  for (let f = Math.max(0, Math.floor((off - PAD) / ppf)); f <= S.total; f++) {
-    const has = f < S.total && frames.has(f);
+  const fpp = fps() / pps; let a = -1;
+  for (let f = Math.max(0, Math.floor((off - PAD) * fpp)); f <= S.total; f++) {
+    const has = f < S.total && have(f);
     if (has && a < 0) a = f;
-    if (!has && a >= 0) { g.fillRect(x(a) - off, RULER - 2, (f - a) * ppf, 2); a = -1; }
-    if (x(f) - off > w) break;
+    if (!has && a >= 0) { g.fillRect(x(stepsOf(a)) - off, RULER - 2, (f - a) / fpp, 2); a = -1; }
+    if (x(stepsOf(f)) - off > w) break;
   }
-  g.fillStyle = '#6e79d6'; const hx = x(F) - off; g.beginPath(); g.moveTo(hx - 5, 0); g.lineTo(hx + 5.5, 0); g.lineTo(hx + .5, 7); g.fill();
+  g.fillStyle = '#6e79d6'; const hx = x(stepsOf(F)) - off; g.beginPath(); g.moveTo(hx - 5, 0); g.lineTo(hx + 5.5, 0); g.lineTo(hx + .5, 7); g.fill();
 }
 
 // ---- editing ---------------------------------------------------------------------------------
@@ -239,50 +285,75 @@ async function patch(path, value) {
   }
   sending = false;
 }
-function commit(m, before, after) { if (before !== after) { undo.push({ path: m.path, before, after }); redo = []; } }
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+function commit(path, before, after) { if (!same(before, after)) { undo.push({ path, before, after }); redo = []; } }
 function showSel() {
   const d = selected && [...track.querySelectorAll('[data-key]')].find(d => d.dataset.key === selected);
   $('sel').style.display = d ? 'flex' : 'none';
-  if (d) { $('sel').querySelector('i').style.background = d._m.color; if (document.activeElement !== $('selv')) $('selv').value = d._m.value; }
+  if (d) { $('sel').querySelector('i').style.background = d._m.color; if (document.activeElement !== $('selv')) $('selv').value = num(d._m.value); }
   return d;
 }
+const snap = (v, e) => e.shiftKey ? Math.round(v * 4) / 4 : Math.round(v);
+function scaleNotes() { const out = []; for (let o = -3; o <= 3; o++) for (const s of S.scale) out.push(o * 12 + s); return out; }
 track.addEventListener('pointerdown', e => {
-  const d = e.target.closest('[data-key]');
-  if (d) {
-    const was = playing; pause();
-    selected = d.dataset.key; track.querySelectorAll('[data-key]').forEach(n => n.classList.toggle('sel', n.dataset.key === selected));
+  const n = e.target.closest('.note'), d = e.target.closest('[data-key]');
+  const was = playing; pause();
+  if (n) {                                                // a syllable's note: pitch, or length by its right edge
+    const t = S.turns[n._n.ti], q = t.say, len = e.target.classList.contains('ng');
+    const key = len ? 'rhythm' : 'melody', arr = q.sylls.map(s => len ? s.len : s.semi);
+    selected = null; track.querySelectorAll('.sel').forEach(m => m.classList.remove('sel')); showSel();
+    drag = { note: n._n, len, path: ['turns', t.index, key], arr, before: q[key], last: q[key], x0: e.clientX, y0: e.clientY, was, per: (ROLL - 16) / (rollHi - rollLo) };
+    new Audio(`/audio?rev=${S.rev}`);                    // warm the cache so the change can be heard quickly
+  } else if (d) {
+    selected = d.dataset.key; track.querySelectorAll('[data-key]').forEach(m => m.classList.toggle('sel', m.dataset.key === selected));
     showSel();
     drag = { m: d._m, x0: e.clientX, start: d._m.value, last: d._m.value, was };
   } else {
-    pause(); selected = null; track.querySelectorAll('.sel').forEach(n => n.classList.remove('sel')); showSel();
+    selected = null; track.querySelectorAll('.sel').forEach(m => m.classList.remove('sel')); showSel();
     drag = { scrub: true }; scrubTo(e);
   }
   e.preventDefault();
 });
-const scrubTo = e => setF((e.clientX - scroll.getBoundingClientRect().left + scroll.scrollLeft - PAD) / ppf, true);
+const scrubTo = e => setF(frameOf((e.clientX - scroll.getBoundingClientRect().left + scroll.scrollLeft - PAD) / pps), true);
 addEventListener('pointermove', e => {
   if (!drag) return;
   if (drag.scrub) return scrubTo(e);
-  const v = Math.min(Math.max(drag.start + Math.round((e.clientX - drag.x0) / ppf), drag.m.lo), drag.m.hi);
+  if (drag.note) {
+    const arr = drag.arr.slice(), i = drag.note.i;
+    if (drag.len) arr[i] = Math.max(0.25, drag.arr[i] + snap((e.clientX - drag.x0) / pps, e));
+    else {
+      const want = drag.arr[i] - (e.clientY - drag.y0) / drag.per;
+      arr[i] = e.altKey ? Math.round(want) : scaleNotes().reduce((a, b) => Math.abs(b - want) < Math.abs(a - want) ? b : a);
+    }
+    if (!same(arr, drag.last)) { drag.last = arr; patch(drag.path, arr); }
+    return;
+  }
+  const v = Math.min(Math.max(drag.start + snap((e.clientX - drag.x0) / pps, e), drag.m.lo), drag.m.hi);
   if (v !== drag.last) { drag.last = v; patch(drag.m.path, v); }
 });
 addEventListener('pointerup', async () => {
   if (!drag) return;
   const d = drag; drag = null;
   if (d.scrub) return;
-  commit(d.m, d.start, d.last);
   while (sending) await new Promise(r => setTimeout(r, 20));
+  if (d.note) { commit(d.path, d.before, d.last); build(); if (!same(d.before, d.last)) hear(d.note.ti); return; }
+  commit(d.m.path, d.start, d.last);
   build();
   if (d.was && d.start !== d.last) play(true);
 });
-$('selv').addEventListener('change', () => { const d = showSel(); if (!d) return; const v = Math.min(Math.max(+$('selv').value | 0, d._m.lo), d._m.hi); commit(d._m, d._m.value, v); patch(d._m.path, v); $('selv').blur(); });
+async function hear(ti) {                                 // after changing a note, play that line back
+  const t = S.turns[ti]; if (!t || !t.say) return;
+  loop = false; $('loop').classList.remove('on');
+  setF(frameOf(t.start + Math.max(0, t.say.at - 1))); await play(); stopAt = frameOf(t.start + t.say.at + t.say.reveal + 2);
+}
+$('selv').addEventListener('change', () => { const d = showSel(); if (!d) return; const v = Math.min(Math.max(+$('selv').value || 0, d._m.lo), d._m.hi); commit(d._m.path, d._m.value, v); patch(d._m.path, v); $('selv').blur(); });
 async function step(from, to) {
   const op = from.pop(); if (!op) return;
   pause(); to.push(op); selected = JSON.stringify(op.path);
   await patch(op.path, from === undo ? op.before : op.after);
 }
 $('undo').onclick = () => step(undo, redo); $('redo').onclick = () => step(redo, undo);
-$('save').onclick = async () => { try { S = (await api('/save', {})).state; build(); toast('Saved ' + S.file); } catch (e) { toast(e.message, true); } };
+$('save').onclick = async () => { try { S = (await api('/save', {})).state; build(); toast('Saved'); } catch (e) { toast(e.message, true); } };
 $('render').onclick = async () => {
   pause(); $('spin').style.display = 'block'; $('render').disabled = true;
   try { const r = await api('/render', {}); toast('Rendered ' + r.file + '\nClick to open.', false, () => open('/video?t=' + Date.now())); } catch (e) { toast(e.message, true); }
@@ -294,19 +365,49 @@ async function openScene(dir) {
   dropFrames(0); undo = []; redo = []; selected = null; F = 0; fit(); build(); scroll.scrollLeft = 0;
 }
 $('prev').onclick = () => openScene(-1); $('next').onclick = () => openScene(1);
-$('xray').onclick = () => { xray = !xray; $('xray').classList.toggle('on', xray); dropFrames(0); pump(); };
+$('xray').onclick = () => { xray = !xray; $('xray').classList.toggle('on', xray); dropFrames(0); fill(); };
+
+// ---- tuning panel: sliders for the small details and for every sound -------------------------
+function buildTune() {
+  const row = (group, name, p) => `<label class="row" title="${p.tip}"><span>${p.key.replace(/_/g, ' ')}</span><input type="range" min="${p.min}" max="${p.max}" step="${p.step}" value="${p.value}" data-g="${group}" data-n="${name}" data-k="${p.key}"><span>${num(p.value)}</span></label>`;
+  $('tune').innerHTML = `<h4 title="How things move">${ICON.feel}motion</h4>` + S.feel.map(p => row('feel', '', p)).join('') +
+    S.sounds.map(s => `<h4 class="snd" data-snd="${s.name}" title="Click to hear it">${ICON.snd}${s.name}</h4>` + s.params.map(p => row('sounds', s.name, p)).join('')).join('');
+}
+let tuneT = 0, tuneQ = null, tuning = false;
+async function sendTune() {
+  if (tuning || !tuneQ) return; tuning = true;
+  while (tuneQ) {
+    const q = tuneQ; tuneQ = null;
+    try { const r = await api('/tune', q); dropFrames(0); S = r.state; build(); } catch (e) { toast(e.message, true); }
+  }
+  tuning = false;
+}
+$('tune').addEventListener('input', e => {
+  const d = e.target.dataset; if (!d.k) return;
+  e.target.nextElementSibling.textContent = num(+e.target.value);
+  tuneQ = { group: d.g, name: d.n, key: d.k, value: +e.target.value };
+  clearTimeout(tuneT); tuneT = setTimeout(sendTune, 50);
+});
+$('tune').addEventListener('change', async e => {         // let go of a sound's slider: hear the result
+  const d = e.target.dataset; if (d.g !== 'sounds') return;
+  clearTimeout(tuneT); await sendTune(); while (tuning) await new Promise(r => setTimeout(r, 20));
+  new Audio(`/sfx?name=${encodeURIComponent(d.n)}&t=${Date.now()}`).play().catch(() => {});
+});
+$('tune').addEventListener('click', e => { const h = e.target.closest('[data-snd]'); if (h) new Audio(`/sfx?name=${encodeURIComponent(h.dataset.snd)}&t=${Date.now()}`).play().catch(() => {}); });
+$('tuneb').onclick = () => { const on = $('tune').style.display !== 'block'; if (on) buildTune(); $('tune').style.display = on ? 'block' : 'none'; $('stage').style.paddingRight = on ? '298px' : '14px'; $('tuneb').classList.toggle('on', on); };
 
 // ---- playback: audio is the clock; if the next frame is not ready, wait for it ---------------
+let stopAt = null;
 const now = () => muted ? clockBase + (performance.now() - clock0) / 1000 : audio.currentTime;
 const seek = f => { clockBase = f / S.fps; clock0 = performance.now(); if (!muted) audio.currentTime = f / S.fps; };
 async function ready(f) {
-  const end = Math.min(f + 24, range[1]);
-  for (;;) { let ok = true; for (let i = f; i < end; i++) if (!frames.has(i)) { ok = false; break; } if (ok || !playing) return; await new Promise(r => setTimeout(r, 40)); }
+  const end = Math.min(f + 45, range[1]);
+  for (;;) { let ok = true; for (let i = f; i < end; i++) if (!have(i)) { ok = false; break; } if (ok || !playing) return; await new Promise(r => setTimeout(r, 40)); }
 }
 async function play(fromRangeStart) {
   if (playing) return;
-  playing = true; $('play').innerHTML = ICON.pause;
-  const t = turnAt(F); range = loop ? [t.start, t.start + t.length] : [0, S.total];
+  playing = true; stopAt = null; $('play').innerHTML = ICON.pause;
+  range = loop ? turnFrames(turnAt(F)) : [0, S.total];
   if (fromRangeStart === true || F >= range[1] - 1) setF(range[0]);
   if (audioRev !== S.rev) {
     audioRev = S.rev;                      // fetched whole, so the browser can seek anywhere in it
@@ -317,7 +418,7 @@ async function play(fromRangeStart) {
       await new Promise(r => { audio.oncanplaythrough = r; audio.onerror = r; setTimeout(r, 1500); });
     } catch (e) {}
   }
-  $('spin').style.display = 'block'; pump(); await ready(F); $('spin').style.display = 'none';
+  $('spin').style.display = 'block'; fill(); await ready(F); $('spin').style.display = 'none';
   if (!playing) return;
   seek(F);
   try { muted = false; await audio.play(); } catch (e) { muted = true; seek(F); }
@@ -327,9 +428,10 @@ function pause() { if (!playing) return; playing = false; stalled = false; audio
 function tick() {
   if (!playing || stalled) return;
   let f = Math.max(Math.floor(now() * S.fps + 0.001), range[0]);
+  if (stopAt !== null && f >= stopAt) { pause(); return setF(Math.min(stopAt, S.total - 1)); }
   if (f >= range[1]) { if (!loop) { pause(); return setF(range[1] - 1); } f = range[0]; seek(f); }
-  if (!frames.has(f)) {
-    stalled = true; audio.pause(); $('spin').style.display = 'block'; F = f; pump();
+  if (!have(f)) {
+    stalled = true; audio.pause(); $('spin').style.display = 'block'; F = f; fill();
     return ready(f).then(() => { $('spin').style.display = 'none'; if (!playing) return; stalled = false; seek(f); if (!muted) audio.play().catch(() => { muted = true; seek(f); }); requestAnimationFrame(tick); });
   }
   if (f !== F) setF(f);
@@ -339,32 +441,33 @@ $('play').onclick = () => playing ? pause() : play();
 $('loop').onclick = () => { loop = !loop; $('loop').classList.toggle('on', loop); if (playing) { pause(); play(); } };
 
 // ---- view: wheel scrolls the timeline, Ctrl/Cmd+wheel (or pinch) zooms about the pointer ------
-const fit = () => { ppf = Math.max(1, (scroll.clientWidth - 2 * PAD) / S.total); };
+const fit = () => { pps = Math.max(2, (scroll.clientWidth - 2 * PAD) / S.steps); };
 scroll.addEventListener('wheel', e => {
   e.preventDefault();
   if (e.ctrlKey || e.metaKey) {
-    const mx = e.clientX - scroll.getBoundingClientRect().left, f = (mx + scroll.scrollLeft - PAD) / ppf;
-    ppf = Math.min(Math.max(ppf * Math.exp(-e.deltaY * 0.004), Math.min(1, (scroll.clientWidth - 2 * PAD) / S.total)), 28);
-    build(); scroll.scrollLeft = x(f) - mx; drawRuler();
+    const mx = e.clientX - scroll.getBoundingClientRect().left, s = (mx + scroll.scrollLeft - PAD) / pps;
+    pps = Math.min(Math.max(pps * Math.exp(-e.deltaY * 0.004), Math.min(2, (scroll.clientWidth - 2 * PAD) / S.steps)), 120);
+    build(); scroll.scrollLeft = x(s) - mx; drawRuler();
   } else scroll.scrollLeft += Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
 }, { passive: false });
 scroll.addEventListener('scroll', drawRuler);
 addEventListener('resize', drawRuler);
 addEventListener('keydown', e => {
-  if (e.target === $('selv') && !(e.ctrlKey || e.metaKey)) { if (e.key === 'Escape') $('selv').blur(); return; }
+  if (e.target.tagName === 'INPUT' && !(e.ctrlKey || e.metaKey)) { if (e.key === 'Escape') e.target.blur(); return; }
   const mod = e.ctrlKey || e.metaKey, k = e.key, low = k.toLowerCase();
   if (k === ' ') { playing ? pause() : play(); }
   else if (mod && low === 's') $('save').click();
   else if (mod && low === 'z') step(e.shiftKey ? redo : undo, e.shiftKey ? undo : redo);
   else if (low === 'l') $('loop').click();
   else if (low === 'x') $('xray').click();
+  else if (low === 't') $('tuneb').click();
   else if (k === '[') openScene(-1);
   else if (k === ']') openScene(1);
   else if ((k === 'ArrowLeft' || k === 'ArrowRight') && e.altKey) {
-    const d = showSel(); if (!d) return; const v = Math.min(Math.max(d._m.value + (k === 'ArrowLeft' ? -1 : 1) * (e.shiftKey ? 5 : 1), d._m.lo), d._m.hi);
-    commit(d._m, d._m.value, v); patch(d._m.path, v);
+    const d = showSel(); if (!d) return; const v = Math.min(Math.max(d._m.value + (k === 'ArrowLeft' ? -0.25 : 0.25), d._m.lo), d._m.hi);
+    commit(d._m.path, d._m.value, v); patch(d._m.path, v);
   }
-  else if (k === 'ArrowLeft' || k === 'ArrowRight') { pause(); setF(F + (k === 'ArrowLeft' ? -1 : 1) * (e.shiftKey ? 10 : 1)); }
+  else if (k === 'ArrowLeft' || k === 'ArrowRight') { pause(); const dir = k === 'ArrowLeft' ? -1 : 1; setF(e.shiftKey ? frameOf(Math.round(stepsOf(F)) + dir) : F + dir); }
   else if (k === 'Home') { pause(); setF(0); }
   else if (k === 'End') { pause(); setF(S.total - 1); }
   else return;

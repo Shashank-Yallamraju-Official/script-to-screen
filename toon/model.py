@@ -1,10 +1,17 @@
-"""The turn-based model. Script + entity files -> what an observer can see at every frame.
+"""The turn-based model. Script + entity files -> what an observer can see and hear at any moment.
 
 Three layers, none of which draws anything:
   felt state   what an entity feels (emotion + intensity), written per turn, shared vocabulary
   tells        each entity's own ordered list of how an emotion leaks out
   position     side and status in the room decide how far the valve opens (gain)
 Deliberate actions (`do`) set the baseline; tells are laid over it.
+
+Time is counted in steps of the tempo grid (a sixteenth note by default), so every pause,
+hold and syllable lands on the beat unless it is deliberately nudged off it.
+
+Scenes are read in path order (episodes/<season>/<episode>/<scene>.yaml). What an entity
+feels and its standing carry from the end of one scene into the next; nothing resets unless
+the next scene says what happened `offscreen`.
 """
 import math
 from pathlib import Path
@@ -16,8 +23,8 @@ from . import speech
 SLOTS = 9                                   # the stage is one line of nine places
 ZONES = {"intimate": 1, "personal": 2, "social": 3, "public": 4}   # distance in slots
 POSTURE = {"upright": (1.0, 1.0, 0), "contracted": (1.12, 0.8, 0), "lean_in": (1.0, 1.0, 1), "lean_back": (1.0, 1.0, -1)}
-NUMERIC = ("slot", "facing", "lx", "ly", "sx", "sy", "lean", "alpha")
 TELL_KEYS = {"attention", "orient", "distance", "posture", "tone", "latency"}
+LIBRARY = ("tones", "sounds", "feel")
 
 
 class ScriptError(Exception):
@@ -37,6 +44,20 @@ def find_root(path):
     raise ScriptError("no show.yaml above " + str(path))
 
 
+def scene_paths(root):
+    return sorted((Path(root) / "episodes").rglob("*.yaml"))
+
+
+def carry_into(path, root, lib=None):
+    """What every entity brings into this scene: the end state of all the scenes before it."""
+    carry = {}
+    for p in scene_paths(root):
+        if p == path:
+            break
+        carry = Scene(p, lib=lib, carry=carry).carry_out
+    return carry
+
+
 def sgn(v):
     return (v > 0) - (v < 0)
 
@@ -46,11 +67,18 @@ def smooth(k):
     return k * k * (3 - 2 * k)
 
 
+def back(k, amount):
+    """Ease out that swings past its mark by `amount` and settles."""
+    k, c = max(0.0, min(1.0, k)), 1.70158 * amount
+    return 1 + (c + 1) * (k - 1) ** 3 + c * (k - 1) ** 2
+
+
 class Show:
-    def __init__(self, root):
+    def __init__(self, root, lib=None):
         self.root = root
         self.cfg = load_yaml(root / "show.yaml")
-        self.tones = load_yaml(root / "library/tones.yaml")
+        for name in LIBRARY:                 # the editor passes its unsaved copies in `lib`
+            setattr(self, name, (lib or {}).get(name) or load_yaml(root / "library" / f"{name}.yaml"))
         self.emotions = self.cfg["emotions"]
 
     def entity(self, eid, scene_key):
@@ -68,16 +96,20 @@ class Show:
 
 
 class Scene:
-    def __init__(self, path, script=None):
+    def __init__(self, path, script=None, lib=None, carry=None):
         self.path = Path(path).resolve()
         self.root = find_root(self.path)
-        self.show = Show(self.root)
+        carry = carry_into(self.path, self.root, lib) if carry is None else carry
+        self.carry = {e: dict(v) for e, v in carry.items()}
+        self.show = Show(self.root, lib)
         cfg = self.show.cfg
         self.W, self.H, self.fps = cfg["width"], cfg["height"], cfg["fps"]
         self.key = self.path.relative_to(self.root / "episodes").with_suffix("").as_posix()
         self.script = script if script is not None else load_yaml(self.path)
         self.title = str(self.script.get("scene", self.path.stem))
-        self.problems, self.ents, self.keys, self.turns, self.lines = [], {}, {}, [], []
+        self.tempo = float(self.script.get("tempo", cfg["tempo"]))
+        self.step = 60.0 / self.tempo / cfg["steps_per_beat"]          # seconds per step
+        self.problems, self.ents, self.keys, self.turns, self.lines, self.events = [], {}, {}, [], [], []
         self._build()
 
     def flag(self, level, turn, msg):
@@ -165,9 +197,25 @@ class Scene:
                           latency=expr.get("latency", 0), info=info)
         return obs
 
-    # ---- the script, turn by turn -------------------------------------------------------------
+    # ---- the script, turn by turn (all times here are in steps) --------------------------------
     def _build(self):
-        T, st, t0 = self.show.cfg["timing"], {}, 0
+        T, st, t0, sec = self.show.cfg["timing"], {}, 0.0, self.step
+        self.carried = {e: v["felt"] for e, v in self.carry.items() if v.get("felt")}   # as the last scene left it
+        self.offscreen = []
+        for ev in self.script.get("offscreen") or []:       # what happened between scenes, unseen
+            if not str(ev.get("why") or "").strip():
+                self.flag("error", None, "an `offscreen` event has no `why`")
+            for e, f in (ev.get("feel") or {}).items():
+                felt = None
+                if f not in (None, "calm"):
+                    emo = next(k for k in f if k != "at")
+                    if emo not in self.show.emotions:
+                        self.flag("error", None, f"offscreen: '{emo}' is not in the show's emotion list")
+                    felt = (emo, f[emo], f.get("at"))
+                self.carry.setdefault(e, {})["felt"] = felt
+            for e, v in (ev.get("status") or {}).items():
+                self.carry.setdefault(e, {})["status"] = v
+            self.offscreen.append(str(ev.get("why") or ""))
         for i, raw in enumerate(self.script.get("turns") or []):
             tid = raw.get("id", i + 1)
             if not str(raw.get("why") or "").strip():
@@ -178,7 +226,8 @@ class Scene:
                 self.keys.setdefault(e, [])
                 st[e] = dict(present=True, slot=spec["slot"], orient=spec.get("orient", "out"),
                              attention=spec.get("attention", "ahead"), posture=spec.get("posture", "upright"),
-                             side=None, status=self.ents[e].get("status", 1), felt=None)
+                             side=None, status=self.carry.get(e, {}).get("status", self.ents[e].get("status", 1)),
+                             felt=self.carry.get(e, {}).get("felt"))
 
             def need(e):
                 if e not in st:
@@ -219,8 +268,9 @@ class Scene:
                 else:
                     feel(e, f)
             a = self._observe(st, tid)
-            pause, hold, say_at, reveal, react = int(raw.get("pause", T["pause"])), int(raw.get("hold", T["hold"])), 0, 0, 0
-            line = None
+            pause, hold = float(raw.get("pause", T["pause"])), float(raw.get("hold", T["hold"]))
+            say_at = reveal = react = 0.0
+            line, sylls = None, []
             if say:
                 if who not in st:
                     raise ScriptError(f"turn {tid}: `say` needs `who` to be an entity in the scene")
@@ -228,57 +278,105 @@ class Scene:
                 if tone not in self.show.tones:
                     self.flag("error", tid, f"unknown tone '{tone}'")
                     tone = "neutral"
-                times, dur = speech.schedule(str(say), self.show.tones[tone]["cps"], self.fps)
-                say_at, reveal = pause + a[who]["latency"], math.ceil(dur)
+                n = len(speech.syllables(say))
+                rhythm, melody = raw.get("rhythm"), raw.get("melody")
+                for name, v in (("rhythm", rhythm), ("melody", melody)):
+                    if v is not None and len(v) != n:
+                        self.flag("error", tid, f"`{name}` has {len(v)} entries but the line has {n} syllables")
+                rhythm = list(rhythm) if rhythm is not None and len(rhythm) == n else None
+                melody = list(melody) if melody is not None and len(melody) == n else None
+                sylls = speech.plan(say, self.show.tones[tone], self.show.cfg["scale"], rhythm, melody)
+                say_at = pause + a[who]["latency"]
+                reveal = sum(s["len"] for s in sylls)
                 react = say_at + reveal
-                line = dict(who=who, text=str(say), tone=tone, start=t0 + say_at, times=times, reveal=reveal)
-            length = (react if say else T["settle"]) + hold
+                line = dict(who=who, text="".join(s["text"] for s in sylls), tone=tone, start=(t0 + say_at) * sec,
+                            sylls=[dict(text=s["text"], start=(t0 + say_at + s["at"]) * sec, dur=s["len"] * sec, semi=s["semi"])
+                                   for s in sylls])
+            length = (react if say else float(T["settle"])) + hold
             for e, o in a.items():
-                self.keys[e].append((t0, o))
+                self.keys[e].append((t0 * sec, o))
             b = a
             if late:
                 for e, f in late.items():
                     feel(e, f)
                 b = self._observe(st, tid)
                 for e, o in b.items():
-                    self.keys[e].append((t0 + react, o))
+                    self.keys[e].append(((t0 + react) * sec, o))
             if line:
-                line["end"] = t0 + length
+                line["end"] = (t0 + length) * sec
                 self.lines.append(line)
+                self.events.append((line["start"], "bubble", who))
+            for fx in raw.get("sfx") or []:          # explicit sounds: [{at: steps, sound: name}]
+                self.events.append(((t0 + float(fx.get("at", 0))) * sec, str(fx["sound"]), None))
             self.turns.append(dict(id=tid, index=i, start=t0, length=length, who=who, why=str(raw.get("why") or ""),
                                    pause=pause, hold=hold, latency=a[who]["latency"] if say else 0, say_at=say_at,
-                                   reveal=reveal, react=react if late else 0, line=line,
+                                   reveal=reveal, react=react if late else 0, line=line, sylls=sylls,
+                                   rhythm=raw.get("rhythm"), melody=raw.get("melody"),
                                    relies_on=raw.get("relies_on") or {},
                                    info=[(0, {e: o["info"] for e, o in a.items()})] +
                                         ([(react, {e: o["info"] for e, o in b.items()})] if late else [])))
             t0 += length
-        self.total = t0
         if not self.turns:
             raise ScriptError("the scene has no turns")
+        self.carry_out = dict(self.carry)                    # entities not in this scene pass through untouched
+        for e, s in st.items():
+            self.carry_out[e] = dict(felt=s["felt"], status=s["status"])
+        self.steps = t0
+        self.dur = t0 * sec
+        self.total = max(1, round(self.dur * self.fps))
+        # every visible change is also an event that can make a sound
+        for e, ks in self.keys.items():
+            prev = None
+            for t, o in ks:
+                if prev is None or o["alpha"] != prev["alpha"]:
+                    if (prev is not None or o["alpha"]) and t > 1e-9:     # already there when a scene opens: no sound
+                        self.events.append((t, "enter" if o["alpha"] else "exit", e))
+                elif o["alpha"]:
+                    turned = o["facing"] != prev["facing"]
+                    if o["slot"] != prev["slot"]:
+                        self.events.append((t, "move", e))
+                    if turned:
+                        self.events.append((t, "turn", e))
+                    elif (o["lx"], o["ly"]) != (prev["lx"], prev["ly"]):
+                        self.events.append((t, "look", e))
+                    if (o["sx"], o["sy"], o["lean"]) != (prev["sx"], prev["sy"], prev["lean"]):
+                        self.events.append((t, "posture", e))
+                    f0, f1 = prev["info"], o["info"]
+                    if f1["felt"] and (f1["felt"], f1["intensity"]) != (f0["felt"], f0["intensity"]):
+                        self.events.append((t, "feel." + f1["felt"], e))
+                prev = o
+        self.events.sort(key=lambda ev: ev[0])
 
-    # ---- reading it back ----------------------------------------------------------------------
-    def turn_at(self, F):
-        for t in self.turns:
-            if t["start"] <= F < t["start"] + t["length"]:
-                return t
+    # ---- reading it back (times in seconds) ----------------------------------------------------
+    def turn_at(self, t):
+        s = t / self.step
+        for turn in self.turns:
+            if turn["start"] <= s < turn["start"] + turn["length"]:
+                return turn
         return self.turns[-1]
 
-    def line_at(self, F):
+    def line_at(self, t):
         for ln in self.lines:
-            if ln["start"] <= F < ln["end"]:
+            if ln["start"] <= t < ln["end"]:
                 return ln
         return None
 
-    def state(self, e, F):
-        """What entity e looks like at frame F, easing from its previous snapshot."""
-        ks = self.keys[e]
-        idx = max((i for i, (f, _) in enumerate(ks) if f <= F), default=None)
+    def state(self, e, t):
+        """What entity e looks like at time t, easing from its previous snapshot."""
+        ks, feel = self.keys[e], self.show.feel
+        idx = max((i for i, (kt, _) in enumerate(ks) if kt <= t + 1e-9), default=None)
         if idx is None:
             return None
-        f1, cur = ks[idx]
-        prev = ks[idx - 1][1] if idx else dict(cur, alpha=0.0) if f1 else cur     # already there when a scene opens
-        k = smooth((F - f1) / self.show.cfg["timing"]["ease"])
+        t1, cur = ks[idx]
+        prev = ks[idx - 1][1] if idx else dict(cur, alpha=0.0) if t1 > 1e-9 else cur   # already there when a scene opens
+        u = max(0.0, min(1.0, (t - t1) / max(float(feel["ease"]), 1e-3)))
+        soft, swing = smooth(u), back(u, float(feel["overshoot"]))
         out = dict(cur)
-        for n in NUMERIC:
-            out[n] = prev[n] + (cur[n] - prev[n]) * k
+        for n in ("facing", "lx", "ly", "alpha"):
+            out[n] = prev[n] + (cur[n] - prev[n]) * soft
+        for n in ("slot", "sx", "sy", "lean"):
+            out[n] = prev[n] + (cur[n] - prev[n]) * swing
+        pulse = math.sin(math.pi * u) if u < 1 else 0.0
+        out["flip"] = pulse if cur["facing"] != prev["facing"] else 0.0       # mid-turn, thin as paper
+        out["travel"] = pulse if cur["slot"] != prev["slot"] else 0.0         # stretched while moving
         return out

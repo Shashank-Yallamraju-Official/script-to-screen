@@ -1,4 +1,7 @@
 scene: The vase
+offscreen:
+  - feel: {otis: calm, juno: calm}
+    why: A day has passed. The dumpling is forgiven, or at least not mentioned.
 turns:
   - id: 1
     enter: {juno: {slot: 2}, bix: {slot: 3}, otis: {slot: 6}}
@@ -25,4 +28,4 @@ turns:
 
   - id: 5
     why: He holds still. With two watching, even full shame does not turn him away.
-    hold: 45
+    hold: 12

@@ -1,8 +1,9 @@
 kind: person
 color: "#e0a92e"
-voice: 300
+voice: 196
+timbre: tri
 status: 1
 tells:
-  shame: [{attention: down}, {tone: nervous, latency: 18}, {orient: away}]
+  shame: [{attention: down}, {tone: nervous, latency: 5}, {orient: away}]
   joy:   [{tone: cheerful}, {posture: lean_in}]
   fear:  [{distance: 1}, {posture: lean_back}]

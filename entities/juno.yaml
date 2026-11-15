@@ -1,11 +1,11 @@
 kind: person        # free text, never drawn. An entity is anything that can think, act and feel.
 color: "#d95f43"
-voice: 560          # blip pitch in Hz
+voice: 392          # the pitch of its voice in Hz; add `timbre: sine | tri | square`
 status: 1           # standing in a room; a scene can override it
 # How each feeling leaks out, in order. The first entry is the last to be suppressed.
 # Channels: attention (down, up, viewer, source, away), orient (toward, away, out),
 # distance (slots: negative approaches, positive retreats), posture (contracted, lean_in,
-# lean_back), tone (see library/tones.yaml), latency (extra frames before speaking).
+# lean_back), tone (see library/tones.yaml), latency (extra steps before speaking).
 tells:
   joy:   [{tone: teasing}, {posture: lean_in}, {distance: -1}]
   anger: [{tone: deadpan}, {attention: source}, {distance: -1}]

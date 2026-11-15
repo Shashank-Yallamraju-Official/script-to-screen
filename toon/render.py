@@ -2,8 +2,8 @@
 
     python -m toon.render episodes/pilot/scene01.yaml
     python -m toon.render --all
-    python -m toon.render episodes/pilot/scene01.yaml --still 2:40   # turn 2, frame 40, as a PNG
-    --xray shows the director's view (felt against shown, weight in the room); --slate adds turn and frame
+    python -m toon.render episodes/pilot/scene01.yaml --still 2:6    # turn 2, six steps in, as a PNG
+    --xray shows the director's view (felt against shown, weight in the room); --slate adds turn and step
 
 A scene with errors (a turn with no `why`, a feeling with no tell, a payoff the audience
 cannot decode yet) does not render.
@@ -48,10 +48,9 @@ def render(scene, xray=False, slate=False):
     ff.stdin.close()
     if ff.wait() != 0:
         sys.exit("ffmpeg failed")
-    speech.write_blips(scene.lines, scene.show.tones, {e: ent["voice"] for e, ent in scene.ents.items()},
-                       scene.fps, scene.total, str(wav))
+    wav.write_bytes(speech.mix(scene))
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(silent), "-i", str(wav), "-map", "0:v", "-map", "1:a",
-                    "-c:v", "copy", "-c:a", "aac", "-b:a", "128k", "-shortest", str(tmp)], check=True)
+                    "-c:v", "copy", "-c:a", "aac", "-b:a", "160k", "-shortest", str(tmp)], check=True)
     os.replace(tmp, out)
     silent.unlink()
     wav.unlink()
@@ -62,31 +61,45 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("scene", nargs="?")
     ap.add_argument("--all", action="store_true")
+    ap.add_argument("--episode", help="a folder under episodes/, e.g. s01/e01: render its scenes and join them")
     ap.add_argument("--still")
     ap.add_argument("--xray", action="store_true")
     ap.add_argument("--slate", action="store_true")
     a = ap.parse_args()
     root = find_root(Path(a.scene).resolve() if a.scene else Path.cwd())
+    if a.episode:
+        a.all = False
     _, problems = ledger.build(root)
-    paths = ledger.scene_paths(root) if a.all else [Path(a.scene).resolve()]
+    paths = (ledger.scene_paths(root) if a.all else
+             sorted((root / "episodes" / a.episode).rglob("*.yaml")) if a.episode else [Path(a.scene).resolve()])
+    if not paths:
+        sys.exit("no scenes found")
     scenes = [Scene(p) for p in paths]
-    errors = [p for p in problems if p["level"] == "error" and (a.all or p["scene"] in {s.key for s in scenes} | {s.path.stem for s in scenes})]
+    mine = {s.key for s in scenes} | {s.path.stem for s in scenes}
     for p in problems:
         print(f"{p['level']}: {p['scene']}" + (f" turn {p['turn']}" if p.get("turn") is not None else "") + f": {p['msg']}", file=sys.stderr)
-    if errors:
+    if any(p["level"] == "error" and (a.all or p["scene"] in mine) for p in problems):
         sys.exit("not rendered: fix the errors above")
     for sc in scenes:
         if a.still:
-            tid, f = a.still.split(":")
+            tid, steps = a.still.split(":")
             turn = next(t for t in sc.turns if str(t["id"]) == tid)
+            F = round((turn["start"] + float(steps)) * sc.step * sc.fps)
             surface = skia.Surface(sc.W, sc.H)
-            draw_frame(surface.getCanvas(), sc, turn["start"] + int(f), a.xray, a.slate)
-            png = out_path(sc).with_name(f"{sc.path.stem}_t{tid}_{int(f):03d}.png")
+            draw_frame(surface.getCanvas(), sc, F, a.xray, a.slate)
+            png = out_path(sc).with_name(f"{sc.path.stem}_t{tid}_{steps}.png")
             png.parent.mkdir(parents=True, exist_ok=True)
             surface.makeImageSnapshot().save(str(png), skia.kPNG)
             print(png)
         else:
-            print(render(sc, a.xray, a.slate), f"{sc.total} frames, {sc.total / sc.fps:.1f}s")
+            print(render(sc, a.xray, a.slate), f"{sc.dur:.1f}s")
+    if a.episode and not a.still:                        # same encoder settings throughout, so the join is lossless
+        listing = root / "out" / (a.episode + ".txt")
+        listing.write_text("".join(f"file '{out_path(sc)}'\n" for sc in scenes))
+        joined = root / "out" / (a.episode + ".mp4")
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(listing), "-c", "copy", str(joined)], check=True)
+        listing.unlink()
+        print(joined)
 
 
 if __name__ == "__main__":
