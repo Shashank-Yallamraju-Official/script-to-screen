@@ -14,6 +14,7 @@ feels and its standing carry from the end of one scene into the next; nothing re
 the next scene says what happened `offscreen`.
 """
 import math
+import re
 from pathlib import Path
 
 import yaml
@@ -221,6 +222,7 @@ class Scene:
             if not str(raw.get("why") or "").strip():
                 self.flag("error", tid, "no `why`: every turn must say why it happens")
             who, say = raw.get("who"), raw.get("say") or raw.get("sing")      # `sing:` is a line that is sung
+            bubbles = []
             for e, spec in (raw.get("enter") or {}).items():
                 self.ents[e] = self.show.entity(e, self.key)
                 self.keys.setdefault(e, [])
@@ -278,6 +280,15 @@ class Scene:
                 if tone not in self.show.tones:
                     self.flag("error", tid, f"unknown tone '{tone}'")
                     tone = "neutral"
+                # One bubble holds one beat, and a pause is what separates beats. A line breaks into
+                # bubbles wherever the speaker pauses for `bubble_break` steps or more (a full stop
+                # does; a comma does not). A list (say: [Ha, ha, ha]) breaks exactly where it says.
+                parts = [str(x) for x in say] if isinstance(say, (list, tuple)) else None
+                say = " ".join(parts) if parts else str(say)
+                cuts, k = set(), 0
+                for part in parts or []:
+                    k += len(speech.syllables(part))
+                    cuts.add(k)
                 n = len(speech.syllables(say))
                 rhythm, melody, stress = raw.get("rhythm"), raw.get("melody"), raw.get("stress")
                 for name, v in (("rhythm", rhythm), ("melody", melody), ("stress", stress)):
@@ -286,13 +297,24 @@ class Scene:
                 rhythm = list(rhythm) if rhythm is not None and len(rhythm) == n else None
                 melody = list(melody) if melody is not None and len(melody) == n else None
                 stress = list(stress) if stress is not None and len(stress) == n else None
-                sylls = speech.plan(say, self.show.tones[tone], self.show.cfg["scale"], rhythm, melody, stress)
+                gap = float(T.get("bubble_break", 2))
+                sylls = speech.plan(say, self.show.tones[tone], self.show.cfg["scale"], rhythm, melody, stress, cuts, gap)
                 say_at = pause + a[who]["latency"]
                 reveal = sum(s["len"] for s in sylls)
                 react = say_at + reveal
-                line = dict(who=who, text="".join(s["text"] for s in sylls), tone=tone, sung="sing" in raw, start=(t0 + say_at) * sec,
-                            sylls=[dict(text=s["text"], start=(t0 + say_at + s["at"]) * sec, dur=s["len"] * sec, voiced=(s["len"] - s["rest"]) * sec, semi=s["semi"], stress=s["stress"])
-                                   for s in sylls])
+                b = 0
+                for k, s in enumerate(sylls):
+                    s["bubble"] = b
+                    ends = (k + 1) in cuts if parts else s["rest"] >= gap
+                    if ends and k < len(sylls) - 1:
+                        b += 1
+                span = (min(s["semi"] for s in sylls), max(s["semi"] for s in sylls))
+                line = dict(text="".join(s["text"] for s in sylls), tone=tone, sung="sing" in raw)
+                bubbles = [dict(who=who, tone=tone, sung="sing" in raw, range=span,
+                                text="".join(s["text"] for s in sylls if s["bubble"] == g).strip(),
+                                sylls=[dict(text=s["text"], start=(t0 + say_at + s["at"]) * sec, dur=s["len"] * sec,
+                                            voiced=(s["len"] - s["rest"]) * sec, semi=s["semi"], stress=s["stress"])
+                                       for s in sylls if s["bubble"] == g]) for g in range(b + 1)]
             length = (react if say else float(T["settle"])) + hold
             for e, o in a.items():
                 self.keys[e].append((t0 * sec, o))
@@ -304,9 +326,11 @@ class Scene:
                 for e, o in b.items():
                     self.keys[e].append(((t0 + react) * sec, o))
             if line:
-                line["end"] = (t0 + length) * sec
-                self.lines.append(line)
-                self.events.append((line["start"], "bubble", who))
+                for g, bub in enumerate(bubbles):            # each bubble gives way to the next
+                    bub["start"] = bub["sylls"][0]["start"]
+                    bub["end"] = bubbles[g + 1]["sylls"][0]["start"] if g + 1 < len(bubbles) else (t0 + length) * sec
+                    self.lines.append(bub)
+                    self.events.append((bub["start"], "bubble", who))
             for fx in raw.get("sfx") or []:          # explicit sounds: [{at: steps, sound: name}]
                 self.events.append(((t0 + float(fx.get("at", 0))) * sec, str(fx["sound"]), None))
             self.turns.append(dict(id=tid, index=i, start=t0, length=length, who=who, why=str(raw.get("why") or ""),

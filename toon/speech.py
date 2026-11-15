@@ -95,7 +95,7 @@ def semi_of(degree, scale):
     return 12 * (degree // len(scale)) + scale[degree % len(scale)]
 
 
-def plan(text, tone, scale, rhythm=None, melody=None, stress=None):
+def plan(text, tone, scale, rhythm=None, melody=None, stress=None, breaks=(), gap=2):
     """-> [{text, at, len, semi, stress, rest}]: each syllable's start and length in steps, its pitch
     in semitones, its stress, and how much of its length is the breath after punctuation.
 
@@ -106,6 +106,9 @@ def plan(text, tone, scale, rhythm=None, melody=None, stress=None):
     """
     syl = syllables(text)
     n = len(syl)
+    for k in breaks:                                      # a break chosen by hand is a pause too
+        if 0 < k < n:
+            syl[k - 1]["rest"] = max(syl[k - 1]["rest"], gap)
     if stress is not None:
         for s, v in zip(syl, stress):
             s["stress"] = max(0, min(2, int(v)))

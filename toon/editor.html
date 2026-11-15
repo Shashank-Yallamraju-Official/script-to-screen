@@ -63,6 +63,7 @@
   .say { position: absolute; height: 20px; margin-top: -10px; border-radius: 6px; cursor: ew-resize; overflow: hidden; z-index: 2; }
   .say b { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px 0 0 6px; }
   .say span { position: absolute; left: 18px; right: 6px; top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #111; font-weight: 500; font-size: 11px; pointer-events: none; }
+  .say i { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--panel); }
   .say u { position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 0 1.5px #fff9; pointer-events: none; }
   .note { position: absolute; height: 11px; margin-top: -5.5px; border-radius: 3px; cursor: ns-resize; z-index: 2; font-size: 9px; line-height: 11px; color: #111; padding-left: 3px; overflow: hidden; white-space: nowrap; font-weight: 600; }
   .note.set { outline: 1.5px solid #fff8; outline-offset: -1.5px; }
@@ -191,7 +192,7 @@ const ySemi = v => rollTop + 8 + (rollHi - v) / (rollHi - rollLo) * (ROLL - 16);
 function build() {
   const lanes = [['turns', ICON.turns, 'Turns: hover one to read why it happens. Drag its right edge to change how long it holds.', ROW],
     ...S.entities.map(e => [e.id, `<i style="background:${e.color}"></i>`, `${e.id}${e.kind ? ' (' + e.kind + ')' : ''}: what it feels. Filled pips show; hollow pips are held in.`, ROW]),
-    ['say', ICON.say, 'Lines: drag one to change the pause before it starts.', ROW],
+    ['say', ICON.say, 'Lines: drag one to change the pause before it starts. A gap marks where one bubble gives way to the next.', ROW],
     ['roll', ICON.roll, 'Every syllable is one note. Brightness is stress: faint is weak, solid is strong, ringed is the phrase\'s main accent. Double-click a note to change its stress. Drag it up or down for pitch (Alt for notes outside the scale), or drag its right edge for length. Hold Shift for quarter steps. A white outline marks a line you have set by hand.', ROLL]];
   const y = {}; let top = RULER + 8;
   for (const l of lanes) { y[l[0]] = top + l[3] / 2; if (l[0] === 'roll') rollTop = top; top += l[3]; }
@@ -222,6 +223,7 @@ function build() {
         `${q.who} ${q.sung ? 'sings' : 'says'} (${q.tone}): ${q.text}\nStarts after a pause of ${num(t.pause)} steps` + (q.latency ? `, plus ${num(q.latency)} of hesitation from what ${q.who} feels` : ''));
       d.innerHTML = `<b style="width:${q.reveal * pps}px;background:${c}"></b><u style="background:${q.tone_color}"></u><span></span>`;
       d.querySelector('span').textContent = q.text;
+      q.sylls.forEach((s, i) => { if (i && s.bubble !== q.sylls[i - 1].bubble) { const k = document.createElement('i'); k.style.left = s.at * pps - 1 + 'px'; k.title = 'A new bubble starts here'; d.appendChild(k); } });
       mark(d, ['turns', t.index, 'pause'], 200, t.pause, c);
       q.sylls.forEach((s, i) => {
         const n = el('note' + (q.melody || q.rhythm || q.stress ? ' set' : ''), { left: x(at + s.at) + 'px', top: ySemi(s.semi) + 'px', width: Math.max(s.len * pps - 1, 4) + 'px', background: c + ['66', 'cc', 'ff'][s.stress], boxShadow: s.stress === 2 ? '0 0 0 2px ' + c : '' },

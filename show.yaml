@@ -19,7 +19,9 @@ emotions: {fear: "#7b5ea7", anger: "#c8372d", sadness: "#4a6fa5", joy: "#e0a01e"
 gain: {slope: 2.0, min: 0.34, max: 1.5}
 
 # Steps. pause = before a line starts; hold = after a turn finishes; settle = a turn with no line.
-timing: {pause: 2, hold: 8, settle: 4}
+# bubble_break = a pause this long or longer inside a line starts a new bubble. A full stop is a
+# pause of 2 and a comma of 1, so by default sentences get their own bubbles and clauses do not.
+timing: {pause: 2, hold: 8, settle: 4, bubble_break: 2}
 
 # A tell counts as learned by the audience once it has shown in this many separate scenes.
 ledger: {learn_after: 3}

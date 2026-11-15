@@ -4,6 +4,8 @@
 #   do             a deliberate action: slot, move, orient, attention, posture
 #   who, say       the speaker and the line; the tone comes from what the speaker feels
 #                  (write `sing:` in place of `say:` for a sung line, which shows a music note)
+#                  one bubble holds one beat: a line breaks into bubbles wherever there is a
+#                  pause (full stop, ? or !), or write a list to choose: say: [Ha, ha, ha]
 #   feel           what the turn makes entities feel: {entity: {emotion: 1-3}} or {entity: calm}
 #   pause, hold    steps before the line and after the turn (tune these in the editor)
 #   rhythm, melody one entry per syllable: its length in steps, its pitch in semitones

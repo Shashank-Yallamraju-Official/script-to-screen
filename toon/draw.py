@@ -148,7 +148,7 @@ def indicator(line, chunks, t):
     syl = line["sylls"]
     if t < syl[0]["start"] - 1e-6:
         return None
-    lo, hi = min(s["semi"] for s in syl), max(s["semi"] for s in syl)
+    lo, hi = line["range"]                                       # the whole utterance's range, shared by its bubbles
     height = lambda k: (syl[k]["semi"] - lo) / (hi - lo) if hi > lo else 0.5
     i = max(k for k, s in enumerate(syl) if s["start"] <= t + 1e-6)
     s, prev = syl[i], max(i - 1, 0)

@@ -69,8 +69,19 @@ Time is counted in **steps** of a tempo grid (`tempo` and `steps_per_beat` in `s
 at the defaults one step is an eighth of a second). Pauses, holds and syllables all land on
 the grid, and fractions of a step are allowed for nudges. A scene can set its own `tempo`.
 
-A line appears in its bubble all at once. It is split into syllables, each syllable is one
-note, and an **indicator** travels under the text in time with the voice:
+**One bubble holds one beat, and a pause is what separates beats.** A line breaks into
+bubbles wherever the speaker pauses, and each bubble replaces the one before it. A full stop,
+question mark, exclamation mark or ellipsis is a pause; a comma is too short to count (the
+threshold is `bubble_break` in `show.yaml`). To choose the breaks yourself, write the line as
+a list, one item per bubble; each break gets a pause:
+
+    say: Ha ha ha!                                   # one bubble
+    say: Ha. Ha. Ha.                                 # three bubbles
+    say: [Ha, ha, ha]                                # three bubbles, without the full stops
+    say: [Michael. Get in here.]                     # one bubble, despite the full stop
+
+A bubble's text appears all at once. It is split into syllables, each syllable is one note,
+and an **indicator** travels under the text in time with the voice:
 
 | What the indicator does | What it shows |
 |---|---|
