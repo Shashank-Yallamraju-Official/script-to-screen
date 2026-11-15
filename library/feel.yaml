@@ -7,5 +7,3 @@ talk_hop: 5           # pixels the speaker hops on each syllable
 bubble_pop: 0.14      # seconds a bubble takes to pop open
 text_pop: 0.09        # seconds a syllable takes to pop in
 text_pop_scale: 1.25  # how big a syllable starts before settling to size
-wave: 4               # pixels of sway for wavy text
-shake: 2.5            # pixels of jitter for shaking text

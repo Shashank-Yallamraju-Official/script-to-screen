@@ -28,7 +28,7 @@ What an observer can see of a token:
 | The toe at its base | Which way the body faces. No toe means facing out |
 | The dot | Where its attention is |
 | Its shape | Posture: upright, contracted, leaning in, leaning back |
-| Bubble and note | The line, and the tone it is said in |
+| Bubble | The line. A music note appears on it only when the line is sung (`sing:` in place of `say:`) |
 
 ## A series
 
@@ -80,9 +80,9 @@ Syllables are guessed from spelling. Where the guess is wrong, write a middle do
 
 | File | Tunes |
 |---|---|
-| `library/tones.yaml` | Per tone: rhythm, melody contour, voice, how the letters behave, the bubble's note |
+| `library/tones.yaml` | Per tone: rhythm, melody contour, voice, letter size, and the note shown on sung lines |
 | `library/sounds.yaml` | One synthesised sound per kind of event: enter, exit, move, turn, look, posture, bubble, feel |
-| `library/feel.yaml` | The small motions: settle time, overshoot, paper flip, stretch, hops, pops, text sway and jitter |
+| `library/feel.yaml` | The small motions: settle time, overshoot, paper flip, stretch, hops, pops |
 
 A turn can also place a sound by hand: `sfx: [{at: 4, sound: thud}]`.
 

@@ -1,15 +1,15 @@
 # A tone is how a line is delivered. It sets, all from one place:
-#   the note on the bubble      color, motion, double (a beamed pair)
 #   the rhythm                  rate = steps per syllable, stretch = how much longer the last one is
 #   the melody                  contour (flat, rise, fall, wobble) spanning `range` notes of the scale
 #   the voice                   pitch (multiplier), vol
-#   the letters                 text = still, wave, shake, tremble or small
+#   the letters                 text: small shrinks them (a whisper); otherwise they are plain
+#   the note on a sung line     color, motion, double (a beamed pair); spoken lines show no note
 # A line can override rhythm and melody syllable by syllable (see the editor's piano roll).
-neutral:  {color: "#3a3531", motion: still,   rate: 2, contour: flat,   range: 2, pitch: 1.00, vol: 0.50, text: still}
-deadpan:  {color: "#6f6a63", motion: still,   rate: 2, contour: fall,   range: 1, pitch: 0.92, vol: 0.45, text: still}
-cheerful: {color: "#e08a1e", motion: bounce,  rate: 2, contour: rise,   range: 4, pitch: 1.25, vol: 0.60, text: wave, double: true}
-teasing:  {color: "#d6457a", motion: sway,    rate: 2, contour: rise,   range: 3, pitch: 1.12, vol: 0.50, text: wave, stretch: 2}
-sad:      {color: "#4a6fa5", motion: droop,   rate: 3, contour: fall,   range: 3, pitch: 0.80, vol: 0.40, text: still}
-angry:    {color: "#c8372d", motion: shake,   rate: 2, contour: flat,   range: 1, pitch: 0.90, vol: 0.80, text: shake}
-nervous:  {color: "#7b5ea7", motion: tremble, rate: 2, contour: wobble, range: 3, pitch: 1.18, vol: 0.40, text: tremble}
+neutral:  {color: "#3a3531", motion: still,   rate: 2, contour: flat,   range: 2, pitch: 1.00, vol: 0.50}
+deadpan:  {color: "#6f6a63", motion: still,   rate: 2, contour: fall,   range: 1, pitch: 0.92, vol: 0.45}
+cheerful: {color: "#e08a1e", motion: bounce,  rate: 2, contour: rise,   range: 4, pitch: 1.25, vol: 0.60, double: true}
+teasing:  {color: "#d6457a", motion: sway,    rate: 2, contour: rise,   range: 3, pitch: 1.12, vol: 0.50, stretch: 2}
+sad:      {color: "#4a6fa5", motion: droop,   rate: 3, contour: fall,   range: 3, pitch: 0.80, vol: 0.40}
+angry:    {color: "#c8372d", motion: shake,   rate: 2, contour: flat,   range: 1, pitch: 0.90, vol: 0.80}
+nervous:  {color: "#7b5ea7", motion: tremble, rate: 2, contour: wobble, range: 3, pitch: 1.18, vol: 0.40}
 whisper:  {color: "#9a948c", motion: float,   rate: 3, contour: flat,   range: 1, pitch: 1.00, vol: 0.20, text: small}

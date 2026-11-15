@@ -40,13 +40,6 @@ def font(size=28, mono=False):
     return skia.Font(skia.Typeface("DejaVu Sans Mono" if mono else "DejaVu Sans", skia.FontStyle.Bold()), size)
 
 
-def jitter(a, b):
-    """A steady pseudo-random pair in -1..1 for a given (time slice, index)."""
-    v = math.sin(a * 12.9898 + b * 78.233) * 43758.5453
-    w = math.sin(a * 39.3468 + b * 11.135) * 24634.6345
-    return (v - math.floor(v)) * 2 - 1, (w - math.floor(w)) * 2 - 1
-
-
 def draw_token(c, ent, o, W, H, feel, hop=0.0):
     a = 255 * o["alpha"]
     if a < 1:
@@ -71,7 +64,7 @@ def draw_token(c, ent, o, W, H, feel, hop=0.0):
 
 
 def draw_note(c, x, y, tone, secs, ring):
-    """The tone marker on a speech bubble: colour and movement carry how the line is said."""
+    """Shown only on a line that is sung. Its colour and movement follow the tone."""
     m, w = tone.get("motion", "still"), 2 * math.pi * secs
     dx = dy = rot = 0.0
     sc = 1.0
@@ -168,26 +161,20 @@ def draw_bubble(c, scene, line, t, o, ent, hop):
         c.translate(-hx, -top)
     c.drawPath(shape, fill("#ffffff"))
     c.drawPath(shape, stroke(ent["color"], 4))
-    ink, style = fill(INK), tone.get("text", "still")
+    ink = fill(INK)
     tp, ts = float(feel["text_pop"]), float(feel["text_pop_scale"])
     for i, (row, cx, text, cw) in enumerate(chunks):
         a = t - line["sylls"][i]["start"]
         if a < -1e-6:
             continue
         s = 1 + (ts - 1) * (1 - a / tp) if tp > 0 and a < tp else 1.0      # each syllable lands on its note
-        dx = dy = 0.0
-        if style == "wave":
-            dy = math.sin(t * 7 + i * 0.8) * float(feel["wave"])
-        elif style in ("shake", "tremble"):
-            jx, jy = jitter(int(t * 30), i)
-            amp = float(feel["shake"]) * (1.0 if style == "shake" else 0.45)
-            dx, dy = jx * amp, jy * amp
         c.save()
-        c.translate(bx + pad + cx + cw / 2 + dx, by + pad + size - 4 + row * lh + dy)
+        c.translate(bx + pad + cx + cw / 2, by + pad + size - 4 + row * lh)
         c.scale(s, s)
         c.drawString(text.rstrip(), -cw / 2, 0, f, ink)
         c.restore()
-    draw_note(c, bx + w - 2, by + 2, tone, max(age, 0), ent["color"])
+    if line["sung"]:
+        draw_note(c, bx + w - 2, by + 2, tone, max(age, 0), ent["color"])
     c.restore()
 
 

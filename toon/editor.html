@@ -219,7 +219,7 @@ function build() {
     if (t.say) {
       const q = t.say, c = S.entities.find(e => e.id === q.who).color, at = t.start + q.at;
       const d = el('say', { left: x(at) + 'px', top: y.say + 'px', width: Math.max((t.length - q.at) * pps - 2, 10) + 'px', background: c + '66' },
-        `${q.who} (${q.tone}): ${q.text}\nStarts after a pause of ${num(t.pause)} steps` + (q.latency ? `, plus ${num(q.latency)} of hesitation from what ${q.who} feels` : ''));
+        `${q.who} ${q.sung ? 'sings' : 'says'} (${q.tone}): ${q.text}\nStarts after a pause of ${num(t.pause)} steps` + (q.latency ? `, plus ${num(q.latency)} of hesitation from what ${q.who} feels` : ''));
       d.innerHTML = `<b style="width:${q.reveal * pps}px;background:${c}"></b><u style="background:${q.tone_color}"></u><span></span>`;
       d.querySelector('span').textContent = q.text;
       mark(d, ['turns', t.index, 'pause'], 200, t.pause, c);

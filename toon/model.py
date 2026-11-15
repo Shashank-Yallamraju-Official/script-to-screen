@@ -220,7 +220,7 @@ class Scene:
             tid = raw.get("id", i + 1)
             if not str(raw.get("why") or "").strip():
                 self.flag("error", tid, "no `why`: every turn must say why it happens")
-            who, say = raw.get("who"), raw.get("say")
+            who, say = raw.get("who"), raw.get("say") or raw.get("sing")      # `sing:` is a line that is sung
             for e, spec in (raw.get("enter") or {}).items():
                 self.ents[e] = self.show.entity(e, self.key)
                 self.keys.setdefault(e, [])
@@ -273,7 +273,7 @@ class Scene:
             line, sylls = None, []
             if say:
                 if who not in st:
-                    raise ScriptError(f"turn {tid}: `say` needs `who` to be an entity in the scene")
+                    raise ScriptError(f"turn {tid}: a line needs `who` to be an entity in the scene")
                 tone = a[who]["tone"] or raw.get("tone", "neutral")
                 if tone not in self.show.tones:
                     self.flag("error", tid, f"unknown tone '{tone}'")
@@ -289,7 +289,7 @@ class Scene:
                 say_at = pause + a[who]["latency"]
                 reveal = sum(s["len"] for s in sylls)
                 react = say_at + reveal
-                line = dict(who=who, text="".join(s["text"] for s in sylls), tone=tone, start=(t0 + say_at) * sec,
+                line = dict(who=who, text="".join(s["text"] for s in sylls), tone=tone, sung="sing" in raw, start=(t0 + say_at) * sec,
                             sylls=[dict(text=s["text"], start=(t0 + say_at + s["at"]) * sec, dur=s["len"] * sec, semi=s["semi"])
                                    for s in sylls])
             length = (react if say else float(T["settle"])) + hold

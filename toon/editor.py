@@ -35,9 +35,7 @@ FEEL = [("ease", 0.05, 0.8, 0.01, "Seconds a change takes to settle"),
         ("talk_hop", 0, 16, 0.5, "Pixels the speaker hops on each syllable"),
         ("bubble_pop", 0, 0.5, 0.01, "Seconds a bubble takes to pop open"),
         ("text_pop", 0, 0.3, 0.01, "Seconds a syllable takes to pop in"),
-        ("text_pop_scale", 1, 2, 0.05, "How big a syllable starts before settling"),
-        ("wave", 0, 12, 0.5, "Pixels of sway for wavy text"),
-        ("shake", 0, 8, 0.25, "Pixels of jitter for shaking text")]
+        ("text_pop_scale", 1, 2, 0.05, "How big a syllable starts before settling")]
 SOUND = [("vol", 0, 1, 0.01, "Volume (0 is off)"), ("freq", 40, 2000, 5, "Starting pitch in Hz"),
          ("to", 40, 2000, 5, "Pitch it glides to, in Hz"), ("dur", 0.01, 0.6, 0.01, "Length in seconds")]
 
@@ -111,7 +109,7 @@ class Session:
             say = None
             if t["line"]:
                 tone = t["line"]["tone"]
-                say = dict(who=t["who"], text=t["line"]["text"], tone=tone, tone_color=sc.show.tones[tone]["color"],
+                say = dict(who=t["who"], text=t["line"]["text"], tone=tone, sung=t["line"]["sung"], tone_color=sc.show.tones[tone]["color"],
                            at=t["say_at"], reveal=t["reveal"], latency=t["latency"], sylls=t["sylls"],
                            rhythm=list(t["rhythm"]) if t["rhythm"] is not None else None,
                            melody=list(t["melody"]) if t["melody"] is not None else None)
