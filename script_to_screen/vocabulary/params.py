@@ -49,7 +49,7 @@ class Param:
         return dict(asdict(self), scope=self.scope, scopes=list(self.scopes), fine=self.fine if self.fine is not None else self.step / 4)
 
 
-WIDER = {"turn.pause": ("turn", "scene", "show"), "turn.hold": ("turn", "scene", "show")}
+WIDER = {"turn.pause": ("turn", "scene", "show"), "turn.hold": ("turn", "scene", "show"), "syllable.breath": ("syllable", "show")}
 MOVES = ("move", "turn", "look", "posture", "enter", "exit")
 _ = Param
 PARAMS = {p.key: p for p in [
@@ -65,8 +65,11 @@ PARAMS = {p.key: p for p in [
     _("reaction.beat", "Beat", "Steps a featured reaction holds the scene.", "steps", 1, 200, 1, "a reaction's `beat:`",
       "timing", fine=0.25, owns_time=True, words=("beat", "take", "look to camera", "reaction length")),
     # ---- a syllable ---------------------------------------------------------------------------------
-    _("syllable.length", "Length", "Steps a syllable lasts, including any breath after it.", "steps", 0.5, 32, 1, "a turn's `rhythm:` list",
-      "timing", fine=0.25, owns_time=True, words=("rhythm", "drawn out", "clipped", "quick", "slow")),
+    _("syllable.length", "Length", "Steps a syllable is voiced for.", "steps", 0.25, 32, 0.5, "a turn's `rhythm:` list, less the breath",
+      "timing", fine=0.125, owns_time=True, words=("rhythm", "drawn out", "clipped", "quick", "slow")),
+    _("syllable.breath", "Breath", "Steps of silence after a syllable, before the next one. Punctuation gives it; a hand can change it.", "steps", 0, 16, 0.5,
+      "worked out from punctuation; show.yaml timing.breath.<comma|stop|ellipsis>", "timing", fine=0.125, owns_time=True,
+      words=("breath", "gap", "pause after", "full stop", "comma", "breathing room", "beat between")),
     _("syllable.pitch", "Pitch", "A syllable's note, in semitones above the speaker's voice.", "semitones", -12, 24, 1, "a turn's `melody:` list",
       "sound", exercised_by=("bubble",), words=("pitch", "melody", "higher", "lower", "inflection")),
     _("syllable.stress", "Stress", "0 weak, 1 strong, 2 the phrase's main accent. Drives length, loudness and pitch.", "level", 0, 2, 1, "a turn's `stress:` list",

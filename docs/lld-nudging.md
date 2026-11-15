@@ -513,7 +513,7 @@ Each slice is usable on its own and ends with something the writer can feel.
 |---|---|---|
 | 1 ✓ | **Fast and safe.** (built: see [phases.md](phases.md)) Take the ledger and earlier scenes off the nudge path. Autosave by command, journal undo, follow the files | A nudge is under 40 ms. Editing the file in another window while the editor is open loses nothing. Sliders undo |
 | 2 ✓ | **Registry and cascade.** (built) `params.py`, `resolve`, `tune:` blocks, the three commands, addresses, schema 2 | `s2s tune set the-thermostat:2.hold 9 --dry-run --json` works; every value in 4.1 is settable |
-| 3 | **Ownership.** Breath as its own value, stretches, the strip, the knob and scope chip | The worked example in section 1 can be done up to step 3 without touching the piano roll |
+| 3 ✓ | **Ownership.** (built) Breath as its own value, stretches, the strip, the knob and scope chip | The worked example in section 1 can be done up to step 3 without touching the piano roll |
 | 4 | **Audition and compare.** Spans, auto-replay, loop, A/B | Steps 3 and 4 of the worked example |
 | 5 | **In play, widen, anchors.** The candidate row, W with its count, orphans | Steps 5 and 6. "How he turns is wrong" finds flip, ease and overshoot |
 | 6 | **Shortcuts.** Picking in the picture, search by word | Clicking a syllable in the bubble selects it |
@@ -521,6 +521,17 @@ Each slice is usable on its own and ends with something the writer can feel.
 
 Slices 1 and 2 are the ones that also unblock the writing loop: they are build steps 1 and 2
 of the architecture, done for the tuning commands first.
+
+## 10a. What was built differently, and why
+
+| The design said | What was built | Why |
+|---|---|---|
+| Breath has scopes syllable, tone, show | Syllable and show, and the show holds one breath per kind of pause (comma, stop, ellipsis) | A full stop and a comma do not breathe alike, so one show-wide number could not replace three. No call for a per-tone breath yet |
+| (not said) | Tuning a breath never moves a bubble break; breaks follow the script's punctuation | Otherwise shortening a full stop below the break threshold would merge two bubbles, and a nudge would have changed structure |
+| A syllable's `length` | It is the voiced length; the slot on the grid is length plus breath | So shortening a gap cannot look like lengthening a word, which was the complaint in section 1 |
+| The knob previews while a key is held and writes on release | Each nudge is written at once, and a quick run of them is merged into one journal entry | A nudge takes 21 to 29 ms end to end, so a preview path was not needed; undo still takes back the gesture |
+| The strip replaces the handles for hold, pause and beat; the slider panel is retired | The strip and knob were added; the old handles and the slider panel still work | Nothing is lost while the knob proves itself. Remove them once the in-play row (slice 5) reaches every value |
+| Nothing | Files that have not changed are not parsed again | Parsing YAML 28 times per nudge was the whole cost; with this a drag preview takes 2 ms and a release 13 ms |
 
 ## 11. Open questions
 

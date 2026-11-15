@@ -4,10 +4,11 @@ through the functions here, so there is one way a `tune:` block is ever written.
 Addresses (the narrowest scope a value can be set at comes first):
 
     the-thermostat:2.hold            a turn's pause or hold
-    the-thermostat:2.s3.length       syllable 3 of that turn's line: length, pitch or stress
+    the-thermostat:2.s3.length       syllable 3 of that turn's line: length, breath, pitch or stress
     the-thermostat:2.r1.beat         that turn's first reaction: how long it holds the scene
     the-thermostat.hold              every turn in a scene
     show.hold                        every turn in the show (also show.settle, show.bubble_break)
+    show.breath.stop                 the breath after every full stop in the show (also .comma, .ellipsis)
     @otis.reflex                     an entity
     ~angry.rate                      a tone of voice
     feel.overshoot                   motion, the indicator and the voice
@@ -24,6 +25,14 @@ from ..script import Show, load_yaml, scene_paths, series, tuning
 from ..vocabulary import PARAMS
 from . import A, Refused, address, command, edit
 
+played = None        # the editor sets this to hand over a scene it has already worked out: path -> score, or None
+
+
+def scene_of(path):
+    """A scene as it plays (its turns and syllables). Worked out afresh unless someone already has it."""
+    return (played and played(Path(path))) or Scene(path)
+
+
 TONE_DEFAULT = dict(rate=2, stretch=1, range=2, pitch=1, vol=0.5)
 ENTITY_DEFAULT = dict(reflex=0)
 
@@ -37,6 +46,11 @@ def tidy(v):
 def _flow(m):
     m.fa.set_flow_style()
     return m
+
+
+def _key(n):
+    """A syllable or reaction is keyed by its number; a kind of pause by its name."""
+    return int(n) if str(n).isdigit() else str(n)
 
 
 def put(holder, name, value, n=None):
@@ -53,8 +67,8 @@ def put(holder, name, value, n=None):
     else:
         if block.get(name) is None:
             block[name] = _flow(CommentedMap())
-        block[name][int(n)] = tidy(value)
-        items = sorted(block[name].items())              # keep syllables in order
+        block[name][_key(n)] = tidy(value)
+        items = sorted(block[name].items(), key=lambda kv: str(kv[0]).zfill(6))     # keep syllables in order
         block[name].clear()
         block[name].update(items)
 
@@ -62,12 +76,12 @@ def put(holder, name, value, n=None):
 def drop(holder, name, n=None):
     """Take a hand-set value off. -> whether there was one. An emptied block is removed."""
     block = holder.get("tune")
-    if not block or name not in block or (n is not None and int(n) not in (block[name] or {})):
+    if not block or name not in block or (n is not None and _key(n) not in (block[name] or {})):
         return False
     if n is None:
         del block[name]
     else:
-        del block[name][int(n)]
+        del block[name][_key(n)]
         if not block[name]:
             del block[name]
     if not any(k in block for k in tuning.SYLLABLE):
@@ -107,14 +121,14 @@ class Target:
 
     @property
     def n(self):
-        return self.where.get("n")
+        return self.where.get("n", self.where.get("mark"))
 
     @property
     def address(self):
         w = self.where
         return {"turn": lambda: f"{w['scene']}:{w['turn']}.{self.name}", "syllable": lambda: f"{w['scene']}:{w['turn']}.s{w['n']}.{self.name}",
                 "reaction": lambda: f"{w['scene']}:{w['turn']}.r{w['n']}.{self.name}", "scene": lambda: f"{w['scene']}.{self.name}",
-                "show": lambda: f"show.{self.name}", "feel": lambda: f"feel.{self.name}", "sound": lambda: f"sounds.{w['sound']}.{self.name}",
+                "show": lambda: f"show.{self.name}" + (f".{w['mark']}" if "mark" in w else ""), "feel": lambda: f"feel.{self.name}", "sound": lambda: f"sounds.{w['sound']}.{self.name}",
                 "tone": lambda: f"~{w['tone']}.{self.name}", "entity": lambda: f"@{w['entity']}.{self.name}"}[self.scope]()
 
     def holder(self, doc):
@@ -134,6 +148,11 @@ class Target:
             return self
         if scope == "scene":
             return Target(self.root, self.param.key, "scene", self.file, scene=self.where["scene"])
+        if scope == "show" and self.name == "breath":
+            syl = scene_of(self.file).turns[edit.find_turn(load_yaml(self.file), self.where["turn"])[0]]["sylls"][self.where["n"] - 1]
+            if not syl["mark"]:
+                raise Refused("this breath was put in by hand; no punctuation follows the syllable, so there is nothing to generalise from")
+            return Target(self.root, self.param.key, "show", self.root / "show.yaml", mark=syl["mark"])
         if scope == "show":
             return Target(self.root, self.param.key, "show", self.root / "show.yaml")
         raise Refused(f"{self.param.label.lower()} cannot be set for a whole {scope}", hint="it can be set for: " + ", ".join(self.param.scopes))
@@ -171,6 +190,10 @@ def parse(ref, show=None):
         _, snd, name = (ref.split(".", 2) + [""])[:3]
         _names("sound", load_yaml(lib / "sounds.yaml"), snd)
         return Target(root, _param("sound", name), "sound", lib / "sounds.yaml", sound=snd)
+    if ref.startswith("show.breath"):
+        mark = ref[12:]
+        _names("kind of pause", tuning.BREATH, mark)
+        return Target(root, "syllable.breath", "show", root / "show.yaml", mark=mark)
     if ref.startswith("show."):
         return Target(root, _param("show", ref[5:]), "show", root / "show.yaml")
     m = re.fullmatch(r"(.+):([^:.]+)\.(?:([sr])(\d+)\.)?([a-z_]+)", ref)
@@ -221,6 +244,21 @@ def chain(t, doc=None):
         cfg = doc if t.scope == "show" else load_yaml(t.root / "show.yaml")
         add("show", "hand", (cfg.get("tune") or {}).get(name))
         add("show", "written", cfg["timing"][name])
+    elif name == "breath":
+        cfg, mark = (doc if t.scope == "show" else load_yaml(t.root / "show.yaml")), w.get("mark")
+        if t.scope == "syllable":
+            i, turn = edit.find_turn(doc, w["turn"])
+            tunes, _ = tuning.syllable_tunes(turn)
+            add("syllable", "hand", (tunes.get("breath") or {}).get(w["n"]))
+            syl = scene_of(t.file).turns[i]["sylls"][w["n"] - 1]
+            mark = syl["mark"]
+            if not mark or syl["base"]["breath"] != (cfg["timing"].get("breath") or {}).get(mark, tuning.BREATH[mark]):
+                add("syllable", "worked out", syl["base"]["breath"])     # no punctuation, or a break chosen in the script
+                mark = None
+        if mark:
+            add("show", "hand", ((cfg.get("tune") or {}).get("breath") or {}).get(mark))
+            written = (cfg["timing"].get("breath") or {}).get(mark)
+            add("show", "written" if written is not None else "default", written if written is not None else tuning.BREATH[mark])
     elif t.scope == "show":
         add("show", "hand", (doc.get("tune") or {}).get(name))
         add("show", "written", doc["timing"].get(name))
@@ -228,7 +266,7 @@ def chain(t, doc=None):
         i, turn = edit.find_turn(doc, w["turn"])
         tunes, _ = tuning.syllable_tunes(turn)
         add("syllable", "hand", (tunes.get(name) or {}).get(w["n"]))
-        base = Scene(t.file).turns[i]["sylls"][w["n"] - 1]["base"][name]
+        base = scene_of(t.file).turns[i]["sylls"][w["n"] - 1]["base"][name]
         written = turn.get({"length": "rhythm", "pitch": "melody", "stress": "stress"}[name])
         add("syllable", "written" if written is not None else "worked out", base)
     elif t.scope == "reaction":
@@ -369,7 +407,11 @@ def tune(a):
     def both(docs, cfg):
         reset_in(docs[t.file], t) if t.file in docs else None
         set_in(cfg if to == "show" else docs[wide.file], wide, value)
-    affects = turns_affected(wide, both)
+    if t.name == "breath":                               # every breath after that kind of pause, unless it has its own
+        affects = sum(1 for p in scene_paths(t.root) for turn in scene_of(p).turns for k, s in enumerate(turn["sylls"], 1)
+                      if s["mark"] == wide.where["mark"] and s["rest"] != value and not (p == t.file and str(turn["id"]) == str(t.where["turn"]) and k == t.n))
+    else:
+        affects = turns_affected(wide, both)
     group = f"widen-{len(edit.entries(t.root)) + 1}"
     out = write(a, wide, lambda doc: dict(discards=set_in(doc, wide, value)), group=group)
     try:
@@ -377,7 +419,8 @@ def tune(a):
     except Refused:
         pass                                             # nothing was set by hand at the narrow scope; it simply inherits now
     out.update(widened_from=t.address, affects=affects)
-    out["text"] = f"{t.address} -> {wide.address} = {value}; changes {affects} turn(s)" + (" (dry run)" if out["dry_run"] else "")
+    what = "other breath(s)" if t.name == "breath" else "turn(s)"
+    out["text"] = f"{t.address} -> {wide.address} = {value}; changes {affects} {what}" + (" (dry run)" if out["dry_run"] else "")
     return out
 
 
@@ -392,7 +435,11 @@ def listing(a):
 
     if only is None:
         for name, v in (load_yaml(root / "show.yaml").get("tune") or {}).items():
-            row(Target(root, _param("show", name), "show", root / "show.yaml"), v)
+            if name == "breath":
+                for mark, steps in v.items():
+                    row(Target(root, "syllable.breath", "show", root / "show.yaml", mark=mark), steps)
+            else:
+                row(Target(root, _param("show", name), "show", root / "show.yaml"), v)
         for name, v in (load_yaml(root / "library" / "feel.yaml").get("tune") or {}).items():
             row(Target(root, "feel." + name, "feel", root / "library" / "feel.yaml"), v)
         for kind, file, scope in (("sound", "sounds.yaml", "sound"), ("tone", "tones.yaml", "tone")):

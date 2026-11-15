@@ -150,3 +150,73 @@ def test_a_nudge_is_fast():
         s.patch([dict(path=["turns", 1, "hold"], value=9 + n % 2)], commit=True)
         took.append((time.perf_counter() - t) * 1000)
     assert statistics.median(took) < 120, f"median {statistics.median(took):.0f} ms"
+
+
+# ---- the knob: any value, by its address ------------------------------------------------------------
+TALK = dict(id=2, who="a", say="I saw. You took it.", why="She has waited.")
+
+
+@pytest.fixture
+def talk(show):
+    show.scene("s01/e01/02", [ENTER, dict(id=2, who="b", say="No. Never.", why="He denies it.")])
+    return Session(show.scene("s01/e01/01", [ENTER, TALK]))
+
+
+def test_the_knob_shows_where_a_value_comes_from_and_how_it_can_change(talk):
+    gap = next(x for x in talk.state()["turns"][1]["stretches"] if x["param"] == "syllable.breath")
+    v = talk.value(gap["address"])
+    assert (v["value"], v["scope"], v["by"], v["hand_here"], v["wider"]) == (2, "show", "default", False, "show")
+    assert v["param"]["scopes"] == ["syllable", "show"] and v["param"]["step"] == 0.5
+
+
+def test_the_worked_example_shorten_one_breath_then_every_full_stop_then_change_your_mind(talk):
+    """docs/lld-nudging.md, section 1."""
+    gap = "s01/e01/01:2.s2.breath"
+    word = talk.scene.turns[1]["sylls"][1]
+    voiced = word["len"] - word["rest"]
+    talk.nudge(gap, "set", 1.5)                                         # steps 1 to 3
+    now = talk.scene.turns[1]["sylls"][1]
+    assert now["rest"] == 1.5 and now["len"] - now["rest"] == voiced and talk.value(gap)["by"] == "hand"
+    assert 'breath: {2: 1.5}' in talk.path.read_text()
+    talk.nudge(gap, "widen")                                            # step 5
+    assert talk.value(gap)["chain"][0] == dict(scope="show", by="hand", value=1.5)
+    assert "tune" not in talk.path.read_text() and "breath: {stop: 1.5}" in (talk.root / "show.yaml").read_text()
+    other = Scene(talk.root / "episodes" / "s01/e01/02.yaml").turns[1]["sylls"][0]
+    assert other["rest"] == 1.5
+    talk.step("undo")                                                   # step 6: back to this syllable only
+    assert talk.value(gap)["chain"][0] == dict(scope="syllable", by="hand", value=1.5)
+    assert "tune:" not in (talk.root / "show.yaml").read_text()
+    talk.nudge(gap, "reset")
+    assert talk.value(gap)["value"] == 2 and "tune" not in talk.path.read_text()
+
+
+def test_a_quick_run_of_nudges_is_one_undo_step(talk):
+    before = talk.path.read_text()
+    for v in (9, 10, 11, 12):
+        talk.nudge("s01/e01/01:2.hold", "set", v)
+    assert len(edit.stacks(talk.root, by="hand")[0]) == 1 and talk.scene.turns[1]["hold"] == 12
+    talk.step("undo")
+    assert talk.scene.turns[1]["hold"] == 8 and Scene(talk.path).turns[1]["hold"] == 8
+    assert "tune" not in talk.path.read_text() and before.count("why") == talk.path.read_text().count("why")
+
+
+def test_nudging_a_value_back_to_what_it_would_be_takes_the_hand_set_value_off(talk):
+    talk.nudge("feel.overshoot", "set", 0.9)
+    assert "tune: {overshoot: 0.9}" in (talk.root / "library" / "feel.yaml").read_text()
+    talk.nudge("feel.overshoot", "set", 0.6)
+    assert "tune" not in (talk.root / "library" / "feel.yaml").read_text()
+
+
+def test_the_knob_is_fast():
+    """Design budget: 60 ms from a keypress to a rebuilt scene; allow 3x for a slow test machine."""
+    import shutil
+    import tempfile
+    root = Path(tempfile.mkdtemp()) / "demo"
+    shutil.copytree(DEMO, root, ignore=shutil.ignore_patterns("out", ".s2s"))
+    s = Session(series(root).by_id["the-vase"]["path"])
+    took = []
+    for n in range(12):
+        t = time.perf_counter()
+        s.nudge("the-vase:3.s3.length", "set", 3 + n % 3)
+        took.append((time.perf_counter() - t) * 1000)
+    assert statistics.median(took) < 180, f"median {statistics.median(took):.0f} ms"

@@ -3,6 +3,7 @@
 This layer reads a show's files and knows their layout. It decides nothing about what
 happens; it imports no other layer.
 """
+import copy
 from pathlib import Path
 
 import yaml
@@ -17,9 +18,20 @@ class ScriptError(Exception):
     pass
 
 
+_Loader = getattr(yaml, "CSafeLoader", yaml.SafeLoader)    # the C parser where it is installed; the same result, much sooner
+_read = {}                                                  # path -> (what the file was when read, its parsed content)
+
+
 def load_yaml(p):
-    with open(p) as fh:
-        return yaml.safe_load(fh)
+    """A file's content. A file that has not changed since it was last read is not parsed again;
+    each caller gets its own copy, so nobody's changes leak into anyone else's."""
+    p = Path(p)
+    st = p.stat()
+    key, stamp = str(p), (st.st_mtime_ns, st.st_size)
+    if _read.get(key, (None,))[0] != stamp:
+        with open(p) as fh:
+            _read[key] = (stamp, yaml.load(fh, Loader=_Loader))
+    return copy.deepcopy(_read[key][1])
 
 
 def find_root(path):
@@ -121,7 +133,10 @@ class Show:
         self.cfg = load_yaml(root / "show.yaml")
         if self.cfg.get("schema", 1) != SCHEMA:
             raise ScriptError(f"this show is written for schema {self.cfg.get('schema', 1)}, and this engine reads schema {SCHEMA}; run `s2s migrate`")
-        self.cfg["timing"] = {**self.cfg["timing"], **{k: v for k, v in (self.cfg.get("tune") or {}).items() if k in tuning.TIMING}}
+        hand = self.cfg.get("tune") or {}
+        self.breath_written = {**tuning.BREATH, **(self.cfg["timing"].get("breath") or {})}      # steps of breath after each kind of pause
+        self.breath = {**self.breath_written, **(hand.get("breath") or {})}
+        self.cfg["timing"] = {**self.cfg["timing"], **{k: v for k, v in hand.items() if k in tuning.TIMING}, "breath": self.breath}
         for name in LIBRARY:                 # the editor passes its copies in `lib`, to preview a value before it is written
             raw = (lib or {}).get(name) or load_yaml(root / "library" / f"{name}.yaml")
             setattr(self, name, tuning.overlay(raw) if name == "feel" else tuning.each(raw))     # hand-set values laid over written ones

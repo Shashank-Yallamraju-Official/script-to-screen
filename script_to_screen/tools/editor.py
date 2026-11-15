@@ -15,6 +15,7 @@ import time
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from types import SimpleNamespace
 from urllib.parse import parse_qs, urlparse
 
 
@@ -75,14 +76,15 @@ def apply_ops(root, path, sid, doc, score, ops):
             name, field = LIST_OF[where[2]]
             for k, (syl, v) in enumerate(zip(played["sylls"], value)):
                 t = tune.Target(root, "syllable." + name, "syllable", path, scene=sid, turn=tid, n=k + 1)
-                v = tune.tidy(t.param.clamp(max(v, 0.25) if name == "length" else round(v)))
-                if v == tune.tidy(syl[field]):
+                now = syl["len"] - syl["rest"] if name == "length" else syl[field]      # a note's length is its voiced part
+                v = tune.tidy(t.param.clamp(max(v - syl["rest"], 0.25) if name == "length" else round(v)))
+                if v == tune.tidy(now):
                     continue
                 if v == tune.tidy(syl["base"][name]):        # back to what it would be anyway: the tune comes off
                     tune.reset_in(doc, t)
                 else:
                     tune.set_in(doc, t, v)
-                changes.append(dict(address=t.address, field=name, before=tune.tidy(syl[field]), after=v))
+                changes.append(dict(address=t.address, field=name, before=tune.tidy(now), after=v))
         else:
             raise ValueError("that value is not editable here")
         first = i if first is None else min(first, i)
@@ -100,6 +102,7 @@ class Session:
         self.lock = threading.Lock()
         self.rev = self.info_rev = 0
         self.load()
+        tune.played = lambda p: self.clean[1] if p == self.path and self.clean[0] == p.read_text() else None   # spare the tune commands a rebuild
 
     # ---- reading the files ---------------------------------------------------------------------
     def files(self):
@@ -176,7 +179,7 @@ class Session:
                            melody=list(t["melody"]) if t["melody"] is not None else None,
                            stress=list(t["stress"]) if t["stress"] is not None else None)
             turns.append(dict(id=t["id"], index=t["index"], start=t["start"], length=t["length"], why=t["why"], who=t["who"],
-                              pause=t["pause"], hold=t["hold"], say=say, lanes=lanes, reacts=t["reacts"]))
+                              pause=t["pause"], hold=t["hold"], say=say, lanes=lanes, reacts=t["reacts"], stretches=t["stretches"]))
         mine = [p for p in self.problems if p["scene"] == sc.id]
         feel, sounds = look.feel, look.sounds                    # as in force: hand-set values laid over written ones
         done, undone = edit.stacks(self.root, by="hand")
@@ -250,6 +253,55 @@ class Session:
         self.work(score=False)                                   # the score does not depend on the look
         return 0 if t.param.rebuild == "look" else None
 
+    # ---- the knob: any tunable value, by its address ---------------------------------------------
+    def value(self, address):
+        """What a value is, where it comes from, and how it can be changed. For the knob and its scope marks."""
+        t = tune.parse(address, self.root)
+        r = tune.resolve(t)
+        scopes = list(t.param.scopes)
+        here = scopes.index(t.scope) if t.scope in scopes else 0
+        return dict(address=t.address, value=r["value"], scope=r["scope"], by=r["by"], chain=r["chain"],
+                    hand_here=any(c["scope"] == t.scope and c["by"] == "hand" for c in r["chain"]),
+                    wider=scopes[here + 1] if here + 1 < len(scopes) else None, rebuild=t.param.rebuild,
+                    param=dict(label=t.param.label, meaning=t.param.meaning, unit=t.param.unit, lo=t.param.lo, hi=t.param.hi,
+                               step=t.param.step, fine=t.param.fine if t.param.fine is not None else t.param.step / 4, scopes=scopes))
+
+    def nudge(self, address, op, value=None):
+        """Set, take off or widen a hand-set value from the knob. Each is written at once; a quick run of
+        nudges on one value is one undo step. -> the first frame to redraw, or None if the picture is unchanged."""
+        t = tune.parse(address, self.root)
+        if op == "set":
+            value = tune.tidy(t.param.clamp(value))
+            if value == tune.inherited(t):                       # back to what it would be anyway: the hand-set value comes off
+                op = "reset"
+        ask = SimpleNamespace(action=op, address=address, value=value, to=None, orphans=False, show=str(self.root),
+                              dry_run=False, because=None, by="hand")
+        try:
+            tune.tune(ask)
+        except Refused as e:
+            if "nothing" not in str(e):                          # already that value: not an error for a knob
+                raise ValueError(str(e) + (f". {e.hint}" if e.hint else ""))
+            return None
+        if op == "set":
+            edit.coalesce(self.root)
+        score = t.param.rebuild == "timing"
+        if t.file == self.path:
+            self.doc = edit.load(self.path)
+        elif t.file.parent.name == "library" and t.file.stem in self.lib:
+            self.lib[t.file.stem] = edit.load(t.file)
+        self.stamps = self.stamp()
+        if t.param.rebuild == "look":
+            self.cache = {}
+        self.work(score=score)
+        if score:
+            self.clean = (self.path.read_text(), self.scene)
+            self.stale = time.monotonic()
+        if not score:
+            return 0 if t.param.rebuild == "look" else None
+        turn = t.where.get("turn")
+        i = next((k for k, x in enumerate(self.scene.turns) if str(x["id"]) == str(turn)), 0) if t.file == self.path and turn is not None else 0
+        return self.frame_of(i)
+
     def step(self, which):
         """Undo or redo the writer's own last change (never the assistant's)."""
         (edit.undo if which == "undo" else edit.redo)(self.root, by="hand")
@@ -293,6 +345,8 @@ def make_handler(sess):
                         return self.send((HERE / "editor.html").read_bytes(), "text/html; charset=utf-8")
                     if url.path == "/state":
                         return self.send(sess.state())
+                    if url.path == "/value":                 # the knob: what a value is and where it comes from
+                        return self.send(sess.value(q["address"][0]))
                     if url.path == "/poll":                  # has anything changed underneath?
                         return self.send(sess.poll())
                     if url.path == "/frame":
@@ -334,6 +388,12 @@ def make_handler(sess):
                         out["dirty_from"] = sess.patch(body["ops"], bool(body.get("commit")))
                     elif self.path == "/tune":
                         out["dirty_from"] = sess.tune(body["group"], body.get("name"), body["key"], body["value"], bool(body.get("commit")))
+                    elif self.path == "/nudge":
+                        out["dirty_from"] = sess.nudge(body["address"], body["op"], body.get("value"))
+                        try:
+                            out["value"] = sess.value(body["address"])
+                        except Refused:
+                            out["value"] = None
                     elif self.path in ("/undo", "/redo"):
                         sess.step(self.path[1:])
                         out["dirty_from"] = 0

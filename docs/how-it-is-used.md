@@ -132,8 +132,8 @@ project's oldest habit, hand-set values becoming derived ones, turned into a rou
 | Before and after | No |
 | Undo anything | Yes. Timings, notes and sliders, across restarts |
 | The real thing | Yes. The editor draws with the renderer and plays the same sound |
-| Every tunable value reachable | By command, yes: all 31 declared parameters. In the editor: timings, notes, stress, motion and sounds; tones and entities come with the knob in N3 |
-| Scope is visible | On the command line, yes (`tune get`, `tune widen` with a count of turns changed). In the editor, not yet: the scope chip is slice N3 |
+| Every tunable value reachable | By command, yes: all 32 declared parameters. In the editor: everything that owns time through the knob, plus notes, stress, motion and sounds. A tone's or an entity's settings reach the knob in slice N5 |
+| Scope is visible | Yes. The knob shows one mark per scope and which one the value comes from; widening is a deliberate key and says what it now covers |
 | A pin | No |
 | **Where they meet** | |
 | Who set each value | Yes. Hand-set values live in `tune:` blocks; `s2s tune get` shows every scope's say and `s2s tune list` shows all of them |

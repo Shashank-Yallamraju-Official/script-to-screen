@@ -65,7 +65,7 @@ def test_a_single_syllable_can_be_tuned_and_keeps_what_it_would_have_been(s2s):
     s2s("tune", "set", "kitchen:2.s3.length", "4")
     s2s("tune", "set", "kitchen:2.s3.pitch", "9")
     now = turn(s2s, 2)["sylls"][2]
-    assert (now["len"], now["semi"]) == (4, 9) and now["base"] == dict(length=was["len"], pitch=was["semi"], stress=was["stress"])
+    assert (now["len"], now["semi"]) == (4, 9) and now["base"] == dict(length=was["len"], breath=0, pitch=was["semi"], stress=was["stress"])
     assert turn(s2s, 2)["sylls"][3]["at"] == turn(s2s, 2)["sylls"][2]["at"] + 4       # what follows moves along
     code, out = s2s("tune", "set", "kitchen:2.s9.length", "4")
     assert code == commands.REFUSED and "5 one." in out["hint"]
@@ -97,7 +97,7 @@ def test_every_declared_scope_can_be_reached(s2s):
         assert code == 0 and out["after"]["by"] == "hand", addr
     assert {r["address"] for r in s2s("tune", "list")[1]["tunes"]} == {"feel.overshoot", "sounds.thud.vol", "~angry.rate", "@b.reflex",
                                                                          "show.settle", "show.bubble_break"}
-    reached = {"turn.pause", "turn.hold", "reaction.beat", "syllable.length", "syllable.pitch", "syllable.stress"}
+    reached = {"turn.pause", "turn.hold", "reaction.beat", "syllable.length", "syllable.breath", "syllable.pitch", "syllable.stress"}
     assert all(p.scope in ("feel", "sound", "tone", "entity", "show") or p.key in reached for p in PARAMS.values())
 
 
@@ -123,7 +123,65 @@ def test_no_tuning_can_change_the_story(s2s):
         return json.dumps([table, [p for p in problems if p["level"] == "error"], carry], sort_keys=True, default=str)
     before = story()
     for addr, value in [("kitchen:2.hold", "30"), ("kitchen:2.pause", "9"), ("kitchen:2.s2.length", "6"), ("kitchen:2.s2.pitch", "12"),
-                        ("kitchen:2.s2.stress", "2"), ("kitchen:2.r1.beat", "20"), ("kitchen.hold", "2"), ("show.hold", "1"), ("show.settle", "9"),
+                        ("kitchen:2.s2.stress", "2"), ("kitchen:2.s2.breath", "3"), ("show.breath.stop", "0.5"), ("kitchen:2.r1.beat", "20"), ("kitchen.hold", "2"), ("show.hold", "1"), ("show.settle", "9"),
                         ("show.bubble_break", "4"), ("feel.ease", "0.6"), ("sounds.thud.freq", "400"), ("~angry.rate", "4"), ("@b.reflex", "6")]:
         assert s2s("tune", "set", addr, value)[0] == 0, addr
     assert story() == before
+
+
+# ---- time ownership, and breath as a value of its own -----------------------------------------------
+TALK = dict(id=2, who="a", say="I saw. You took it, then.", react=[dict(who="b", do={"attention": "viewer"}, beat=6),
+                                                                   dict(who="b", word="took", feel={"shame": 1})], why="She has waited.")
+
+
+def tiles(sc):
+    for t in sc.turns:
+        end = t["start"]
+        for x in t["stretches"]:
+            assert x["length"] > 0 and abs(x["start"] - end) < 1e-9, (t["id"], x)
+            end = x["start"] + x["length"]
+        assert abs(end - (t["start"] + t["length"])) < 1e-9, t["id"]
+
+
+def test_every_moment_of_every_turn_has_exactly_one_owner(show):
+    from pathlib import Path
+    from script_to_screen.script import series
+    demo = Path(__file__).resolve().parents[1] / "shows" / "demo"
+    for sg in series(demo).segments:
+        tiles(Scene(sg["path"]))
+    show.entity("b", reflex=9)                                         # he reacts after the line is over: that wait is owned too
+    slow = dict(id=3, who="a", say="Well?", react=[dict(who="b", feel={"shame": 2})], why="She waits.")
+    sc = Scene(show.scene("owned", [ENTER, TALK, slow, dict(id=4, why="Nobody speaks.")]))
+    tiles(sc)
+    owners = [x["param"] for t in sc.turns for x in t["stretches"]]
+    assert {"turn.pause", "syllable.length", "syllable.breath", "reaction.beat", "entity.reflex", "show.settle", "turn.hold"} <= set(owners)
+
+
+def test_every_stretch_can_be_tuned_by_its_own_address(s2s, show):
+    show.scene("kitchen", [ENTER, TALK])
+    for x in turn(s2s, 2)["stretches"]:
+        if x["address"]:
+            code, out = s2s("tune", "get", x["address"])
+            assert code == 0 and out["param"]["key"] == x["param"] and out["value"] == pytest.approx(x["length"]), x["address"]
+
+
+def test_a_breath_is_its_own_value_and_shortening_it_does_not_lengthen_the_word(s2s, show):
+    show.scene("kitchen", [ENTER, TALK])
+    saw = turn(s2s, 2)["sylls"][1]
+    assert (saw["mark"], saw["rest"]) == ("stop", 2)
+    assert s2s("tune", "set", "kitchen:2.s2.breath", "0.5")[0] == 0
+    now = turn(s2s, 2)["sylls"][1]
+    assert now["rest"] == 0.5 and now["len"] - now["rest"] == saw["len"] - saw["rest"]      # same voiced length; only the silence changed
+    assert len(Scene(s2s.path).lines) == 2                                                  # still two bubbles: tuning never moves a bubble break
+
+
+def test_widening_a_breath_sets_it_for_every_pause_of_that_kind_in_the_show(s2s, show):
+    show.scene("kitchen", [ENTER, TALK])
+    show.scene("later", [ENTER, dict(id=2, who="b", say="No. Not me. Never.", why="He denies it.")])
+    s2s("tune", "set", "kitchen:2.s2.breath", "1.5")
+    code, out = s2s("tune", "widen", "kitchen:2.s2.breath")
+    assert code == 0 and out["address"] == "show.breath.stop" and out["affects"] == 2       # the two full stops in the other scene
+    rests = [s["rest"] for s in Scene(s2s.root / "episodes" / "later.yaml").turns[1]["sylls"] if s["mark"] == "stop"]
+    assert rests == [1.5, 1.5] and turn(s2s, 2)["sylls"][4]["rest"] == 1                    # the comma keeps its own breath
+    assert len(Scene(s2s.root / "episodes" / "later.yaml").lines) == 3                      # and bubbles still break at the full stops
+    assert "the syllable" in s2s("tune", "widen", "kitchen:2.s1.breath")[1]["refused"]      # no punctuation: nothing to generalise from

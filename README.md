@@ -223,11 +223,11 @@ worked out.
 
 | Scope | Address | Holds |
 |---|---|---|
-| A syllable | `the-vase:2.s3.length` | length, pitch, stress |
+| A syllable | `the-vase:2.s3.length` | length (voiced), breath (the silence after it), pitch, stress |
 | A featured reaction | `the-vase:2.r1.beat` | how long it holds the scene |
 | A turn | `the-vase:2.hold` | pause, hold |
 | A scene | `the-vase.hold` | pause, hold for every turn in it |
-| The show | `show.hold`, `feel.overshoot` | timings, motion, the indicator, the voice |
+| The show | `show.hold`, `show.breath.stop`, `feel.overshoot` | timings, the breath after each kind of pause (comma, stop, ellipsis), motion, the indicator, the voice |
 | An entity, a tone, a sound | `@otis.reflex`, `~angry.rate`, `sounds.thud.vol` | their own settings |
 
     s2s tune get the-vase:2.hold          # the value, and every scope's say on it
@@ -235,6 +235,10 @@ worked out.
     s2s tune reset the-vase:2.hold        # take the hand-set value off
     s2s tune widen the-vase:2.hold        # move it out to the scene (then the show); says how many turns change
     s2s tune list                         # everything set by hand, beside what it replaced
+
+Tuning changes how a scene feels, never its structure: shortening a breath does not merge
+two bubbles, because bubbles break where the script's punctuation says, not where a tuned
+silence happens to fall.
 
 Per-syllable values belong to the words they were tuned against (`for:`). If the line is
 reworded they are set aside, not applied and not deleted, and `s2s check` and
@@ -250,9 +254,20 @@ let go, that one value is written to the file (comments and layout kept) and rec
 journal. The editor follows the files, so a change made elsewhere, by the assistant or in a
 text editor, appears within half a second and is never overwritten.
 
+**Whose time is it?** The top strip of the timeline divides the scene into stretches, and
+every stretch belongs to exactly one value: a pause, a syllable, a breath (hatched), a held
+reaction, a hold. Click a stretch and the **knob** appears on that value.
+
 | Do this | To |
 |---|---|
-| Click or drag the ruler; arrow keys (Shift for a whole step) | Move through the scene |
+| Click a stretch in the top strip | Put the knob on the value that owns that time |
+| Up or Down with nothing picked | Pick whatever owns the moment under the playhead |
+| Up, Down (Shift for a fine step); or type a number | Nudge the picked value. Each nudge is written at once; a quick run is one undo step |
+| Backspace | Take the hand-set value off; it goes back to what it inherits |
+| W | Widen: use this value for the next scope out (a turn's hold for its scene, then the show; a breath for every pause of its kind) |
+| Escape | Put the knob away |
+| Hover the dots beside the value | See every scope's say. One dot per scope, narrowest first; the filled one is where the value comes from, and it is coloured if set by hand |
+| Click or drag the ruler; Left and Right (Shift for a whole step) | Move through the scene |
 | Drag a turn's right edge | Change its hold |
 | Drag a line | Change the pause before it starts |
 | Drag the right edge of an outlined box in an entity's lane | Change how long a featured reaction holds the scene |

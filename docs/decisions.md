@@ -299,6 +299,21 @@ between episodes, or reused, without being edited.
 **Costs.** Two people adding episodes at once will touch the same file. A scene file on its
 own no longer says where it belongs.
 
+## 22. Tuning changes feel, never structure
+
+**Decision.** A hand-set value can change how long something lasts, how it sounds and how it
+moves. It cannot change what is felt, who stands where, which tells show, or where one
+bubble gives way to the next. Bubble breaks follow the script's punctuation, not tuned
+silences. A test sets every kind of hand-set value and checks the story is unchanged.
+
+**Instead of** letting a breath shortened below the break threshold merge two bubbles.
+
+**Because** the writer nudges by feel, dozens of times in a row, and must never have to ask
+whether a nudge changed the scene. It is also what lets a nudge skip the ledger and the
+earlier scenes, which is where its speed comes from.
+
+**Costs.** To merge or split bubbles the script has to change, through the assistant.
+
 ## Open questions
 
 These are not decided, because the conversation has not yet produced the evidence.

@@ -1,17 +1,18 @@
 """Hand-set values. A value tuned by hand lives in a `tune:` block at the scope it applies to:
 
-    a turn         tune: {for: "the line's words", pause: 3.5, length: {4: 3}, pitch: {5: 9}, stress: {5: 2}, beat: {1: 10}}
+    a turn         tune: {for: "the line's words", pause: 3.5, length: {4: 3}, breath: {2: 1.5}, pitch: {5: 9}, stress: {5: 2}, beat: {1: 10}}
     a scene        tune: {hold: 6}                      (top of the scene file: every turn in it)
     an entity      tune: {reflex: 1.5}                  (its sheet)
     a tone         angry: {..., tune: {rate: 2.5}}      (library/tones.yaml)
     a sound        thud: {..., tune: {vol: 0.5}}        (library/sounds.yaml)
-    the show       tune: {hold: 10}                     (show.yaml), and tune: {ease: 0.3} in library/feel.yaml
+    the show       tune: {hold: 10, breath: {stop: 1.5}}   (show.yaml), and tune: {ease: 0.3} in library/feel.yaml
 
 Where a value is stored says who set it: anything in a `tune:` block was set by hand, and it
 outranks the written value at the same scope. Deleting a block restores what was written or
 worked out. A value is looked for from the narrowest scope outward, and the first one found wins.
 """
-SYLLABLE = ("length", "pitch", "stress")          # per-syllable tunes, keyed by the syllable's number (from 1)
+SYLLABLE = ("length", "breath", "pitch", "stress")   # per-syllable tunes, keyed by the syllable's number (from 1)
+BREATH = {"comma": 1, "stop": 2, "ellipsis": 3}    # steps of breath after each kind of pause, unless the show says otherwise
 TIMING = ("pause", "hold", "settle", "bubble_break")
 
 

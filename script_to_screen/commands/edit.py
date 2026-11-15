@@ -135,10 +135,27 @@ def record(root, command, because, path, changes, before_text, after_text, by="c
     n = len(entries(root)) + 1
     journal(root).parent.mkdir(exist_ok=True)
     with open(journal(root), "a") as fh:
-        fh.write(json.dumps(dict(id=n, at=time.strftime("%Y-%m-%dT%H:%M:%S"), by=by, command=command, because=because, group=group,
+        fh.write(json.dumps(dict(id=n, at=time.strftime("%Y-%m-%dT%H:%M:%S"), t=time.time(), by=by, command=command, because=because, group=group,
                                  path=str(Path(path).relative_to(root)), changes=changes,
                                  before=before_text, after=after_text), ensure_ascii=False) + "\n")
     return n
+
+
+def coalesce(root, window=1.5):
+    """If the last two changes are the same hand nudging the same value in quick succession, make them one,
+    so that undo takes back the whole gesture and not one keystroke. -> whether it merged."""
+    lines = journal(root).read_text().splitlines() if journal(root).exists() else []
+    if len(lines) < 2:
+        return False
+    a, b = json.loads(lines[-2]), json.loads(lines[-1])
+    one = lambda e: "undoes" not in e and "redoes" not in e and e.get("by") == "hand" and not e.get("group") and len(e.get("changes") or []) == 1
+    if not (one(a) and one(b) and a["path"] == b["path"] and a["changes"][0]["address"] == b["changes"][0]["address"]
+            and b.get("t", 0) - a.get("t", 0) <= window and a["after"] == b["before"]):
+        return False
+    a["after"], a["t"] = b["after"], b["t"]
+    a["changes"][0]["after"] = b["changes"][0]["after"]
+    journal(root).write_text("\n".join(lines[:-2] + [json.dumps(a, ensure_ascii=False)]) + "\n")
+    return True
 
 
 def stacks(root, by=None):

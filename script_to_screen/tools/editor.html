@@ -43,6 +43,16 @@
   #ledger { display: flex; gap: 10px; padding: 0 8px; flex: none; }
   .led { display: flex; align-items: center; gap: 5px; } .led > i { width: 9px; height: 9px; border-radius: 50%; }
   .pips { display: flex; gap: 2px; } .pips u { width: 6px; height: 6px; border-radius: 50%; border: 1.5px solid; box-sizing: border-box; }
+  .own { position: absolute; height: 10px; margin-top: -5px; border-radius: 3px; cursor: pointer; box-sizing: border-box; opacity: .75; }
+  .own:hover { opacity: 1; } .own.fixed { cursor: default; opacity: .3; }
+  .own.gap { background: repeating-linear-gradient(135deg, #8a90a8 0 2px, transparent 2px 5px); border: 1px solid #8a90a855; }
+  .own.sel { opacity: 1; outline: 2px solid #fff; outline-offset: 1px; z-index: 3; }
+  #knob { display: none; align-items: center; gap: 7px; padding: 2px 6px 2px 8px; border: 1px solid var(--accent); border-radius: 6px; background: var(--bg); flex: none; }
+  #knob > i { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  #knob input { all: unset; width: 46px; font: 500 12px ui-monospace, Menlo, monospace; color: var(--text); text-align: right; user-select: text; }
+  #knob .sc { display: flex; gap: 3px; cursor: help; } #knob .sc u { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid var(--mute); box-sizing: border-box; }
+  #knob .sc u.on { background: var(--mute); } #knob .sc u.hand { border-color: var(--accent); background: var(--accent); }
+  #knob button { width: 20px; height: 20px; } #knob button svg { width: 12px; height: 12px; }
   #tl { display: flex; background: var(--panel); }
   #gutter { width: 34px; flex: none; position: relative; border-right: 1px solid var(--line); }
   #gutter div { position: absolute; left: 0; width: 100%; display: grid; place-items: center; color: var(--mute); }
@@ -90,6 +100,7 @@
     <button id="carry"><svg viewBox="0 0 16 16"><path d="M2 8h8M7 5l3 3-3 3M13 3v10"/></svg></button>
     <span id="tc"></span>
     <div id="sel" title="Steps for the selected timing. Type a number, or Alt+arrow to nudge a quarter step."><i></i><input id="selv" type="number" step="0.25"></div>
+    <div id="knob"><i></i><input id="knobv" type="number"><span class="sc" id="knobs"></span><button id="kreset"><svg viewBox="0 0 16 16"><path d="M3 8a5 5 0 1 0 1.6-3.7M3 3v3h3"/></svg></button><button id="kwide"><svg viewBox="0 0 16 16"><path d="M6 3H3v3M10 3h3v3M6 13H3v-3M10 13h3v-3"/></svg></button></div>
     <span id="why" title="Why this turn happens"></span>
     <div id="ledger"></div>
     <button id="flag"><svg viewBox="0 0 16 16"><path d="M8 2.5 14.5 13h-13zM8 7v3M8 11.6v.1"/></svg></button>
@@ -109,6 +120,7 @@ const $ = id => document.getElementById(id);
 const view = $('view'), ctx = view.getContext('2d'), scroll = $('scroll'), track = $('track'), ruler = $('ruler');
 const PAD = 14, RULER = 24, ROW = 26, ROLL = 84;
 const ICON = {
+  own: '<svg viewBox="0 0 16 16"><path d="M2 5v6M14 5v6M2 8h12M6 6.5v3M10 6.5v3"/></svg>',
   play: '<svg viewBox="0 0 16 16"><path d="M5 3v10l8-5z" fill="currentColor"/></svg>',
   pause: '<svg viewBox="0 0 16 16"><path d="M5 3v10M11 3v10" stroke-width="2.4"/></svg>',
   turns: '<svg viewBox="0 0 16 16"><rect x="2" y="4" width="5" height="8" rx="1"/><rect x="9" y="4" width="5" height="8" rx="1"/></svg>',
@@ -118,7 +130,7 @@ const ICON = {
   snd: '<svg viewBox="0 0 16 16"><path d="M3 6h2l3-3v10l-3-3H3zM10.5 5.5a3.5 3.5 0 0 1 0 5M12.5 3.5a6.5 6.5 0 0 1 0 9"/></svg>',
 };
 let S = null, F = 0, pps = 12, playing = false, loop = false, stalled = false, xray = false;
-let frames = new Map(), selected = null, drag = null;
+let frames = new Map(), selected = null, drag = null, pick = null, picked = null;   // pick: the address the knob is on; picked: what the server says about it
 let audio = new Audio(), audioRev = -1, muted = false, clock0 = 0, clockBase = 0, range = [0, 0];
 
 const api = async (path, body) => {
@@ -190,7 +202,8 @@ function setF(f, keepView) {
 let rollLo = -5, rollHi = 12, rollTop = 0;
 const ySemi = v => rollTop + 8 + (rollHi - v) / (rollHi - rollLo) * (ROLL - 16);
 function build() {
-  const lanes = [['turns', ICON.turns, 'Turns: hover one to read why it happens. Drag its right edge to change how long it holds.', ROW],
+  const lanes = [['own', ICON.own, 'Whose time is it? Every stretch of the scene belongs to exactly one value: a pause, a syllable, a breath (hatched), a held reaction, a hold. Click a stretch to put the knob on that value, then \u2191 \u2193 to nudge it.', 18],
+    ['turns', ICON.turns, 'Turns: hover one to read why it happens. Drag its right edge to change how long it holds.', ROW],
     ...S.entities.map(e => [e.id, `<i style="background:${e.color}"></i>`, `${e.id}${e.kind ? ' (' + e.kind + ')' : ''}: what it feels. Filled pips show; hollow pips are held in. A diamond is a reaction in passing; an outlined box is a reaction that holds the scene.`, ROW]),
     ['say', ICON.say, 'Lines: drag one to change the pause before it starts. A gap marks where one bubble gives way to the next.', ROW],
     ['roll', ICON.roll, 'Every syllable is one note. Brightness is stress: faint is weak, solid is strong, ringed is the phrase\'s main accent. Double-click a note to change its stress. Drag it up or down for pitch (Alt for notes outside the scale), or drag its right edge for length. Hold Shift for quarter steps. A white outline marks a line you have set by hand.', ROLL]];
@@ -199,13 +212,22 @@ function build() {
   const H = top + 8;
   $('gutter').innerHTML = lanes.map(l => `<div style="top:${y[l[0]] - l[3] / 2}px;height:${l[3]}px" title="${l[2]}">${l[1]}</div>`).join('');
   $('gutter').style.height = H + 'px';
-  track.querySelectorAll('.turn,.cut,.beat,.felt,.say,.note,.rx').forEach(d => d.remove());
+  track.querySelectorAll('.turn,.cut,.beat,.felt,.say,.note,.rx,.own').forEach(d => d.remove());
   track.style.width = x(S.steps) + PAD + 'px'; track.style.height = H + 'px'; $('head').style.height = H + 'px';
   const all = S.turns.flatMap(t => t.say ? t.say.sylls.map(s => s.semi) : []);
   rollLo = Math.min(-3, ...all) - 2; rollHi = Math.max(9, ...all) + 2;
   if (S.spb * pps >= 18) for (let b = 0; b <= S.steps; b += S.spb) el('beat', { left: x(b) + 'px', top: RULER + 'px', height: H - RULER + 'px' });
   const mark = (d, path, hi, value, color) => { d.dataset.key = JSON.stringify(path); d._m = { path, lo: 0, hi, value, color }; if (selected === d.dataset.key) d.classList.add('sel'); };
   for (const t of S.turns) {
+    for (const s of t.stretches) {                         // who owns each stretch of this turn's time
+      const kind = s.param ? s.param.split('.')[1] : 'fixed', spk = t.who && S.entities.find(e => e.id === t.who);
+      const who = kind === 'beat' ? S.entities.find(e => s.label.startsWith(e.id + ' ')) : spk;
+      const c = kind === 'length' || kind === 'beat' ? (who ? who.color : '#888') : kind === 'breath' ? '' : '#6e79d6';
+      const d = el('own' + (s.address ? '' : ' fixed') + (kind === 'breath' ? ' gap' : '') + (pick === s.address ? ' sel' : ''),
+        { left: x(s.start) + 'px', top: y.own + 'px', width: Math.max(s.length * pps - 1, 3) + 'px', background: c },
+        `${s.label} \u00b7 ${num(s.length)} steps` + (s.address ? '' : '\nNo tunable value owns this; it follows from what the character feels.'));
+      if (s.address) { d.dataset.addr = s.address; d._s = s; }
+    }
     const b = el('turn', { left: x(t.start) + 'px', top: y.turns - 12 + 'px', width: t.length * pps - 2 + 'px' }, `Turn ${t.id} · ${num(t.length)} steps (${(t.length * S.step).toFixed(2)}s)\n${t.why}`);
     b.textContent = t.id; b.dataset.id = t.id;
     const g = document.createElement('div'); g.className = 'grip'; g.title = `Hold: ${num(t.hold)} steps after the turn finishes. Drag to change; hold Shift for quarter steps.`; b.appendChild(g);
@@ -257,7 +279,7 @@ function build() {
   $('ledger').innerHTML = S.entities.filter(e => S.ledger[e.id]).map(e => `<span class="led"><i style="background:${e.color}" title="${e.id}: what the audience has had the chance to learn"></i>` +
     Object.entries(S.ledger[e.id]).map(([emo, c]) => `<span title="${e.id} · ${emo}: shown in ${c.seen} of the ${c.need} scenes needed${c.positions.length ? ' (' + c.positions.join(', ') + ')' : ''}. ${c.learned ? 'The audience can read it now.' : 'Not learned yet.'}${c.hidden ? ` Felt but hidden in ${c.hidden}.` : ''}">${pips(c.need, c.seen, S.emotions[emo] || '#888')}</span>`).join('') + '</span>').join('');
   document.title = S.title;
-  showSel();
+  showSel(); showKnob();
   setF(Math.min(F, S.total - 1), true);
 }
 function drawRuler() {
@@ -281,6 +303,51 @@ function drawRuler() {
   g.fillStyle = '#6e79d6'; const hx = x(stepsOf(F)) - off; g.beginPath(); g.moveTo(hx - 5, 0); g.lineTo(hx + 5.5, 0); g.lineTo(hx + .5, 7); g.fill();
 }
 
+// ---- the knob: one control for whichever value is picked ----------------------------------------
+function showKnob() {
+  const k = $('knob'); k.style.display = pick && picked ? 'flex' : 'none';
+  track.querySelectorAll('.own').forEach(d => d.classList.toggle('sel', d.dataset.addr === pick));
+  if (!pick || !picked) return;
+  const p = picked.param, v = $('knobv');
+  k.title = `${p.label}: ${p.meaning}\n${p.lo} to ${p.hi} ${p.unit}.  \u2191 \u2193 nudge by ${p.step} (Shift: ${p.fine}).  Backspace takes a hand-set value off.  W widens it.\n${picked.address}`;
+  v.step = p.fine; v.min = p.lo; v.max = p.hi; if (document.activeElement !== v) v.value = num(picked.value);
+  const from = picked.chain[0];                           // one mark per scope, narrowest first; filled where the value comes from
+  $('knobs').innerHTML = p.scopes.map(s => `<u class="${s === from.scope ? (from.by === 'hand' ? 'hand' : 'on') : ''}"></u>`).join('');
+  $('knobs').title = 'Where this value comes from, narrowest scope first:\n' + p.scopes.join(' \u2192 ') + '\n\n' +
+    picked.chain.map((c, i) => `${i ? '   ' : '\u25b6 '}${c.scope}: ${c.value} (${c.by === 'hand' ? 'set by hand' : c.by})`).join('\n');
+  $('kreset').disabled = !picked.hand_here; $('kreset').title = picked.hand_here ? 'Take the hand-set value off (Backspace): it goes back to ' + (picked.chain[1] ? picked.chain[1].value : 'what it was') : 'Nothing is set by hand here';
+  $('kwide').style.display = picked.wider ? '' : 'none'; $('kwide').title = picked.wider ? `Widen (W): use this value for the whole ${picked.wider}` : '';
+}
+async function pickAt(addr, jump) {
+  pick = addr; picked = null; selected = null; showSel();
+  if (!addr) return showKnob();
+  try { picked = await api('/value?address=' + encodeURIComponent(addr)); } catch (e) { pick = null; toast(e.message, true); }
+  showKnob();
+}
+const ownerAt = f => { const s = stepsOf(f) + 1e-6, t = turnAt(f); return t.stretches.find(x => x.address && s >= x.start && s < x.start + x.length); };
+let nudging = false, nudgeNext = null;
+async function nudge(op, value) {                        // each nudge is written at once; a quick run of them is one undo step
+  if (!pick) return;
+  nudgeNext = { op, value };
+  if (nudging) return;
+  nudging = true;
+  while (nudgeNext) {
+    const q = nudgeNext; nudgeNext = null;
+    try {
+      const r = await api('/nudge', { address: pick, op: q.op, value: q.value });
+      if (r.dirty_from != null) dropFrames(r.dirty_from);
+      S = r.state; picked = r.value || picked; build(); showKnob();
+      if (q.op === 'widen' && r.value) toast(`${picked.param.label} ${num(picked.value)} now holds for the whole ${picked.chain[0].scope}`);
+      if ($('tune').style.display === 'block') buildTune();
+    } catch (e) { toast(e.message, true); }
+  }
+  nudging = false;
+}
+const bump = (dir, fine) => { if (!picked) return; const p = picked.param, d = fine ? p.fine : p.step; picked.value = Math.min(Math.max(Math.round((picked.value + dir * d) / p.fine) * p.fine, p.lo), p.hi); showKnob(); nudge('set', picked.value); };
+track.addEventListener('click', e => { const d = e.target.closest('.own'); if (d && d.dataset.addr) { pause(); pickAt(d.dataset.addr); } });
+$('knobv').addEventListener('change', () => { if (picked) { picked.value = Math.min(Math.max(+$('knobv').value || 0, picked.param.lo), picked.param.hi); nudge('set', picked.value); $('knobv').blur(); } });
+$('kreset').onclick = () => nudge('reset'); $('kwide').onclick = () => nudge('widen');
+
 // ---- editing ---------------------------------------------------------------------------------
 let sending = false, queue = [];
 // While a value is dragged it is previewed; letting go commits it: the server writes the file and journals the change.
@@ -291,7 +358,7 @@ async function patch(path, value, commit = false) {
   sending = true;
   while (queue.length) {
     const op = queue.shift();
-    try { const r = await api('/patch', { ops: [{ path: op.path, value: op.value }], commit: op.commit }); if (r.dirty_from != null) dropFrames(r.dirty_from); S = r.state; build(); }
+    try { const r = await api('/patch', { ops: [{ path: op.path, value: op.value }], commit: op.commit }); if (r.dirty_from != null) dropFrames(r.dirty_from); S = r.state; build(); if (op.commit && pick) pickAt(pick); }
     catch (e) { toast(e.message, true); try { S = await api('/state'); dropFrames(0); build(); } catch (x) {} }
   }
   sending = false;
@@ -366,7 +433,7 @@ async function hear(ti) {                                 // after changing a no
 $('selv').addEventListener('change', () => { const d = showSel(); if (!d) return; const v = Math.min(Math.max(+$('selv').value || 0, d._m.lo), d._m.hi); commit(d._m.path, d._m.value, v); $('selv').blur(); });
 async function step(which) {                              // the journal is on the server, so undo survives a restart and covers sliders
   pause();
-  try { const r = await api('/' + which, {}); dropFrames(0); S = r.state; build(); if ($('tune').style.display === 'block') buildTune(); }
+  try { const r = await api('/' + which, {}); dropFrames(0); S = r.state; build(); if ($('tune').style.display === 'block') buildTune(); if (pick) pickAt(pick); }
   catch (e) { toast(e.message, true); }
 }
 $('undo').onclick = () => step('undo'); $('redo').onclick = () => step('redo');
@@ -378,7 +445,7 @@ $('render').onclick = async () => {
 async function openScene(dir) {
   pause();
   try { S = (await api('/open', { step: dir })).state; } catch (e) { return toast(e.message, true); }
-  dropFrames(0); selected = null; F = 0; fit(); build(); scroll.scrollLeft = 0;
+  dropFrames(0); selected = null; pick = picked = null; F = 0; fit(); build(); scroll.scrollLeft = 0;
 }
 $('prev').onclick = () => openScene(-1); $('next').onclick = () => openScene(1);
 $('xray').onclick = () => { xray = !xray; $('xray').classList.toggle('on', xray); dropFrames(0); fill(); };
@@ -480,6 +547,13 @@ addEventListener('keydown', e => {
   else if (low === 't') $('tuneb').click();
   else if (k === '[') openScene(-1);
   else if (k === ']') openScene(1);
+  else if (k === 'ArrowUp' || k === 'ArrowDown') {        // nudge the picked value; with nothing picked, pick whatever owns this moment
+    if (!pick) { const o = ownerAt(F); if (o) { pause(); pickAt(o.address); } }
+    else bump(k === 'ArrowUp' ? 1 : -1, e.shiftKey);
+  }
+  else if ((k === 'Backspace' || k === 'Delete') && pick) nudge('reset');
+  else if (low === 'w' && pick && picked && picked.wider) nudge('widen');
+  else if (k === 'Escape' && pick) pickAt(null);
   else if ((k === 'ArrowLeft' || k === 'ArrowRight') && e.altKey) {
     const d = showSel(); if (!d) return; const v = Math.min(Math.max(d._m.value + (k === 'ArrowLeft' ? -0.25 : 0.25), d._m.lo), d._m.hi);
     commit(d._m.path, d._m.value, v);
@@ -492,11 +566,11 @@ addEventListener('keydown', e => {
 });
 
 setInterval(async () => {                                // follow the files: pick up changes made elsewhere
-  if (!S || drag || sending || tuning) return;
+  if (!S || drag || sending || tuning || nudging) return;
   try {
     const r = await api('/poll');
-    if (drag || sending || tuning) return;
-    if (r.rev !== S.rev) { S = await api('/state'); dropFrames(0); build(); if ($('tune').style.display === 'block') buildTune(); }
+    if (drag || sending || tuning || nudging) return;
+    if (r.rev !== S.rev) { S = await api('/state'); dropFrames(0); build(); if ($('tune').style.display === 'block') buildTune(); if (pick) pickAt(pick); }
     else if (r.info_rev !== S.info_rev) { S = await api('/state'); build(); }
   } catch (e) {}
 }, 500);

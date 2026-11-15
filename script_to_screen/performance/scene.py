@@ -133,14 +133,15 @@ class Scene:
                     for k in vals:
                         if not 1 <= k <= n:
                             self.flag("error", tid, f"a hand-tuned {name} is set for syllable {k}, but the line has {n}")
-                sylls = speech.plan(say, self.show.tones[tone], self.show.cfg["scale"], rhythm, melody, stress, cuts, gap, tunes)
+                sylls = speech.plan(say, self.show.tones[tone], self.show.cfg["scale"], rhythm, melody, stress, cuts, gap, tunes,
+                                    self.show.breath, self.show.breath_written)
                 say_at = pause + a[who]["latency"]
                 reveal = sum(s["len"] for s in sylls)
                 react = say_at + reveal
                 b = 0
                 for k, s in enumerate(sylls):
                     s["bubble"] = b
-                    ends = (k + 1) in cuts if parts else s["rest"] >= gap
+                    ends = (k + 1) in cuts if parts else s["base"]["breath"] >= gap     # tuning a breath never moves a bubble break
                     if ends and k < len(sylls) - 1:
                         b += 1
                 span = (min(s["semi"] for s in sylls), max(s["semi"] for s in sylls))
@@ -209,7 +210,7 @@ class Scene:
                                    reveal=reveal, react=react if late else 0, line=line, sylls=sylls,
                                    rhythm=raw.get("rhythm"), melody=raw.get("melody"), stress=raw.get("stress"),
                                    relies_on=raw.get("relies_on") or {},
-                                   reacts=reacts,
+                                   reacts=reacts, stretches=self._stretches(tid, t0, who, bool(say), pause, say_at, sylls, reacts, length, hold),
                                    info=[(at, {e: o["info"] for e, o in obs.items()}) for at, obs in snaps]))
             t0 += length
         if not self.turns:
@@ -240,6 +241,38 @@ class Scene:
                 prev = o
         # the fourth value says the event belongs to a reaction in passing; how much quieter that is, is presentation's call
         self.events = sorted(((t, n, e, (round(t, 4), e) in self.quiet) for t, n, e in self.events), key=lambda ev: ev[0])
+
+    def _stretches(self, tid, t0, who, spoken, pause, say_at, sylls, reacts, length, hold):
+        """Who owns each stretch of a turn's time. Laid end to end they are the whole turn, with no gaps
+        and no overlaps, so any moment on screen can be traced to the one value that sets how long it lasts.
+
+        -> [{start, length, param, address, label}] with `start` in steps from the start of the scene.
+        `address` is how that value is tuned (see `s2s tune`); it is None for time no tunable value owns."""
+        out, at, here = [], 0.0, f"{self.key}:{tid}"
+
+        def add(n, param, address, label):
+            nonlocal at
+            if n > 1e-9:
+                out.append(dict(start=t0 + at, length=n, param=param, address=address, label=label))
+                at += n
+
+        if spoken:
+            add(pause, "turn.pause", f"{here}.pause", f"pause before {who} speaks")
+            add(say_at - pause, None, None, f"{who} is slow to answer (a tell)")
+            for k, s in enumerate(sylls, 1):
+                word = s["text"].strip()
+                add(s["len"] - s["rest"], "syllable.length", f"{here}.s{k}.length", f"\u201c{word}\u201d")
+                add(s["rest"], "syllable.breath", f"{here}.s{k}.breath", f"breath after \u201c{word}\u201d")
+        else:
+            add(float(self.show.cfg["timing"]["settle"]), "show.settle", "show.settle", "a turn with no line settles")
+        for r in sorted((r for r in reacts if r["beat"]), key=lambda r: r["at"]):
+            add(r["beat"], "reaction.beat", f"{here}.r{r['index'] + 1}.beat", f"{r['who']} holds the scene")
+        late = [r for r in reacts if not r["beat"] and r["at"] > at + 1e-9]
+        if late:                                             # the line is over, but someone has yet to react
+            slow = max(late, key=lambda r: r["at"])
+            add(slow["at"] - at, "entity.reflex", f"@{slow['who']}.reflex", f"waiting for {slow['who']} to react")
+        add(length - at, "turn.hold", f"{here}.hold", "hold after the turn")
+        return out
 
     def _trigger(self, on, sylls, say_at, tid):
         """When a background reaction fires, in steps from the turn's start: on a word of the line

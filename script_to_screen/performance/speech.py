@@ -6,7 +6,8 @@ import math
 import re
 import zlib
 
-REST = {",": 1, ";": 1, ":": 1, ".": 2, "!": 2, "?": 2, "…": 3}     # breath after punctuation, in steps
+MARK = {",": "comma", ";": "comma", ":": "comma", ".": "stop", "!": "stop", "?": "stop", "…": "ellipsis"}   # what kind of pause a mark is
+BREATH = {"comma": 1, "stop": 2, "ellipsis": 3}                     # the breath after each kind, in steps, unless the show says otherwise
 WEAK = set("""a an the of to in on at by for from with and or but so if as than is am are was were be been
 it its i you he she we they me him her us them my your his our their this that these those there
 do does did have has had will would can could should shall may might must i'm i'd i'll i've you're you'd
@@ -43,7 +44,8 @@ def split_word(w):
 
 
 def syllables(text):
-    """-> [{text, rest, stress}]. stress: 0 weak, 1 strong, 2 the main accent of its phrase.
+    """-> [{text, mark, rest, stress}]. mark: the kind of pause that follows (comma, stop, ellipsis) or None;
+    rest: that pause's usual breath in steps; stress: 0 weak, 1 strong, 2 the main accent of its phrase.
 
     Stress is guessed: small grammatical words are weak, other words are strong on their first
     syllable (or second, for a list of common exceptions). Write ^ before a syllable to force
@@ -69,12 +71,12 @@ def syllables(text):
         for pi, part in enumerate(parts):
             last = pi == len(parts) - 1
             part = part.replace("^", "")
-            out.append(dict(text=part + (" " if last and wi < len(words) - 1 else ""),
-                            rest=REST.get(part.rstrip("\"')")[-1:], 0) if last else 0,
-                            stress=1 if pi == strong else 0))
+            mark = MARK.get(part.rstrip("\"')")[-1:]) if last else None
+            out.append(dict(text=part + (" " if last and wi < len(words) - 1 else ""), mark=mark,
+                            rest=BREATH[mark] if mark else 0, stress=1 if pi == strong else 0))
     if not out:
         return out
-    out[-1]["rest"] = 0
+    out[-1]["rest"], out[-1]["mark"] = 0, None                # nothing follows the last syllable, so no breath
     start = 0
     for i, s in enumerate(out):                           # the last strong syllable of each phrase carries it
         if s["rest"] or i == len(out) - 1:
@@ -88,13 +90,16 @@ def semi_of(degree, scale):
     return 12 * (degree // len(scale)) + scale[degree % len(scale)]
 
 
-def plan(text, tone, scale, rhythm=None, melody=None, stress=None, breaks=(), gap=2, tune=None):
-    """-> [{text, at, len, semi, stress, rest}]: each syllable's start and length in steps, its pitch
-    in semitones, its stress, and how much of its length is the breath after punctuation.
+def plan(text, tone, scale, rhythm=None, melody=None, stress=None, breaks=(), gap=2, tune=None, breaths=None, breaths_base=None):
+    """-> [{text, at, len, rest, semi, stress, mark, base}]: each syllable's place on the grid in steps.
+    A syllable's slot (`len`) is its voiced length plus its breath (`rest`), the silence after punctuation.
 
-    `tune` holds hand-set values for single syllables, by number from 1: {length: {4: 3}, pitch: {5: 9},
-    stress: {5: 2}}. Each is laid over what was written or worked out, and each syllable keeps the
-    value it would have had (`base`), so a tune can be seen and taken off.
+    `breaths` is how long each kind of pause breathes in this show ({comma, stop, ellipsis});
+    `breaths_base` is the same before any hand-tuning, and is what decides where bubbles break.
+
+    `tune` holds hand-set values for single syllables, by number from 1: {length: {4: 3}, breath: {2: 1.5},
+    pitch: {5: 9}, stress: {5: 2}}. `length` is the voiced length. Each is laid over what was written or
+    worked out, and each syllable keeps the values it would have had (`base`), so a tune can be seen and taken off.
 
     Anything not given is worked out. Stress comes from the words. Rhythm is the tone's `rate`
     (steps for a strong syllable), halved for weak ones and half as long again for a phrase's
@@ -103,9 +108,12 @@ def plan(text, tone, scale, rhythm=None, melody=None, stress=None, breaks=(), ga
     """
     syl = syllables(text)
     n = len(syl)
+    was, now = breaths_base or BREATH, breaths or breaths_base or BREATH
+    for s in syl:
+        s["rest"], s["now"] = (was[s["mark"]], now[s["mark"]]) if s["mark"] else (0, 0)
     for k in breaks:                                      # a break chosen by hand is a pause too
         if 0 < k < n:
-            syl[k - 1]["rest"] = max(syl[k - 1]["rest"], gap)
+            syl[k - 1]["rest"], syl[k - 1]["now"] = max(syl[k - 1]["rest"], gap), max(syl[k - 1]["now"], gap)
     if stress is not None:
         for s, v in zip(syl, stress):
             s["stress"] = max(0, min(2, int(v)))
@@ -130,16 +138,19 @@ def plan(text, tone, scale, rhythm=None, melody=None, stress=None, breaks=(), ga
             elif span >= 2:                               # a little wander among the weak ones
                 d += (0, 0, 0, -1)[(seed >> ((k % 16) * 2)) & 3]
             melody.append(semi_of(round(d), scale))
-    rhythm, melody = list(rhythm), list(melody)
-    base = [dict(length=ln, pitch=m, stress=st) for ln, m, st in zip(rhythm, melody, base_stress)]
-    for k, v in (tune.get("length") or {}).items():
-        if 1 <= k <= n:
-            rhythm[k - 1] = max(0.25, float(v))
+    melody = list(melody)
+    base = []
+    for s, total, m, st in zip(syl, rhythm, melody, base_stress):     # split each slot into its voiced part and its breath
+        breath = max(0, min(s["rest"], total - 0.5))
+        base.append(dict(length=total - breath, breath=breath, pitch=m, stress=st))
     for k, v in (tune.get("pitch") or {}).items():
         if 1 <= k <= n:
             melody[k - 1] = int(round(v))
+    hand_len, hand_breath = tune.get("length") or {}, tune.get("breath") or {}
     out, at = [], 0
-    for s, ln, m, b in zip(syl, rhythm, melody, base):        # `rest` is the silent part at the end of `len`
-        out.append(dict(text=s["text"], at=at, len=ln, semi=m, stress=s["stress"], rest=max(0, min(s["rest"], ln - 0.5)), base=b))
-        at += ln
+    for k, (s, m, b) in enumerate(zip(syl, melody, base), 1):
+        voiced = max(0.25, float(hand_len[k])) if k in hand_len else b["length"]
+        rest = max(0.0, float(hand_breath[k])) if k in hand_breath else (b["breath"] if s["now"] == s["rest"] else s["now"])
+        out.append(dict(text=s["text"], at=at, len=voiced + rest, semi=m, stress=s["stress"], rest=rest, mark=s["mark"], base=b))
+        at += voiced + rest
     return out
