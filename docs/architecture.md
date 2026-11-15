@@ -11,8 +11,9 @@ arrived (title screens, music scoring, series tracking, and AI as the main way o
 
 ## The idea in one paragraph
 
-The author types what they want. An AI assistant turns that into **commands**, the only way
-anything changes. Commands edit the **script**, which is what the author means. From the
+The tool contains no AI. A writer talks to an assistant such as Claude, and the assistant
+operates the tool through its command line or its MCP server, both built to be easy for an
+assistant to use. Either way, what it sends are **commands**, the only way anything changes. Commands edit the **script**, which is what the author means. From the
 script the engine computes the **world** (everything true at each moment), then the
 **performance** (everything that could be seen or heard, as tracks on a timeline), then the
 **presentation** (pixels and sound). Readers such as the checks, the audience ledger and the
@@ -66,13 +67,31 @@ breaks in four ways:
 `add_offscreen_event`, `place_cue`, and so on. A command is typed, validated before it is
 applied, undoable, and recorded with who asked for it and in what words.
 
-There are three operators, and they are equals in what they can do:
+There are three ways in, and they are equals in what they can do:
 
-| Operator | For | How |
+| Way in | Used by | For |
 |---|---|---|
-| **An AI assistant** | Writing and revising from plain-language notes. The main way of working | An MCP server, `toon mcp` |
-| **The editor** | Tuning by hand: timing, pitch, sliders; watching changes arrive | A browser page sending the same commands |
-| **The command line** | Rendering, checking, automation | `toon ...` |
+| **The command line**, `toon ...` | An assistant working in a terminal; scripts; a person | Everything |
+| **The MCP server**, `toon mcp` | An assistant connected over MCP | Everything, plus reading the show as resources |
+| **The editor** | A person, by hand | Timing, pitch, sliders; watching an assistant's changes arrive |
+
+The command line and the MCP server are generated from the same list of commands, so neither
+can do something the other cannot, and neither can fall behind.
+
+**What makes the command line good for an assistant.** An assistant uses a command line the
+way a careful stranger would: it reads the help, runs something, and reads what comes back.
+So:
+
+| Property | Meaning |
+|---|---|
+| It describes itself | `toon help`, `toon help <command>` and `toon commands --json` list every command, its arguments and an example. Nothing has to be known in advance |
+| Every command can answer in JSON | `--json` gives the same result a person sees, as data |
+| It never asks a question | No prompts and no confirmations. A command runs or refuses |
+| It can be rehearsed | `--dry-run` reports exactly what would change and what would then be wrong, and changes nothing |
+| A refusal says what to do | "No word 'dumplings' in this line. Its words are: someone, ate, the, last, dumpling." |
+| Things have short, stable addresses | `s01/e01/vase:3` is turn 3 of that scene, wherever the file is |
+| Results are files at stated paths | A render prints where the clip or still went |
+| Exit codes mean something | Success, refused, and check-failed are different numbers |
 
 **Why commands and not file edits, for the AI in particular.** An assistant that edits text
 can produce a file that parses and means nothing. An assistant that calls `add_reaction(who,
@@ -87,31 +106,35 @@ the line. The files stay readable and hand-editable (decision 11), but nobody ha
 | **Tools** (things to do) | Every command; `check`; `explain` (why is this value what it is); `render_still`, `render_contact_sheet`, `render_clip`; `compare` | Doing, verifying and looking are all first-class |
 | **Prompts** (ways of working) | Draft a scene from a description; stage a scene I know; apply these notes; tighten the pacing; propose a title sequence | The house method, shipped with the tool |
 
-**The loop the author experiences**
+**The loop the writer experiences.** The conversation is between the writer and their
+assistant. The tool is what the assistant reaches for.
 
-1. The author types: *"In the vase scene, Otis should seem more defensive, and let the
-   silence after 'I saw' run longer."*
-2. The assistant reads the scene and Otis's sheet, and asks `explain` why he currently looks
-   down and goes quiet.
-3. It proposes a **change set**: raise his shame from 2 to 3 on that line; lengthen the hold
-   after "I saw" from 8 steps to 14. Each change carries a reason, because every turn must.
-4. The engine checks it. If the ledger objects (a payoff resting on an unlearned tell), the
-   assistant sees that and revises before the author is bothered.
-5. The assistant renders stills, looks at them, and shows the author a clip.
-6. The author accepts, rejects, or types another note. Accepting applies the commands; the
-   editor, if open, updates live.
+1. The writer tells the assistant: *"In the vase scene, Otis should seem more defensive, and
+   let the silence after 'I saw' run longer."*
+2. The assistant reads the scene and Otis's sheet, and runs `explain` to see why he
+   currently looks down and goes quiet.
+3. It rehearses a **change set** with `--dry-run`: raise his shame from 2 to 3 on that line;
+   lengthen the hold after "I saw" from 8 steps to 14. Each change carries a reason, because
+   every turn must.
+4. The tool reports what would then be wrong. If the ledger objects (a payoff resting on an
+   unlearned tell), the assistant revises before the writer is bothered.
+5. The assistant applies the changes, renders stills, looks at them, and shows the writer a
+   clip.
+6. The writer says yes, no, or something else. Anything applied can be undone; the editor,
+   if open, updates live.
 
 Three properties make that loop trustworthy:
 
 - **Every response says what changed, what is now wrong, and how to see it.** The assistant
   can correct itself without the author.
-- **Changes are proposed as a set and applied on approval.** The author reviews outcomes and
-  reasons, not syntax.
+- **Changes can be rehearsed, grouped and undone.** How much the assistant shows the writer
+  before applying is between the two of them; the tool makes either choice safe.
 - **Provenance is kept.** Each change records the author's own words that caused it. "Why is
   this hold 14?" has an answer a year later.
 
-**No model lives inside the engine.** The engine is deterministic and has no AI dependency.
-Any assistant that speaks MCP can operate it, which also means it can be tested without one.
+**No AI lives inside the tool.** It is deterministic, has no model and calls no AI service.
+The MCP "prompts" above are text the tool hands to an assistant, not something it runs. Any
+assistant can operate it, which also means it can be tested without one.
 
 ## The four layers
 
@@ -308,8 +331,9 @@ docs/                 this design
 The target:
 
 ```
-toon/commands/        every operation on a show; validation, undo, provenance, change sets
-toon/mcp/             the MCP server: resources, tools, prompts
+toon/commands/        every operation on a show; validation, dry runs, undo, provenance
+toon/cli/             the command line, generated from the commands
+toon/mcp/             the MCP server, generated from the same commands
 toon/script/          schemas, manifests, loading, migrations
 toon/world/           events, replay, state queries
 toon/perform/         the score, the registries, derivation steps (one file each)
@@ -326,7 +350,7 @@ Each step leaves the tests passing and the demo show rendering the same.
 | Step | What changes | Why this order |
 |---|---|---|
 | 0. Done | Package, `toon` command, show separated from engine, schema number, tests, CI | A base that can be changed without fear |
-| 1 | **Commands and the MCP server**, over the prototype as it is: read the show, apply typed changes, check, explain, render stills | AI is the main way of working, and today it edits files by hand. This pays back at once and needs no other step |
+| 1 | **Commands, the command line and the MCP server**, over the prototype as it is: read the show, apply typed changes, rehearse, check, explain, render stills | An assistant is how the tool is used, and today it edits files by hand. This pays back at once and needs no other step |
 | 2 | **Manifests, identities and the series index** | Tracking and comparing are wanted now; title cards need segments; stable IDs get harder to add later |
 | 3 | **The score.** The model writes tracks; drawing and audio read only tracks | The contract everything else depends on |
 | 4 | **Skins and cards.** The token becomes one skin; the title card is the first card | Presentation changes most; the title screen proves the seam |
@@ -348,7 +372,7 @@ The measure of this design is that each ask is an addition in one place.
 | Title screens | A segment kind in the manifest; a card in presentation | A `stage/card` track |
 | Music scoring | The Drama and Scoring steps; `library/cues.yaml` | Emotions declare a valence; themes in entity files |
 | Tracking and comparing | The series index, a reader | Manifests and stable identities |
-| Type, and the AI does the rest | The command layer and the MCP server | Nothing in the model |
+| A writer works through an assistant | The command layer, with the command line and MCP server over it | Nothing in the model |
 | Appraisal | A step before Expression; facts in the world | A `says:` act on lines |
 | Camera and cutting | A presentation component reading focus and drama | A framing channel, if shots are scripted |
 | Masking | A step after Expression | Felt and shown already separate |

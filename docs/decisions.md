@@ -148,34 +148,36 @@ shows what changed between versions.
 
 **Costs.** YAML has traps (`on` is read as `true`). The schemas in decision 8 are the guard.
 
-## 12. Every change is a command, and an AI assistant is the first operator
+## 12. Every change is a command, and the tool is built to be operated by an assistant
 
-**Decision.** There is one set of typed, validated, undoable commands. The MCP server, the
-editor and the command line all use it and nothing else. Commands are proposed as a change
-set and applied on approval, and each records who asked and in what words.
+**Decision.** There is one set of typed, validated, undoable commands. The command line and
+the MCP server are both generated from it, so they stay equal, and the editor uses it too.
+Every command can be rehearsed with a dry run, can answer in JSON, and never asks a
+question. Each applied change records who asked and in what words.
 
 **Instead of** an assistant editing the show's files as text, which is how the whole
 prototype was written.
 
-**Because** the stated way of working is "I type, and the AI handles the rest". Text edits
+**Because** the stated way of working is that a writer iterates with an assistant and the
+assistant uses the tool, through MCP or a good command line. Text edits
 fail silently (a key YAML read as `true` did nothing), and an author who never opens a file
 cannot catch that. A command either applies or says exactly why not.
 
 **Costs.** Every capability must be given a command before anyone can use it, including the
 assistant. That is slower than editing a file, and it is the point.
 
-## 13. No model inside the engine
+## 13. No AI inside the tool
 
-**Decision.** The engine is deterministic and has no AI dependency. It serves MCP; any
-assistant that speaks MCP can operate it.
+**Decision.** The tool is deterministic, has no model and calls no AI service. Writers bring
+their own assistant, which reaches the tool through the command line or MCP.
 
 **Instead of** a chat box in the editor wired to one model.
 
 **Because** the engine has to be testable, reproducible and usable by other writers with
 whatever assistant they have. A built-in model would tie rendering a show to a service.
 
-**Costs.** There is no single app to open and type into. The author needs an assistant
-connected to the server. A chat panel in the editor can come later as one more client.
+**Costs.** There is no single app to open and type into; a writer needs an assistant as well
+as the tool.
 
 ## 14. An episode is an ordered list of segments, and things have identities
 
@@ -223,5 +225,5 @@ These are not decided, because the conversation has not yet produced the evidenc
   character, which is the root of dramatic irony.
 - **Is music heard by the characters?** A title card's theme is not. A character singing is.
   The `sing:` line already sits on this boundary.
-- **How much may the assistant do without asking?** Today nothing is applied without
-  approval. Routine changes ("tighten every hold by a step") may deserve a faster path.
+- **Should the tool itself hold changes for approval?** As designed it does not: rehearsing
+  and undoing are the tool's job, and asking the writer first is the assistant's.

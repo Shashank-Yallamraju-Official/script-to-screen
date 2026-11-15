@@ -32,7 +32,7 @@ this document, and [How the first predictions did](#how-the-first-predictions-di
 | 18 | Title screens | An episode contains things that are not scenes |
 | 19 | Music scoring that knows surprising-and-bad from surprising-and-good | The engine must know what happened dramatically, not only what moved |
 | 20 | Track scenes, episodes and seasons so they are easy to compare | The author needs to see the series from above |
-| 21 | AI and MCP are first-class: I type, the AI handles the rest | The primary operator is an assistant, and the author may never open a file |
+| 21 | Easy for an AI to use, through MCP and a great command line; no AI in the tool itself. Writers iterate with Claude, and Claude uses the tool | The primary operator is an assistant, and the author may never open a file |
 
 ## Five patterns
 
@@ -69,7 +69,7 @@ the same resolved data the renderer uses, with descriptions and stable identitie
 unit.*
 
 **7. The operator is an assistant.** "Claude does the work while I explain the scenes" (1),
-"I type and the AI handles the rest" (21). Between those rounds the assistant edited files by
+"writers should use Claude to iterate, and Claude accesses the tool" (21). Between those rounds the assistant edited files by
 hand, and one such edit failed silently. *Consequence: every change goes through typed,
 validated commands, and the engine's replies are written to be read by an assistant: what
 changed, what is wrong, how to look.*
@@ -110,7 +110,7 @@ architecture must already allow, so that the ask is an addition.
 | **Camera and cutting**: framing, cuts, reaction shots | "I've been paying very close attention to how TV is shot, edited, directed"; featured reactions already carry focus | Framing is a track like any other. Focus exists in the model, separate from how it is shown |
 | **Masking**: showing a feeling other than the one felt | It is a puzzle show; a `take` already outranks tells | Felt and shown are separate values, with a step between them |
 | **Decoration, on purpose**: sets, props, richer bodies | "We can add the decoration later"; the paper look was parked, not rejected | A body is a skin over abstract channels. A prop is an entity that cannot feel |
-| **Review of what the AI did**: approve, reject, see a change next to its reason, go back | Round 21, and "I like to be very particular" | Changes are proposed as sets and applied on approval; every change keeps the words that caused it |
+| **Seeing what the assistant changed**: each change next to its reason, and a way back | Round 21, and "I like to be very particular" | Changes can be rehearsed and undone; every change keeps the words that caused it |
 | **The rest of an episode's furniture**: cold open, recap, credits, act breaks | Round 18 | An episode is a list of segments of different kinds |
 | **Themes**: a motif for a character or an idea, recurring and varied | Round 19; the running-gag structure of the shows cited | Music is written as notes on the show's scale, and a cue can quote a theme |
 | **Recorded sound and export to a music tool** | "Match the text to the music"; the tempo grid exists for it | Audio is a track on the same grid. Sounds are assets with a synthesised fallback |
