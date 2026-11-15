@@ -53,6 +53,9 @@
   #knob .sc { display: flex; gap: 3px; cursor: help; } #knob .sc u { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid var(--mute); box-sizing: border-box; }
   #knob .sc u.on { background: var(--mute); } #knob .sc u.hand { border-color: var(--accent); background: var(--accent); }
   #knob button { width: 20px; height: 20px; } #knob button svg { width: 12px; height: 12px; }
+  #knob .ab { display: flex; gap: 1px; cursor: pointer; font: 600 10px ui-monospace, Menlo, monospace; color: var(--mute); }
+  #knob .ab b { padding: 1px 4px; border-radius: 3px; } #knob .ab b.on { background: var(--accent); color: #fff; }
+  #abmark { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); padding: 2px 9px; border-radius: 10px; background: #000a; color: #fff; font: 600 11px ui-monospace, Menlo, monospace; display: none; pointer-events: none; }
   #tl { display: flex; background: var(--panel); }
   #gutter { width: 34px; flex: none; position: relative; border-right: 1px solid var(--line); }
   #gutter div { position: absolute; left: 0; width: 100%; display: grid; place-items: center; color: var(--mute); }
@@ -88,19 +91,19 @@
 </head>
 <body>
 <div id="app">
-  <div id="stage"><canvas id="view" width="1280" height="720"></canvas><div id="spin"></div><div id="tune"></div></div>
+  <div id="stage"><canvas id="view" width="1280" height="720"></canvas><div id="spin"></div><div id="abmark"></div><div id="tune"></div></div>
   <div id="bar">
     <button id="prev"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5"/></svg></button>
     <button id="next"><svg viewBox="0 0 16 16"><path d="m6 3 5 5-5 5"/></svg></button>
     <span class="sep"></span>
     <button id="play" title="Play or pause (Space)"></button>
-    <button id="loop" title="Loop the current turn (L)"><svg viewBox="0 0 16 16"><path d="M3 7V6a2 2 0 0 1 2-2h7M10 2l2 2-2 2M13 9v1a2 2 0 0 1-2 2H4M6 14l-2-2 2-2"/></svg></button>
+    <button id="loop" title="Loop (L): the current turn, or, with the knob on a value, the moment around it, with a short gap between passes"><svg viewBox="0 0 16 16"><path d="M3 7V6a2 2 0 0 1 2-2h7M10 2l2 2-2 2M13 9v1a2 2 0 0 1-2 2H4M6 14l-2-2 2-2"/></svg></button>
     <button id="xray" title="X-ray (X): the director's view. Everything below the ground line is for you, not the audience. The bar is an entity's weight in the room. Ringed pips are what it feels; filled pips are what shows."><svg viewBox="0 0 16 16"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg></button>
     <button id="tuneb" title="Tune (T): sliders for the small details and for every sound. Click a sound's name to hear it."><svg viewBox="0 0 16 16"><path d="M2 4.5h7M12 4.5h2M2 11.5h2M7 11.5h7"/><circle cx="10.5" cy="4.5" r="1.5"/><circle cx="5.5" cy="11.5" r="1.5"/></svg></button>
     <button id="carry"><svg viewBox="0 0 16 16"><path d="M2 8h8M7 5l3 3-3 3M13 3v10"/></svg></button>
     <span id="tc"></span>
     <div id="sel" title="Steps for the selected timing. Type a number, or Alt+arrow to nudge a quarter step."><i></i><input id="selv" type="number" step="0.25"></div>
-    <div id="knob"><i></i><input id="knobv" type="number"><span class="sc" id="knobs"></span><button id="kreset"><svg viewBox="0 0 16 16"><path d="M3 8a5 5 0 1 0 1.6-3.7M3 3v3h3"/></svg></button><button id="kwide"><svg viewBox="0 0 16 16"><path d="M6 3H3v3M10 3h3v3M6 13H3v-3M10 13h3v-3"/></svg></button></div>
+    <div id="knob"><i></i><input id="knobv" type="number"><span class="sc" id="knobs"></span><button id="kreset"><svg viewBox="0 0 16 16"><path d="M3 8a5 5 0 1 0 1.6-3.7M3 3v3h3"/></svg></button><span class="ab" id="kab"><b>A</b><b class="on">B</b></span><button id="kwide"><svg viewBox="0 0 16 16"><path d="M6 3H3v3M10 3h3v3M6 13H3v-3M10 13h3v-3"/></svg></button></div>
     <span id="why" title="Why this turn happens"></span>
     <div id="ledger"></div>
     <button id="flag"><svg viewBox="0 0 16 16"><path d="M8 2.5 14.5 13h-13zM8 7v3M8 11.6v.1"/></svg></button>
@@ -130,7 +133,8 @@ const ICON = {
   snd: '<svg viewBox="0 0 16 16"><path d="M3 6h2l3-3v10l-3-3H3zM10.5 5.5a3.5 3.5 0 0 1 0 5M12.5 3.5a6.5 6.5 0 0 1 0 9"/></svg>',
 };
 let S = null, F = 0, pps = 12, playing = false, loop = false, stalled = false, xray = false;
-let frames = new Map(), selected = null, drag = null, pick = null, picked = null;   // pick: the address the knob is on; picked: what the server says about it
+let frames = new Map(), selected = null, drag = null, pick = null, picked = null;
+let aud = null, audT = 0, side = 'B', A = null;        // aud: the frames being auditioned; side: which build plays; A: the scene as it stood when the value was picked   // pick: the address the knob is on; picked: what the server says about it
 let audio = new Audio(), audioRev = -1, muted = false, clock0 = 0, clockBase = 0, range = [0, 0];
 
 const api = async (path, body) => {
@@ -154,7 +158,7 @@ const pips = (n, filled, color) => `<span class="pips">${Array.from({ length: n 
 const num = v => String(Math.round(v * 100) / 100);
 
 // ---- frames: the server renders, the browser keeps what it has seen --------------------------
-const loadImg = (f, full, rev) => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = `/frame?f=${f}&rev=${rev}&full=${full ? 1 : 0}&xray=${xray ? 1 : 0}`; });
+const loadImg = (f, full, rev, build) => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = `/frame?f=${f}&rev=${rev}&full=${full ? 1 : 0}&xray=${xray ? 1 : 0}` + (build ? '&build=' + build : ''); });
 function nextNeeded() {
   if (!frames.has(F)) return F;
   const end = playing ? range[1] : Math.min(S.total, F + 3000);
@@ -316,14 +320,54 @@ function showKnob() {
   $('knobs').title = 'Where this value comes from, narrowest scope first:\n' + p.scopes.join(' \u2192 ') + '\n\n' +
     picked.chain.map((c, i) => `${i ? '   ' : '\u25b6 '}${c.scope}: ${c.value} (${c.by === 'hand' ? 'set by hand' : c.by})`).join('\n');
   $('kreset').disabled = !picked.hand_here; $('kreset').title = picked.hand_here ? 'Take the hand-set value off (Backspace): it goes back to ' + (picked.chain[1] ? picked.chain[1].value : 'what it was') : 'Nothing is set by hand here';
+  const changed = A && A.rev !== S.rev;
+  $('kab').style.display = changed ? 'flex' : 'none'; $('kab').children[0].className = side === 'A' ? 'on' : ''; $('kab').children[1].className = side === 'B' ? 'on' : '';
+  $('kab').title = 'B is the scene now; A is the scene as it was when you picked this value. Press B to flip between them and replay.';
   $('kwide').style.display = picked.wider ? '' : 'none'; $('kwide').title = picked.wider ? `Widen (W): use this value for the whole ${picked.wider}` : '';
 }
 async function pickAt(addr, jump) {
   pick = addr; picked = null; selected = null; showSel();
   if (!addr) return showKnob();
   try { picked = await api('/value?address=' + encodeURIComponent(addr)); } catch (e) { pick = null; toast(e.message, true); }
+  if (pick && !jump) {                                    // a new value under the knob: "before" is the scene as it stands now
+    try { const r = await api('/pick', {}); const sp = span(); A = { rev: r.rev, total: r.total, span: sp, frames: new Map(), audio: null }; side = 'B'; } catch (e) { A = null; }
+  }
   showKnob();
 }
+// ---- audition: after a nudge, replay just the moment that changed -------------------------------
+function span() {                                         // the picked value's stretch, with a lead-in and lead-out, in frames
+  const s = pick && S.turns.flatMap(t => t.stretches).find(x => x.address === pick);
+  return s ? [frameOf(Math.max(0, s.start - S.lead[0])), Math.min(S.total, frameOf(s.start + s.length + S.lead[1]))] : null;
+}
+async function audition() {
+  clearTimeout(audT);
+  if (side === 'A' && A && A.span) return playBefore();
+  const r = span(); if (!r) return;
+  pause(); aud = r; setF(r[0]); await play();
+}
+async function playBefore() {                             // the scene as it was when the value was picked: picture and sound only, the timeline stays on now
+  pause(); aud = null;
+  const [f0, f1] = A.span, fps = S.fps, mark = $('abmark');
+  if (!A.audio) { A.audio = new Audio(); try { A.audio.src = URL.createObjectURL(await (await fetch('/audio?build=A&t=' + A.rev)).blob()); await new Promise(r => { A.audio.oncanplaythrough = r; A.audio.onerror = r; setTimeout(r, 1500); }); } catch (e) {} }
+  await Promise.all(Array.from({ length: f1 - f0 }, (_, i) => f0 + i).filter(f => !A.frames.has(f)).map(async f => { try { A.frames.set(f, await loadImg(f, false, A.rev, 'A')); } catch (e) {} }));
+  if (side !== 'A') return;
+  const run = A.run = {}; mark.textContent = 'A \u00b7 before'; mark.style.display = 'block';
+  A.audio.currentTime = f0 / fps; A.audio.play().catch(() => {});
+  const t0 = performance.now();
+  const draw = () => {
+    if (A.run !== run) return;
+    const f = f0 + Math.floor((performance.now() - t0) / 1000 * fps);
+    if (f >= f1) { A.audio.pause(); A.run = null; mark.style.display = 'none'; paint(); if (loop) audT = setTimeout(audition, 500); return; }
+    const img = A.frames.get(f); if (img) ctx.drawImage(img, 0, 0, view.width, view.height);
+    requestAnimationFrame(draw);
+  };
+  requestAnimationFrame(draw);
+}
+function stopBefore() { if (A && A.run) { A.run = null; A.audio && A.audio.pause(); $('abmark').style.display = 'none'; paint(); } }
+function flip() { if (!pick || !A || A.rev === S.rev) return; stopBefore(); side = side === 'A' ? 'B' : 'A'; showKnob(); audition(); }
+let replayT = 0;
+const replaySoon = () => { clearTimeout(replayT); replayT = setTimeout(() => { side = 'B'; showKnob(); audition(); }, 220); };   // once the nudging stops
+
 const ownerAt = f => { const s = stepsOf(f) + 1e-6, t = turnAt(f); return t.stretches.find(x => x.address && s >= x.start && s < x.start + x.length); };
 let nudging = false, nudgeNext = null;
 async function nudge(op, value) {                        // each nudge is written at once; a quick run of them is one undo step
@@ -337,6 +381,7 @@ async function nudge(op, value) {                        // each nudge is writte
       const r = await api('/nudge', { address: pick, op: q.op, value: q.value });
       if (r.dirty_from != null) dropFrames(r.dirty_from);
       S = r.state; picked = r.value || picked; build(); showKnob();
+      if (r.dirty_from != null || picked.rebuild === 'sound') replaySoon();
       if (q.op === 'widen' && r.value) toast(`${picked.param.label} ${num(picked.value)} now holds for the whole ${picked.chain[0].scope}`);
       if ($('tune').style.display === 'block') buildTune();
     } catch (e) { toast(e.message, true); }
@@ -346,7 +391,7 @@ async function nudge(op, value) {                        // each nudge is writte
 const bump = (dir, fine) => { if (!picked) return; const p = picked.param, d = fine ? p.fine : p.step; picked.value = Math.min(Math.max(Math.round((picked.value + dir * d) / p.fine) * p.fine, p.lo), p.hi); showKnob(); nudge('set', picked.value); };
 track.addEventListener('click', e => { const d = e.target.closest('.own'); if (d && d.dataset.addr) { pause(); pickAt(d.dataset.addr); } });
 $('knobv').addEventListener('change', () => { if (picked) { picked.value = Math.min(Math.max(+$('knobv').value || 0, picked.param.lo), picked.param.hi); nudge('set', picked.value); $('knobv').blur(); } });
-$('kreset').onclick = () => nudge('reset'); $('kwide').onclick = () => nudge('widen');
+$('kreset').onclick = () => nudge('reset'); $('kwide').onclick = () => nudge('widen'); $('kab').onclick = flip;
 
 // ---- editing ---------------------------------------------------------------------------------
 let sending = false, queue = [];
@@ -358,7 +403,7 @@ async function patch(path, value, commit = false) {
   sending = true;
   while (queue.length) {
     const op = queue.shift();
-    try { const r = await api('/patch', { ops: [{ path: op.path, value: op.value }], commit: op.commit }); if (r.dirty_from != null) dropFrames(r.dirty_from); S = r.state; build(); if (op.commit && pick) pickAt(pick); }
+    try { const r = await api('/patch', { ops: [{ path: op.path, value: op.value }], commit: op.commit }); if (r.dirty_from != null) dropFrames(r.dirty_from); S = r.state; build(); if (op.commit && pick) pickAt(pick, true); }
     catch (e) { toast(e.message, true); try { S = await api('/state'); dropFrames(0); build(); } catch (x) {} }
   }
   sending = false;
@@ -433,7 +478,7 @@ async function hear(ti) {                                 // after changing a no
 $('selv').addEventListener('change', () => { const d = showSel(); if (!d) return; const v = Math.min(Math.max(+$('selv').value || 0, d._m.lo), d._m.hi); commit(d._m.path, d._m.value, v); $('selv').blur(); });
 async function step(which) {                              // the journal is on the server, so undo survives a restart and covers sliders
   pause();
-  try { const r = await api('/' + which, {}); dropFrames(0); S = r.state; build(); if ($('tune').style.display === 'block') buildTune(); if (pick) pickAt(pick); }
+  try { const r = await api('/' + which, {}); dropFrames(0); S = r.state; build(); if ($('tune').style.display === 'block') buildTune(); if (pick) pickAt(pick, true); }
   catch (e) { toast(e.message, true); }
 }
 $('undo').onclick = () => step('undo'); $('redo').onclick = () => step('redo');
@@ -492,7 +537,7 @@ async function ready(f) {
 async function play(fromRangeStart) {
   if (playing) return;
   playing = true; stopAt = null; $('play').innerHTML = ICON.pause;
-  range = loop ? turnFrames(turnAt(F)) : [0, S.total];
+  range = aud || (loop ? turnFrames(turnAt(F)) : [0, S.total]);
   if (fromRangeStart === true || F >= range[1] - 1) setF(range[0]);
   if (audioRev !== S.rev) {
     audioRev = S.rev;                      // fetched whole, so the browser can seek anywhere in it
@@ -514,7 +559,10 @@ function tick() {
   if (!playing || stalled) return;
   let f = Math.max(Math.floor(now() * S.fps + 0.001), range[0]);
   if (stopAt !== null && f >= stopAt) { pause(); return setF(Math.min(stopAt, S.total - 1)); }
-  if (f >= range[1]) { if (!loop) { pause(); return setF(range[1] - 1); } f = range[0]; seek(f); }
+  if (f >= range[1]) {
+    if (aud) { pause(); setF(range[1] - 1); if (loop) audT = setTimeout(audition, 500); return; }
+    if (!loop) { pause(); return setF(range[1] - 1); } f = range[0]; seek(f);
+  }
   if (!have(f)) {
     stalled = true; audio.pause(); $('spin').style.display = 'block'; F = f; fill();
     return ready(f).then(() => { $('spin').style.display = 'none'; if (!playing) return; stalled = false; seek(f); if (!muted) audio.play().catch(() => { muted = true; seek(f); }); requestAnimationFrame(tick); });
@@ -522,8 +570,9 @@ function tick() {
   if (f !== F) setF(f);
   requestAnimationFrame(tick);
 }
-$('play').onclick = () => playing ? pause() : play();
-$('loop').onclick = () => { loop = !loop; $('loop').classList.toggle('on', loop); if (playing) { pause(); play(); } };
+const userPlay = () => { clearTimeout(audT); clearTimeout(replayT); stopBefore(); aud = null; playing ? pause() : play(); };   // playing by hand leaves the audition
+$('play').onclick = userPlay;
+$('loop').onclick = () => { loop = !loop; $('loop').classList.toggle('on', loop); if (!loop) clearTimeout(audT); if (playing && !aud) { pause(); play(); } };
 
 // ---- view: wheel scrolls the timeline, Ctrl/Cmd+wheel (or pinch) zooms about the pointer ------
 const fit = () => { pps = Math.max(2, (scroll.clientWidth - 2 * PAD) / S.steps); };
@@ -540,7 +589,9 @@ addEventListener('resize', drawRuler);
 addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' && !(e.ctrlKey || e.metaKey)) { if (e.key === 'Escape') e.target.blur(); return; }
   const mod = e.ctrlKey || e.metaKey, k = e.key, low = k.toLowerCase();
-  if (k === ' ') { playing ? pause() : play(); }
+  if (k === ' ') userPlay();
+  else if (k === 'Enter' && pick) audition();
+  else if (low === 'b' && pick) flip();
   else if (mod && low === 'z') step(e.shiftKey ? 'redo' : 'undo');
   else if (low === 'l') $('loop').click();
   else if (low === 'x') $('xray').click();
@@ -553,7 +604,7 @@ addEventListener('keydown', e => {
   }
   else if ((k === 'Backspace' || k === 'Delete') && pick) nudge('reset');
   else if (low === 'w' && pick && picked && picked.wider) nudge('widen');
-  else if (k === 'Escape' && pick) pickAt(null);
+  else if (k === 'Escape' && pick) { clearTimeout(audT); clearTimeout(replayT); stopBefore(); aud = null; pickAt(null); }
   else if ((k === 'ArrowLeft' || k === 'ArrowRight') && e.altKey) {
     const d = showSel(); if (!d) return; const v = Math.min(Math.max(d._m.value + (k === 'ArrowLeft' ? -0.25 : 0.25), d._m.lo), d._m.hi);
     commit(d._m.path, d._m.value, v);
@@ -570,7 +621,7 @@ setInterval(async () => {                                // follow the files: pi
   try {
     const r = await api('/poll');
     if (drag || sending || tuning || nudging) return;
-    if (r.rev !== S.rev) { S = await api('/state'); dropFrames(0); build(); if ($('tune').style.display === 'block') buildTune(); if (pick) pickAt(pick); }
+    if (r.rev !== S.rev) { S = await api('/state'); dropFrames(0); build(); if ($('tune').style.display === 'block') buildTune(); if (pick) pickAt(pick, true); }
     else if (r.info_rev !== S.info_rev) { S = await api('/state'); build(); }
   } catch (e) {}
 }, 500);

@@ -220,3 +220,27 @@ def test_the_knob_is_fast():
         s.nudge("the-vase:3.s3.length", "set", 3 + n % 3)
         took.append((time.perf_counter() - t) * 1000)
     assert statistics.median(took) < 180, f"median {statistics.median(took):.0f} ms"
+
+
+# ---- audition, and before against after ---------------------------------------------------------------
+def test_before_is_the_scene_as_it_stood_when_the_value_was_picked(talk):
+    gap = "s01/e01/01:2.s2.breath"
+    talk.pick()
+    total = talk.stage.total
+    you = talk.stage.score.speech[1]["sylls"][0]["start"]               # when "You" begins, before any change
+    late = round(you * talk.stage.fps) - 3                              # just before it: still the silence after "saw."
+    was = talk.frame(late, False, False)
+    talk.nudge(gap, "set", 0.5)
+    talk.nudge("s01/e01/01:2.hold", "set", 20)
+    assert talk.stage.total != total
+    assert talk.frame(late, False, False, before=True) == was and talk.frame(late, False, False) != was
+    assert talk.before[0].total == total                                # A keeps its own length
+    talk.pick()                                                         # picking again moves "before" up to now
+    assert talk.frame(late, False, False, before=True) == talk.frame(late, False, False)
+
+
+def test_how_much_replays_around_a_nudge_is_a_show_setting(talk):
+    assert talk.state()["lead"] == [8, 8]
+    f = talk.root / "show.yaml"
+    f.write_text(f.read_text() + "\neditor: {lead_in: 12, lead_out: 4}\n")
+    assert talk.poll()["changed"] and talk.state()["lead"] == [12, 4]

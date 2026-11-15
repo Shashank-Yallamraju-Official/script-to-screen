@@ -127,9 +127,9 @@ project's oldest habit, hand-set values becoming derived ones, turned into a rou
 | Stable addresses | Yes for scenes: `scene:turn`, by an id that survives renaming and moving. A turn is still named by its `id` or number |
 | See what the writer did by hand | Yes. `s2s history --by hand` lists every hand change with its address, before and after |
 | **Tuning loop** | |
-| Replay at once after a change | Partly. Changing a note replays its line. A release rebuilds in 35 ms; a sound-only slider keeps every frame. No automatic replay of the moment yet (slice N4) |
-| Loop a stretch | Partly. One turn can be looped; not a line or a chosen stretch |
-| Before and after | No |
+| Replay at once after a change | Yes for the knob: the moment replays by itself after the last nudge. Changing a note replays its line. The slider panel does not replay yet |
+| Loop a stretch | Yes. A turn, or the moment around the picked value, with a gap between passes |
+| Before and after | Yes. B flips between the scene as it was when the value was picked and the scene now |
 | Undo anything | Yes. Timings, notes and sliders, across restarts |
 | The real thing | Yes. The editor draws with the renderer and plays the same sound |
 | Every tunable value reachable | By command, yes: all 32 declared parameters. In the editor: everything that owns time through the knob, plus notes, stress, motion and sounds. A tone's or an entity's settings reach the knob in slice N5 |

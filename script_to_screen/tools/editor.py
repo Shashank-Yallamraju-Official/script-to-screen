@@ -25,7 +25,7 @@ from ..presentation import sound
 from ..presentation.render import frame_jpeg, out_path
 from ..presentation.stage import Look, Stage
 from ..readers import ledger
-from ..script import find_root, scene_paths, series
+from ..script import find_root, load_yaml, scene_paths, series
 from ..vocabulary import params
 
 HERE = Path(__file__).parent
@@ -119,6 +119,8 @@ class Session:
             self.path = self.paths[0]
         self.i = self.paths.index(self.path)
         self.seg = series(self.root).of(self.path)
+        ed = load_yaml(self.root / "show.yaml").get("editor") or {}      # how much of the scene replays around a nudged value, in steps
+        self.lead = [float(ed.get("lead_in", 8)), float(ed.get("lead_out", 8))]
         self.doc = edit.load(self.path)
         self.lib = {name: edit.load(self.root / "library" / f"{name}.yaml") for name in ("feel", "sounds")}
         try:
@@ -127,6 +129,7 @@ class Session:
             self.carry = {}
         self.stamps = self.stamp()
         self.work()
+        self.before = (self.stage, {})                           # until the knob picks something, "before" is simply now
         self.clean = (self.path.read_text(), self.scene)         # the file's text, and the scene as that text plays
         self.inform()
 
@@ -184,7 +187,7 @@ class Session:
         feel, sounds = look.feel, look.sounds                    # as in force: hand-set values laid over written ones
         done, undone = edit.stacks(self.root, by="hand")
         return dict(rev=self.rev, info_rev=self.info_rev, can_undo=bool(done), can_redo=bool(undone), status=self.seg["status"], fps=stage.fps, step=sc.step, tempo=sc.tempo,
-                    spb=sc.grid["steps_per_beat"], scale=list(sc.grid["scale"]),
+                    spb=sc.grid["steps_per_beat"], scale=list(sc.grid["scale"]), lead=self.lead,
                     width=stage.W, height=stage.H, total=stage.total, steps=sc.steps,
                     title=sc.title, file=str(self.path.relative_to(self.root)), index=self.i, count=len(self.paths),
                     entities=[dict(id=e, color=ent["color"], kind=str(ent.get("kind", ""))) for e, ent in look.cast.items()],
@@ -311,13 +314,20 @@ class Session:
         self.path = self.paths[(self.i + int(step)) % len(self.paths)]
         self.load()
 
-    def frame(self, F, full, xray):
+    def pick(self):
+        """The knob has been put on a value: remember the scene as it stands now, to compare against later."""
+        self.before = (self.stage, {})
+        return dict(total=self.stage.total, rev=self.rev)
+
+    def frame(self, F, full, xray, before=False):
+        stage, cache = self.before if before else (self.stage, self.cache)
+        F = min(max(F, 0), stage.total - 1)
         key = (F, full, xray)
-        if key not in self.cache:
-            if len(self.cache) > 12000:
-                self.cache = {}
-            self.cache[key] = frame_jpeg(self.stage, F, 1.0 if full else 0.5, 90 if full else 82, xray)
-        return self.cache[key]
+        if key not in cache:
+            if len(cache) > 12000:
+                cache.clear()
+            cache[key] = frame_jpeg(stage, F, 1.0 if full else 0.5, 90 if full else 82, xray)
+        return cache[key]
 
 
 def make_handler(sess):
@@ -349,11 +359,10 @@ def make_handler(sess):
                         return self.send(sess.value(q["address"][0]))
                     if url.path == "/poll":                  # has anything changed underneath?
                         return self.send(sess.poll())
-                    if url.path == "/frame":
-                        F = min(max(int(q["f"][0]), 0), sess.stage.total - 1)
-                        return self.send(sess.frame(F, flag("full"), flag("xray")), "image/jpeg")
+                    if url.path == "/frame":                 # build=A is the scene as it stood when the knob was put on a value
+                        return self.send(sess.frame(int(q["f"][0]), flag("full"), flag("xray"), q.get("build") == ["A"]), "image/jpeg")
                     if url.path == "/audio":
-                        return self.send(sound.mix(sess.stage), "audio/wav")
+                        return self.send(sound.mix(sess.before[0] if q.get("build") == ["A"] else sess.stage), "audio/wav")
                     if url.path == "/sfx":                   # one sound on its own, to audition it
                         p = sound.sound_for(sess.stage.look.sounds, q["name"][0])
                         return self.send(sound.wav_bytes(sound.effect(p)), "audio/wav")
@@ -388,6 +397,8 @@ def make_handler(sess):
                         out["dirty_from"] = sess.patch(body["ops"], bool(body.get("commit")))
                     elif self.path == "/tune":
                         out["dirty_from"] = sess.tune(body["group"], body.get("name"), body["key"], body["value"], bool(body.get("commit")))
+                    elif self.path == "/pick":
+                        return self.send(sess.pick())
                     elif self.path == "/nudge":
                         out["dirty_from"] = sess.nudge(body["address"], body["op"], body.get("value"))
                         try:

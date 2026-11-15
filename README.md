@@ -265,6 +265,10 @@ reaction, a hold. Click a stretch and the **knob** appears on that value.
 | Up, Down (Shift for a fine step); or type a number | Nudge the picked value. Each nudge is written at once; a quick run is one undo step |
 | Backspace | Take the hand-set value off; it goes back to what it inherits |
 | W | Widen: use this value for the next scope out (a turn's hold for its scene, then the show; a breath for every pause of its kind) |
+| (after any nudge) | The moment replays by itself: the value's stretch with a second before and after, with sound |
+| Enter | Replay that moment again |
+| B | Flip between **A**, the scene as it was when you picked the value, and **B**, the scene now, and replay. A badge on the picture says when A is showing |
+| L | Loop: with the knob on a value, the moment repeats with a half-second gap until you press Space |
 | Escape | Put the knob away |
 | Hover the dots beside the value | See every scope's say. One dot per scope, narrowest first; the filled one is where the value comes from, and it is coloured if set by hand |
 | Click or drag the ruler; Left and Right (Shift for a whole step) | Move through the scene |
@@ -276,7 +280,7 @@ reaction, a hold. Click a stretch and the **knob** appears on that value.
 | Double-click a note | Cycle its stress: weak, strong, main accent |
 | Hold Shift while dragging | Move in quarter steps |
 | T | Open the sliders for motion and sounds. Click a sound's name to hear it |
-| Space, L | Play or pause, loop the current turn |
+| Space, L | Play or pause; loop the current turn (or, with the knob on a value, the moment around it) |
 | X | X-ray: weight, and felt against shown, drawn below the ground line |
 | [ and ] | Previous and next scene |
 | Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z | Undo and redo your own changes, sliders included. It survives closing the editor |
@@ -284,6 +288,8 @@ reaction, a hold. Click a stretch and the **knob** appears on that value.
 Undo in the editor only ever takes back changes made by hand; it never undoes the
 assistant's. It refuses if the file has changed since, because that would lose work.
 `s2s history --by hand` lists what was tuned by hand. A locked scene cannot be nudged.
+
+How much replays around a nudge is set in `show.yaml`: `editor: {lead_in: 8, lead_out: 8}`, in steps.
 
 The arrow-into-a-wall icon appears when a scene inherits something; hover it to see what was
 carried in and what happened off-screen.
