@@ -18,9 +18,11 @@ from urllib.parse import parse_qs, urlparse
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedSeq
 
-from . import ledger, speech
-from .model import Scene, find_root
-from .render import frame_jpeg, out_path
+from ..performance import Scene
+from ..presentation import sound
+from ..presentation.render import frame_jpeg, out_path
+from ..readers import ledger
+from ..script import find_root
 
 HERE = Path(__file__).parent
 NUMBERS = {"pause": 200, "hold": 400}            # editable timings and their upper limit, in steps
@@ -222,10 +224,10 @@ def make_handler(sess):
                         F = min(max(int(q["f"][0]), 0), sess.scene.total - 1)
                         return self.send(sess.frame(F, flag("full"), flag("xray")), "image/jpeg")
                     if url.path == "/audio":
-                        return self.send(speech.mix(sess.scene), "audio/wav")
+                        return self.send(sound.mix(sess.scene), "audio/wav")
                     if url.path == "/sfx":                   # one sound on its own, to audition it
-                        p = speech.sound_for(sess.scene.show.sounds, q["name"][0])
-                        return self.send(speech.wav_bytes(speech.effect(p)), "audio/wav")
+                        p = sound.sound_for(sess.scene.show.sounds, q["name"][0])
+                        return self.send(sound.wav_bytes(sound.effect(p)), "audio/wav")
                     if url.path == "/video":
                         return self.send(out_path(sess.scene).read_bytes(), "video/mp4")
                 self.send(dict(error="not found"), status=404)

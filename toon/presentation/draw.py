@@ -9,7 +9,8 @@ import math
 
 import skia
 
-from .model import SLOTS, back, smooth
+from ..world import SLOTS
+from .motion import back, pose, smooth
 
 BODY_W, BODY_H, MARGIN = 66, 156, 170
 INK, PAPER, RULE = "#1d1d1f", "#f5f3ee", "#c9c5bb"
@@ -247,7 +248,7 @@ def draw_frame(c, scene, F, xray=False, slate=False):
     W, H, t, feel = scene.W, scene.H, F / scene.fps, scene.show.feel
     c.clear(col(PAPER))
     c.drawLine(0, ground(H), W, ground(H), stroke(RULE, 2))
-    states = {e: s for e in scene.keys if (s := scene.state(e, t)) is not None}
+    states = {e: s for e in scene.keys if (s := pose(scene, e, t)) is not None}
     if xray:
         draw_xray(c, scene, states)
     line = scene.line_at(t)

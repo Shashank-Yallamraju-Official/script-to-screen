@@ -9,7 +9,9 @@ import sys
 
 
 def main():
-    from . import editor, ledger, parity, render
+    from .presentation import render
+    from .readers import ledger, parity
+    from .tools import editor
     commands = {"edit": editor.main, "render": render.main, "ledger": ledger.main, "parity": parity.main}
     if len(sys.argv) < 2 or sys.argv[1] not in commands:
         print(__doc__.strip())

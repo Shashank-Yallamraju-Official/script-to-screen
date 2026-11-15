@@ -11,7 +11,8 @@ import json
 import sys
 from pathlib import Path
 
-from .model import Scene, ScriptError, find_root, load_yaml, scene_paths
+from ..performance import Scene
+from ..script import ScriptError, find_root, load_yaml, scene_paths
 
 
 def build(root, override=None, lib=None):

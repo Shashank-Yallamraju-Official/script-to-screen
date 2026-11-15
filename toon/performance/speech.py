@@ -1,17 +1,11 @@
-"""Speech as music. A line is split into syllables; each syllable gets a stress, a place on
-the tempo grid and one note. The text and the sound are built from the same plan, so they
-cannot drift apart. Stress is what keeps it from sounding like a drum: weak syllables are
-short, quiet and still; strong ones are longer, louder and higher; the last strong syllable
-of a phrase carries the most. Sound effects are synthesised here too."""
-import io
+"""Speech as timing: words -> syllables with stress -> one note per syllable on the tempo grid.
+
+Nothing here makes a sound; see presentation/sound.py for that.
+"""
 import math
 import re
-import wave
 import zlib
 
-import numpy as np
-
-RATE = 44100
 REST = {",": 1, ";": 1, ":": 1, ".": 2, "!": 2, "?": 2, "…": 3}     # breath after punctuation, in steps
 WEAK = set("""a an the of to in on at by for from with and or but so if as than is am are was were be been
 it its i you he she we they me him her us them my your his our their this that these those there
@@ -22,7 +16,6 @@ between below beyond become began begin today tonight tomorrow already degrees d
 myself yourself himself herself itself ourselves themselves without within until unless upon perhaps
 okay except explain instead indeed arrive agree allow appear""".split())   # words stressed on their second syllable
 STRETCH = {0: 0.5, 1: 1.0, 2: 1.5}                                   # how long a syllable lasts, by stress
-LOUD = {0: 0.55, 1: 0.85, 2: 1.0}
 
 
 def split_word(w):
@@ -133,75 +126,3 @@ def plan(text, tone, scale, rhythm=None, melody=None, stress=None, breaks=(), ga
         out.append(dict(text=s["text"], at=at, len=ln, semi=m, stress=s["stress"], rest=max(0, min(s["rest"], ln - 0.5))))
         at += ln
     return out
-
-
-# ---- sound ---------------------------------------------------------------------------------
-def _osc(kind, phase):
-    if kind == "square":
-        return np.tanh(3 * np.sin(phase)) * 0.7
-    if kind == "tri":
-        return 2 / np.pi * np.arcsin(np.sin(phase))
-    return np.sin(phase) + 0.3 * np.sin(2 * phase) + 0.12 * np.sin(3 * phase)
-
-
-def note(hz, dur, vol, timbre="sine", attack=0.015, ring=0.7):
-    """One voiced syllable. `attack` is how long it takes to swell; `ring` is how much of its
-    level it keeps to the end (0 = plucked, 1 = held), so neighbours can run together."""
-    n = max(1, int(dur * RATE))
-    t = np.arange(n) / RATE
-    env = np.minimum(1, t / max(attack, 0.001)) * (ring + (1 - ring) * np.exp(-t / 0.05)) * np.clip((dur - t) / 0.02, 0, 1)
-    return _osc(timbre, 2 * np.pi * hz * t) * env * vol * 0.3
-
-
-def effect(p):
-    """One sound effect from its settings: wave, freq (gliding to `to`), dur, vol."""
-    dur = max(0.005, float(p.get("dur", 0.1)))
-    n = max(1, int(dur * RATE))
-    t = np.arange(n) / RATE
-    f0 = max(20.0, float(p.get("freq", 440)))
-    f1 = max(20.0, float(p.get("to", f0)))
-    f = f0 * (f1 / f0) ** (t / dur)
-    if p.get("wave") == "noise":
-        w = max(1, int(RATE / ((f0 + f1) / 2) / 2))
-        x = np.convolve(np.random.default_rng(7).uniform(-1, 1, n), np.ones(w) / w, "same") * math.sqrt(w) * 0.6
-    else:
-        x = _osc(p.get("wave", "sine"), 2 * np.pi * np.cumsum(f) / RATE)
-    return x * np.minimum(1, t / 0.003) * np.exp(-t / (dur / 3)) * float(p.get("vol", 0.3)) * 0.5
-
-
-def wav_bytes(samples):
-    buf = io.BytesIO()
-    with wave.open(buf, "wb") as wv:
-        wv.setnchannels(1)
-        wv.setsampwidth(2)
-        wv.setframerate(RATE)
-        wv.writeframes((np.clip(samples, -1, 1) * 32767).astype(np.int16).tobytes())
-    return buf.getvalue()
-
-
-def sound_for(sounds, name):
-    """`feel.shame` falls back to `feel`."""
-    return sounds.get(name) or sounds.get(name.split(".")[0])
-
-
-def mix(scene):
-    """The whole scene's sound: one note per syllable, plus an effect per event."""
-    audio = np.zeros(int((scene.dur + 0.6) * RATE), dtype=np.float64)
-    feel = scene.show.feel
-
-    def add(at, x):
-        i = int(at * RATE)
-        if 0 <= i < len(audio):
-            audio[i:i + len(x)] += x[: len(audio) - i]
-
-    for line in scene.lines:
-        ent, tone = scene.ents[line["who"]], scene.show.tones[line["tone"]]
-        for s in line["sylls"]:
-            hz = ent["voice"] * tone.get("pitch", 1) * 2 ** (s["semi"] / 12)
-            add(s["start"], note(hz, min(s["voiced"], 0.6), tone.get("vol", 0.5) * LOUD[s["stress"]], ent.get("timbre", "sine"),
-                                 float(feel["voice_attack"]), float(feel["voice_ring"])))
-    for at, name, _, gain in scene.events:
-        p = sound_for(scene.show.sounds, name)
-        if p and float(p.get("vol", 0)) > 0:
-            add(at, effect(p) * gain)
-    return wav_bytes(audio)

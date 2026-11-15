@@ -7,21 +7,28 @@ because the script says so, and every turn has to say why.
     toon edit shows/demo/episodes/s01/e01/01-the-last-dumpling.yaml
     toon render --show shows/demo --episode s01/e01
     toon ledger shows/demo
+    toon parity check shows/demo/episodes/study/the-reveal.yaml
     pytest
 
 | | |
 |---|---|
-| `toon/` | The engine |
+| `toon/script/` | Layer 1: reads a show's files |
+| `toon/world/` | Layer 2: what is true, and a log of every change and its cause |
+| `toon/performance/` | Layer 3: the scene played out on the tempo grid (the score) |
+| `toon/presentation/` | Layer 4: how the score looks and sounds |
+| `toon/readers/`, `toon/tools/` | The audience ledger and parity check; the editor |
 | `shows/demo/` | A small show used for development: one episode of three scenes, plus a staging study |
 | `tests/` | What the engine promises, as tests |
 | [docs/how-it-is-used.md](docs/how-it-is-used.md) | The two loops the tool serves: writing through an assistant, tuning by hand |
 | [docs/architecture.md](docs/architecture.md) | The target design, and the order to build it in |
+| [docs/phases.md](docs/phases.md) | The build phases, and the reference scene every phase must reproduce |
 | [docs/lld-nudging.md](docs/lld-nudging.md) | Low-level design of the hand-tuning loop: identify, change, test |
 | [docs/requirements-history.md](docs/requirements-history.md) | How the requirements evolved, and what is likely to be asked next |
 | [docs/decisions.md](docs/decisions.md) | The choices that would be expensive to reverse |
 
 **Status.** This is a working prototype in a real project's clothes: it is packaged, tested
-and versioned, but its internals have not yet been rebuilt to the design in `docs/`. Two
+and versioned, and its internals are being rebuilt to the design in `docs/`, phase by phase
+([docs/phases.md](docs/phases.md)). Two
 earlier stages are kept as git tags: `paper-v1` (the paper cut-out renderer) and
 `prototype-v1` (the prototype before this restructure).
 

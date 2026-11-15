@@ -15,9 +15,10 @@ from pathlib import Path
 
 import skia
 
-from . import speech
-from .draw import draw_frame
-from .model import Scene, find_root
+from ..performance import Scene
+from ..presentation import sound
+from ..presentation.draw import draw_frame
+from ..script import find_root
 
 
 def _plain(v):
@@ -48,7 +49,7 @@ def digests(path):
         pic.update(surface.makeImageSnapshot().tobytes())
     return dict(scene=scene.key, frames=scene.total,
                 score=score,
-                picture=pic.hexdigest()[:16], sound=sha(speech.mix(scene)))
+                picture=pic.hexdigest()[:16], sound=sha(sound.mix(scene)))
 
 
 def ref_path(path):

@@ -2,11 +2,12 @@ from pathlib import Path
 
 import skia
 
-from toon import ledger
-from toon.draw import draw_frame
-from toon.editor import Session
-from toon.model import Scene, scene_paths
-from toon.render import frame_jpeg
+from toon.performance import Scene
+from toon.presentation.draw import draw_frame
+from toon.presentation.render import frame_jpeg
+from toon.readers import ledger
+from toon.script import scene_paths
+from toon.tools.editor import Session
 
 DEMO = Path(__file__).resolve().parents[1] / "shows" / "demo"
 ENTER = dict(id=1, enter={"a": {"slot": 2}, "b": {"slot": 5}}, why="They are here.")
@@ -42,14 +43,14 @@ def test_the_demo_show_has_no_errors():
 
 
 def test_every_demo_scene_draws_and_sounds():
-    from toon import speech
+    from toon.presentation import sound
     for path in scene_paths(DEMO):
         sc = Scene(path)
         surface = skia.Surface(sc.W, sc.H)
         for F in range(0, sc.total, max(1, sc.total // 12)):
             draw_frame(surface.getCanvas(), sc, F, xray=F % 2 == 0, slate=True)
         assert frame_jpeg(sc, sc.total // 2, 0.5)[:2] == b"\xff\xd8"
-        assert len(speech.mix(sc)) > 44
+        assert len(sound.mix(sc)) > 44
 
 
 def test_the_editor_saves_only_what_changed(show):
@@ -75,7 +76,7 @@ def test_the_reference_scenes_have_not_changed():
     """The gate on every restructuring phase. If a phase means to change a scene, re-record it
     with `toon parity record` and say so in the commit."""
     import json
-    from toon import parity
+    from toon.readers import parity
     for ref in sorted((DEMO / "reference").glob("*.json")):
         was = json.loads(ref.read_text())
         path = DEMO / "episodes" / (was["scene"] + ".yaml")

@@ -3,8 +3,8 @@ import wave
 
 import numpy as np
 
-from toon import speech
-from toon.model import Scene
+from toon.performance import Scene, speech
+from toon.presentation import sound
 
 TONE, SCALE = dict(rate=2, contour="rise", range=3), [0, 2, 4, 7, 9]
 
@@ -46,9 +46,9 @@ def test_every_note_starts_where_its_syllable_is_shown(show):
                                       dict(id=2, who="a", say="Someone ate the last dumpling.", why="x")])
     sc = Scene(path)
     sc.events = []                                                               # voices only
-    w = wave.open(io.BytesIO(speech.mix(sc)))
+    w = wave.open(io.BytesIO(sound.mix(sc)))
     audio = np.abs(np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).astype(float))
     for s in sc.lines[0]["sylls"]:
-        i = int(s["start"] * speech.RATE)
+        i = int(s["start"] * sound.RATE)
         onset = i + int(np.argmax(audio[i:i + 4000] > 200))
-        assert (onset - i) / speech.RATE < 0.005                                 # within 5 ms
+        assert (onset - i) / sound.RATE < 0.005                                 # within 5 ms

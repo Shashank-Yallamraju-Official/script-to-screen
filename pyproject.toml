@@ -17,10 +17,10 @@ dev = ["pytest"]
 toon = "toon.cli:main"
 
 [tool.setuptools]
-packages = ["toon"]
+packages = ["toon", "toon.script", "toon.world", "toon.performance", "toon.presentation", "toon.readers", "toon.tools"]
 
 [tool.setuptools.package-data]
-toon = ["editor.html"]
+"toon.tools" = ["editor.html"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

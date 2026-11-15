@@ -17,9 +17,11 @@ from pathlib import Path
 
 import skia
 
-from . import ledger, speech
+from ..performance import Scene
+from ..readers import ledger
+from ..script import find_root
+from . import sound
 from .draw import draw_frame
-from .model import Scene, find_root
 
 
 def frame_jpeg(scene, F, scale=1.0, quality=85, xray=False, slate=False):
@@ -49,7 +51,7 @@ def render(scene, xray=False, slate=False):
     ff.stdin.close()
     if ff.wait() != 0:
         sys.exit("ffmpeg failed")
-    wav.write_bytes(speech.mix(scene))
+    wav.write_bytes(sound.mix(scene))
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(silent), "-i", str(wav), "-map", "0:v", "-map", "1:a",
                     "-c:v", "copy", "-c:a", "aac", "-b:a", "160k", "-shortest", str(tmp)], check=True)
     os.replace(tmp, out)
