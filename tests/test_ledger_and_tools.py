@@ -69,3 +69,16 @@ def test_the_editor_saves_only_what_changed(show):
     sess.patch([dict(path=["turns", 1, "hold"], value=8)])                         # back to the default: no line needed
     sess.save()
     assert "hold:" not in path.read_text()
+
+
+def test_the_reference_scenes_have_not_changed():
+    """The gate on every restructuring phase. If a phase means to change a scene, re-record it
+    with `toon parity record` and say so in the commit."""
+    import json
+    from toon import parity
+    for ref in sorted((DEMO / "reference").glob("*.json")):
+        was = json.loads(ref.read_text())
+        path = DEMO / "episodes" / (was["scene"] + ".yaml")
+        sc = Scene(path)
+        now = __import__("hashlib").sha256(json.dumps(parity.score_of(sc), sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16]
+        assert now == was["score"], f"{was['scene']} no longer produces the recorded score"

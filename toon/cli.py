@@ -3,13 +3,14 @@
     toon edit <scene>        open the editor on a scene
     toon render <scene>      render a scene (or --episode, --all) to video
     toon ledger [show]       what the audience has had the chance to learn
+    toon parity record|check <scene>    has this scene's score, picture or sound changed?
 """
 import sys
 
 
 def main():
-    from . import editor, ledger, render
-    commands = {"edit": editor.main, "render": render.main, "ledger": ledger.main}
+    from . import editor, ledger, parity, render
+    commands = {"edit": editor.main, "render": render.main, "ledger": ledger.main, "parity": parity.main}
     if len(sys.argv) < 2 or sys.argv[1] not in commands:
         print(__doc__.strip())
         sys.exit(0 if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help") else 2)
