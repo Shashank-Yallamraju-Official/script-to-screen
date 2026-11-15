@@ -1,15 +1,7 @@
-"""Render a scene to video.
+"""Rendering: a scene to video, one frame to a picture, several frames to a contact sheet.
 
-    s2s render shows/demo/episodes/s01/e01/01-the-last-dumpling.yaml
-    s2s render --show shows/demo --episode s01/e01
-    s2s render --show shows/demo --all
-    s2s render <scene> --still 2:6          # turn 2, six steps in, as a PNG
-    --xray shows the director's view (felt against shown, weight in the room); --slate adds turn and step
-
-A scene with errors (a turn with no `why`, a feeling with no tell, a payoff the audience
-cannot decode yet) does not render.
+These are plain functions. Deciding whether a show is fit to render is the `render` command's job.
 """
-import argparse
 import os
 import subprocess
 import sys
@@ -17,9 +9,6 @@ from pathlib import Path
 
 import skia
 
-from ..performance import Scene
-from ..readers import ledger
-from ..script import find_root
 from . import sound
 from .draw import draw_frame
 
@@ -60,51 +49,39 @@ def render(scene, xray=False, slate=False):
     return out
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("scene", nargs="?")
-    ap.add_argument("--show", default=".", help="the show's folder, for --all and --episode (default: here)")
-    ap.add_argument("--all", action="store_true")
-    ap.add_argument("--episode", help="a folder under episodes/, e.g. s01/e01: render its scenes and join them")
-    ap.add_argument("--still")
-    ap.add_argument("--xray", action="store_true")
-    ap.add_argument("--slate", action="store_true")
-    a = ap.parse_args()
-    root = find_root(Path(a.scene or a.show).resolve())
-    if a.episode:
-        a.all = False
-    _, problems = ledger.build(root)
-    paths = (ledger.scene_paths(root) if a.all else
-             sorted((root / "episodes" / a.episode).rglob("*.yaml")) if a.episode else [Path(a.scene).resolve()])
-    if not paths:
-        sys.exit("no scenes found")
-    scenes = [Scene(p) for p in paths]
-    mine = {s.key for s in scenes} | {s.path.stem for s in scenes}
-    for p in problems:
-        print(f"{p['level']}: {p['scene']}" + (f" turn {p['turn']}" if p.get("turn") is not None else "") + f": {p['msg']}", file=sys.stderr)
-    if any(p["level"] == "error" and (a.all or p["scene"] in mine) for p in problems):
-        sys.exit("not rendered: fix the errors above")
-    for sc in scenes:
-        if a.still:
-            tid, steps = a.still.split(":")
-            turn = next(t for t in sc.turns if str(t["id"]) == tid)
-            F = round((turn["start"] + float(steps)) * sc.step * sc.fps)
-            surface = skia.Surface(sc.W, sc.H)
-            draw_frame(surface.getCanvas(), sc, F, a.xray, a.slate)
-            png = out_path(sc).with_name(f"{sc.path.stem}_t{tid}_{steps}.png")
-            png.parent.mkdir(parents=True, exist_ok=True)
-            surface.makeImageSnapshot().save(str(png), skia.kPNG)
-            print(png)
-        else:
-            print(render(sc, a.xray, a.slate), f"{sc.dur:.1f}s")
-    if a.episode and not a.still:                        # same encoder settings throughout, so the join is lossless
-        listing = root / "out" / (a.episode + ".txt")
-        listing.write_text("".join(f"file '{out_path(sc)}'\n" for sc in scenes))
-        joined = root / "out" / (a.episode + ".mp4")
-        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(listing), "-c", "copy", str(joined)], check=True)
-        listing.unlink()
-        print(joined)
+def still(scene, F, png, xray=False, slate=False):
+    """One frame as a PNG."""
+    surface = skia.Surface(scene.W, scene.H)
+    draw_frame(surface.getCanvas(), scene, F, xray, slate)
+    Path(png).parent.mkdir(parents=True, exist_ok=True)
+    surface.makeImageSnapshot().save(str(png), skia.kPNG)
+    return Path(png)
 
 
-if __name__ == "__main__":
-    main()
+def sheet(scene, frames, png, cols=4, scale=0.25, xray=False):
+    """A contact sheet: the given frames side by side, each with its turn label."""
+    w, h = int(scene.W * scale), int(scene.H * scale)
+    rows = (len(frames) + cols - 1) // cols
+    surface = skia.Surface(w * min(cols, len(frames)), h * rows)
+    c = surface.getCanvas()
+    c.clear(skia.ColorWHITE)
+    for k, F in enumerate(frames):
+        c.save()
+        c.translate((k % cols) * w, (k // cols) * h)
+        c.clipRect(skia.Rect.MakeWH(w, h))
+        c.scale(scale, scale)
+        draw_frame(c, scene, F, xray, True)
+        c.restore()
+    Path(png).parent.mkdir(parents=True, exist_ok=True)
+    surface.makeImageSnapshot().save(str(png), skia.kPNG)
+    return Path(png)
+
+
+def join(root, name, scenes):
+    """Join rendered scenes into one file. Same encoder settings throughout, so nothing is re-encoded."""
+    listing = root / "out" / (name + ".txt")
+    listing.write_text("".join(f"file '{out_path(sc)}'\n" for sc in scenes))
+    joined = root / "out" / (name + ".mp4")
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(listing), "-c", "copy", str(joined)], check=True)
+    listing.unlink()
+    return joined

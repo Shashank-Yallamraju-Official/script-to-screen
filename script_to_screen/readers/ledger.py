@@ -8,11 +8,10 @@ after it has shown in `learn_after` separate scenes. Rules checked here:
   - a scene should show at most one tell the audience has never seen, per entity
 """
 import json
-import sys
 from pathlib import Path
 
 from ..performance import Scene
-from ..script import ScriptError, find_root, load_yaml, scene_paths
+from ..script import ScriptError, load_yaml, scene_paths
 
 
 def build(root, override=None, lib=None):
@@ -70,24 +69,3 @@ def build(root, override=None, lib=None):
                 problems.append(dict(level="warn", scene=sc.key, turn=None,
                                      msg=f"{e} shows {len(emos)} tells the audience has never seen ({', '.join(emos)}); one new thing per scene reads more clearly"))
     return table, problems
-
-
-def main():
-    import argparse
-    ap = argparse.ArgumentParser(description="What the audience has had the chance to learn, scene by scene.")
-    ap.add_argument("show", nargs="?", default=".", help="the show's folder, or anything inside it (default: here)")
-    root = find_root(Path(ap.parse_args().show).resolve())
-    table, problems = build(root)
-    for e, row in table.items():
-        for emo, c in row.items():
-            mark = "learned" if c["learned"] else f"{c['seen']}/{c['need']}"
-            extra = f", felt but hidden in {c['hidden']}" if c["hidden"] else ""
-            print(f"{e:8} {emo:9} {mark:8} seen as: {', '.join(c['positions']) or '-'}{extra}")
-    for p in problems:
-        where = p["scene"] + (f" turn {p['turn']}" if p.get("turn") is not None else "")
-        print(f"{p['level'].upper():5} {where}: {p['msg']}")
-    sys.exit(1 if any(p["level"] == "error" for p in problems) else 0)
-
-
-if __name__ == "__main__":
-    main()

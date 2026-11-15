@@ -18,7 +18,7 @@ s2s = "script_to_screen.cli:main"
 script-to-screen = "script_to_screen.cli:main"
 
 [tool.setuptools]
-packages = ["script_to_screen", "script_to_screen.script", "script_to_screen.world", "script_to_screen.performance", "script_to_screen.presentation", "script_to_screen.readers", "script_to_screen.tools"]
+packages = ["script_to_screen", "script_to_screen.script", "script_to_screen.world", "script_to_screen.performance", "script_to_screen.presentation", "script_to_screen.readers", "script_to_screen.commands", "script_to_screen.tools"]
 
 [tool.setuptools.package-data]
 "script_to_screen.tools" = ["editor.html"]

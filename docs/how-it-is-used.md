@@ -121,10 +121,10 @@ project's oldest habit, hand-set values becoming derived ones, turned into a rou
 | Need | Today |
 |---|---|
 | **Writing loop** | |
-| Read, change, rehearse, explain through commands | **No.** The assistant edits files as text. Only `render`, `ledger` and `edit` are commands |
-| Check with precise messages | Partly. Checks exist; messages name the turn but not the fix |
-| Look at stills | Partly. `render --still` exists; no contact sheet |
-| Stable addresses | No. Things are addressed by file path and turn number |
+| Read, change, rehearse, explain through commands | Mostly. Scenes are read, explained and changed by command, with dry runs and undo. Entity sheets, the library and show settings are still edited as files |
+| Check with precise messages | Mostly. A refused command says what would work; check messages name the turn but not always the fix |
+| Look at stills | Yes. `still` and `sheet` |
+| Stable addresses | Partly. `scene:turn` addresses exist; they follow the file's name until scenes get IDs (phase 3) |
 | See what the writer did by hand | No |
 | **Tuning loop** | |
 | Replay at once after a change | Partly. Changing a note replays its line. Moving a slider discards every frame of the scene and waits |
@@ -141,4 +141,4 @@ project's oldest habit, hand-set values becoming derived ones, turned into a rou
 | Locking | No |
 | Editor follows the files | **No. The editor keeps its own copy and overwrites the file on save.** |
 
-The two entries in bold are the ones that can lose work today.
+The entry in bold is the one that can lose work today.

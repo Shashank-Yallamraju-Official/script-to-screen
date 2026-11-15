@@ -7,9 +7,9 @@ because the script says so, and every turn has to say why.
 
     pip install -e ".[dev]"        # plus ffmpeg on the PATH, for rendering
     s2s edit shows/demo/episodes/s01/e01/01-the-last-dumpling.yaml
-    s2s render --show shows/demo --episode s01/e01
-    s2s ledger shows/demo
-    s2s parity check shows/demo/episodes/study/the-reveal.yaml
+    s2s list                       # run from the repository or a show's folder
+    s2s render --episode s01/e01
+    s2s parity check the-reveal
     pytest
 
 | | |
@@ -18,7 +18,9 @@ because the script says so, and every turn has to say why.
 | `script_to_screen/world/` | Layer 2: what is true, and a log of every change and its cause |
 | `script_to_screen/performance/` | Layer 3: the scene played out on the tempo grid (the score) |
 | `script_to_screen/presentation/` | Layer 4: how the score looks and sounds |
-| `script_to_screen/readers/`, `script_to_screen/tools/` | The audience ledger and parity check; the editor |
+| `script_to_screen/readers/` | The audience ledger and the parity check |
+| `script_to_screen/commands/` | Every command, declared once; the command line is generated from them |
+| `script_to_screen/tools/` | The editor |
 | `shows/demo/` | A small show used for development: one episode of three scenes, plus a staging study |
 | `tests/` | What the engine promises, as tests |
 | [docs/how-it-is-used.md](docs/how-it-is-used.md) | The two loops the tool serves: writing through an assistant, tuning by hand |
@@ -173,7 +175,7 @@ A turn can also place a sound by hand: `sfx: [{at: 4, sound: thud}]`.
 
 ## The audience ledger
 
-    s2s ledger shows/demo
+    s2s ledger
 
 A viewer sees only the outputs, and one sighting of a tell is ambiguous. The ledger walks
 every scene in order and counts, per entity and emotion, how many scenes have shown that
@@ -208,13 +210,35 @@ A changed tell (an arc step) starts its count again.
 The arrow-into-a-wall icon appears when a scene inherits something; hover it to see what was
 carried in and what happened off-screen. Saving rewrites only the values you changed.
 
-## Render
+## The command line
 
-    s2s render shows/demo/episodes/s01/e01/01-the-last-dumpling.yaml
-    s2s render --show shows/demo --episode s01/e01      # every scene in the episode, joined
-    s2s render --show shows/demo --all
-    s2s render <scene> --still 2:6                      # turn 2, six steps in, as a PNG
+    s2s commands                 # every command, with arguments and an example
+    s2s <command> --help
 
-Add `--xray` for the director's view or `--slate` for a turn and step label. A scene with
+Scenes and turns have short addresses: `thermostat` is the scene whose name contains that
+word, `thermostat:2` is its turn 2, `thermostat:2+6` is six steps into that turn. Every
+command takes `--json`; a command that changes something also takes `--dry-run`, `--because
+"the writer's words"` and `--force`. Exit codes: 0 done, 2 refused, 3 the show has errors.
+
+| To | Run |
+|---|---|
+| See the show from above | `s2s list` |
+| Read a scene or a turn | `s2s read thermostat:2` |
+| See what is true as a turn ends | `s2s state thermostat:2` |
+| Ask why someone looks the way they do | `s2s explain thermostat:2 otis` |
+| List problems | `s2s check` |
+| Look at a moment, or a whole scene at a glance | `s2s still thermostat:2 --xray`, `s2s sheet thermostat` |
+| Render | `s2s render thermostat`, `s2s render --episode s01/e01`, `s2s render --all` |
+| Change a line, a feeling, a timing, a reason | `set-line`, `set-feeling`, `set-timing`, `set-why` |
+| Add or remove | `add-turn`, `add-reaction`, `remove-turn` |
+| Set any other field of a turn | `s2s put thermostat:2 do '{juno: {orient: otis}}'` |
+| See and reverse changes | `s2s history`, `s2s undo` |
+
+A change is checked against the whole show before it is written. One that would introduce
+an error is refused and says which error; a refusal says what would work ("no word
+'degree' in this line; its words are: it, is, eighty, degrees, in, here"). A scene with
 errors does not render: a turn with no `why`, a feeling with no tell, a rhythm or melody
 that does not match the syllable count, or a payoff the audience cannot decode yet.
+
+Not yet reachable by command: entity sheets, the library and show settings, which are still
+edited as files.

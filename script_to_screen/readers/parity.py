@@ -10,7 +10,6 @@ maths library installed, so they are only meaningful on the machine that recorde
 """
 import hashlib
 import json
-import sys
 from pathlib import Path
 
 import skia
@@ -55,19 +54,3 @@ def digests(path):
 def ref_path(path):
     path = Path(path).resolve()
     return find_root(path) / "reference" / (path.stem + ".json")
-
-
-def main():
-    if len(sys.argv) != 3 or sys.argv[1] not in ("record", "check"):
-        sys.exit(__doc__)
-    path = Path(sys.argv[2])
-    now, ref = digests(path), ref_path(path)
-    if sys.argv[1] == "record":
-        ref.parent.mkdir(exist_ok=True)
-        ref.write_text(json.dumps(now, indent=2) + "\n")
-        print(json.dumps(now))
-        return
-    was = json.loads(ref.read_text())
-    diff = {k: dict(was=was[k], now=now[k]) for k in now if was.get(k) != now[k]}
-    print(json.dumps(dict(ok=not diff, scene=now["scene"], changed=diff)))
-    sys.exit(1 if diff else 0)

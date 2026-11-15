@@ -7,9 +7,10 @@ MAY_USE = {                                   # a layer may import these, and no
     "script": set(),
     "world": {"script"},
     "performance": {"script", "world"},
-    "presentation": {"script", "world", "performance", "readers"},
+    "presentation": {"script", "world", "performance"},
     "readers": {"script", "world", "performance", "presentation"},
-    "tools": {"script", "world", "performance", "presentation", "readers"},
+    "commands": {"script", "world", "performance", "presentation", "readers"},
+    "tools": {"script", "world", "performance", "presentation", "readers", "commands"},
 }
 
 

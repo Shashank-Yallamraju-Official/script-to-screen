@@ -1,24 +1,21 @@
-"""The `s2s` command.
+"""The `s2s` command (also installed as `script-to-screen`).
 
-    s2s edit <scene>        open the editor on a scene
-    s2s render <scene>      render a scene (or --episode, --all) to video
-    s2s ledger [show]       what the audience has had the chance to learn
-    s2s parity record|check <scene>    has this scene's score, picture or sound changed?
+    s2s commands             every command, with arguments and an example
+    s2s <command> --help     one command's arguments
+    s2s edit <scene>         open the tuning editor on a scene
+
+Everything except `edit` is declared in script_to_screen/commands and can answer with --json.
 """
 import sys
 
 
 def main():
-    from .presentation import render
-    from .readers import ledger, parity
-    from .tools import editor
-    commands = {"edit": editor.main, "render": render.main, "ledger": ledger.main, "parity": parity.main}
-    if len(sys.argv) < 2 or sys.argv[1] not in commands:
-        print(__doc__.strip())
-        sys.exit(0 if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help") else 2)
-    name = sys.argv.pop(1)
-    sys.argv[0] = f"s2s {name}"
-    commands[name]()
+    if len(sys.argv) > 1 and sys.argv[1] == "edit":       # the editor is a tool for a person, not a command
+        from .tools import editor
+        sys.argv = ["s2s edit"] + sys.argv[2:]
+        return editor.main()
+    from . import commands
+    sys.exit(commands.run(sys.argv[1:]))
 
 
 if __name__ == "__main__":
