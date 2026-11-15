@@ -279,3 +279,43 @@ def test_a_turn_says_how_many_of_its_tunes_were_orphaned_by_a_rewording(talk):
     assert talk.state()["turns"][1]["orphans"] == 0
     talk.path.write_text(talk.path.read_text().replace("say: I saw. You took it.", "say: I saw you take it."))
     assert talk.poll()["changed"] and talk.state()["turns"][1]["orphans"] == 1
+
+
+# ---- picking in the picture, and finding a value by a word ------------------------------------------
+def test_a_click_on_a_word_in_the_bubble_picks_that_syllable(talk):
+    from script_to_screen.presentation.draw import hits
+    sc = talk.scene
+    took = sc.speech[1]["sylls"][1]                                    # "took", in the second bubble
+    F = round((took["start"] + 0.02) * talk.stage.fps)
+    box = next(h for h in hits(talk.stage, F) if h["kind"] == "syllable" and h["n"] == 1)["box"]
+    assert talk.hit(F, box[0] + box[2] / 2, box[1] + box[3] / 2) == "s01/e01/01:2.s4.length"
+    assert talk.hit(F, 5, 5) is None                                   # empty paper
+
+
+def test_a_click_on_the_bubble_picks_the_tone_and_on_a_token_something_of_that_entity(talk):
+    from script_to_screen.presentation.draw import hits
+    F = round((talk.scene.speech[0]["sylls"][0]["start"] + 0.02) * talk.stage.fps)
+    found = hits(talk.stage, F)
+    bubble = next(h for h in found if h["kind"] == "bubble")["box"]
+    assert talk.hit(F, bubble[0] + 3, bubble[1] + 3) == f"~{talk.scene.speech[0]['tone']}.rate"
+    tok = next(h for h in found if h["kind"] == "token" and h["entity"] == "b")["box"]
+    assert talk.hit(F, tok[0] + tok[2] / 2, tok[1] + tok[3] / 2).startswith("@b.")
+
+
+def test_a_value_can_be_found_by_the_words_a_writer_would_use(talk):
+    saw = talk.scene.speech[0]["sylls"][1]
+    near = round((saw["start"] + saw["voiced"] + 0.05) * talk.stage.fps)       # the playhead is in the silence after "saw."
+    got = [c["address"] for c in talk.find("gap", near)["found"]]
+    assert got[0] == "s01/e01/01:2.s2.breath" and "s01/e01/01:2.pause" in got   # both are gaps; the nearer one, and a real one, comes first
+    assert got.index("s01/e01/01:2.s2.breath") < got.index("s01/e01/01:2.s1.breath") if "s01/e01/01:2.s1.breath" in got else True
+    assert talk.find("hold", 0)["found"][0]["param"] == "turn.hold"
+    nothing = talk.find("bouncy", 0)                                   # nobody moves in this scene
+    assert nothing["found"] == [] and nothing["unseen"] == ["Overshoot"]
+
+
+def test_finding_prefers_the_instance_nearest_the_playhead():
+    s = Session(series(DEMO).by_id["the-vase"]["path"])
+    turns = [round(t * s.stage.fps) for t, name, *_ in s.scene.events if name == "turn"]
+    for F in (turns[0], turns[-1]):
+        c = s.find("snappy", F)["found"][0]
+        assert c["address"] == "feel.ease" and abs(c["span"][0] - F / s.stage.fps / s.scene.step) < 1

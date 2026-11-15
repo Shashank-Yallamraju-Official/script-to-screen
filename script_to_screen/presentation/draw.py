@@ -170,7 +170,8 @@ def indicator(line, chunks, t):
     return row, x, h, w
 
 
-def draw_bubble(c, stage, line, t, o, ent):
+def bubble_box(stage, line, o):
+    """Where a bubble sits for a speaker in state `o`, and how its text is laid out inside it."""
     feel, tone = stage.look.feel, stage.look.tones[line["tone"]]
     f, size, tw, rows, chunks = layout(line, tone)
     W, H, pad = stage.W, stage.H, 22
@@ -181,6 +182,14 @@ def draw_bubble(c, stage, line, t, o, ent):
     hx, top = slot_x(o["slot"], W), ground(H) - BODY_H * o["sy"] - 24
     bx = min(max(hx - w / 2, 24), W - w - 40)
     by = top - h - 24
+    return dict(f=f, size=size, rows=rows, chunks=chunks, pad=pad, lift=lift, rad=rad, lh=lh, w=w, h=h, hx=hx, top=top, bx=bx, by=by)
+
+
+def draw_bubble(c, stage, line, t, o, ent):
+    feel, tone = stage.look.feel, stage.look.tones[line["tone"]]
+    g = bubble_box(stage, line, o)
+    f, size, rows, chunks, pad, lift, rad, lh = (g[k] for k in ("f", "size", "rows", "chunks", "pad", "lift", "rad", "lh"))
+    w, h, hx, top, bx, by = (g[k] for k in ("w", "h", "hx", "top", "bx", "by"))
     tx = min(max(hx, bx + 36), bx + w - 36)
     box = skia.Path()
     box.addRoundRect(skia.Rect.MakeXYWH(bx, by, w, h), 18, 18)
@@ -246,6 +255,24 @@ def draw_xray(c, stage, states):
                     c.drawCircle(px, gy + 38, 5.5 if i < info["intensity"] else 3.5, fill(color))
                 if i < info["intensity"]:
                     c.drawCircle(px, gy + 38, 5.5, stroke(color, 2))
+
+
+def hits(stage, F):
+    """What is where in frame F, front to back: [{kind, box: [x, y, w, h], ...}] in frame pixels.
+    kind is `syllable` (with `line`, the bubble, and `n`, its place in that bubble from 0), `bubble`, or `token` (with `entity`).
+    This is how a click on the picture finds the thing it landed on."""
+    t = F / stage.fps
+    states = {e: s for e in stage.score.pose if (s := pose(stage, e, t)) is not None and s["alpha"] > 0.5}
+    out, line = [], stage.score.line_at(t)
+    if line and line["who"] in states:
+        g = bubble_box(stage, line, states[line["who"]])
+        for n, (row, x0, _, width) in enumerate(g["chunks"]):
+            out.append(dict(kind="syllable", line=line, n=n, box=[g["bx"] + g["pad"] + x0, g["by"] + g["pad"] - 8 + row * g["lh"], max(width, 6), g["lh"]]))
+        out.append(dict(kind="bubble", line=line, box=[g["bx"], g["by"], g["w"], g["h"]]))
+    for e, o in states.items():
+        w, h = BODY_W * o["sx"] + 24, BODY_H * o["sy"]
+        out.append(dict(kind="token", entity=e, box=[slot_x(o["slot"], stage.W) - w / 2, ground(stage.H) - h, w, h]))
+    return out
 
 
 def draw_frame(c, stage, F, xray=False, slate=False):

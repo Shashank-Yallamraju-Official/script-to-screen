@@ -516,8 +516,8 @@ Each slice is usable on its own and ends with something the writer can feel.
 | 3 ✓ | **Ownership.** (built) Breath as its own value, stretches, the strip, the knob and scope chip | The worked example in section 1 can be done up to step 3 without touching the piano roll |
 | 4 ✓ | **Audition and compare.** (built) Spans, auto-replay, loop, A/B | Steps 3 and 4 of the worked example |
 | 5 ✓ | **In play, widen, anchors.** (built) The candidate row, W with its count, orphans | Steps 5 and 6. "How he turns is wrong" finds flip, ease and overshoot |
-| 6 | **Shortcuts.** Picking in the picture, search by word | Clicking a syllable in the bubble selects it |
-| 7 | **Frame cache.** Only if measured need | Worst nudge under 100 ms on the longest real scene |
+| 6 ✓ | **Shortcuts.** (built) Picking in the picture, search by word | Clicking a syllable in the bubble selects it |
+| 7 (not needed yet) | **Frame cache.** Only if measured need | Worst nudge under 100 ms on the longest real scene |
 
 Slices 1 and 2 are the ones that also unblock the writing loop: they are build steps 1 and 2
 of the architecture, done for the tuning commands first.
@@ -533,6 +533,7 @@ of the architecture, done for the tuning commands first.
 | The strip replaces the handles for hold, pause and beat; the slider panel is retired | The strip and knob were added; the old handles and the slider panel still work | Nothing is lost while the knob proves itself. Remove them once the in-play row (slice 5) reaches every value |
 | "How he turns is wrong" finds flip, ease and overshoot | It finds ease and flip, then the turn's sound | Overshoot swings position and posture, not facing, so a turn does not show it at work. It is listed where someone moves or changes posture |
 | Widen shows how many instances change before it applies | In the editor it applies and then says how many changed, with undo one key away; `s2s tune widen --dry-run` gives the count beforehand | One key and a count is quicker than a confirm step, and nothing is lost |
+| Search results are limited to what occurs in the current scene | So they are, and when a word matches a value that nothing in the scene shows at work, the editor says which value that is | Otherwise "bouncy" in a scene where nobody moves looks like the word was not understood |
 | While A plays, nothing else on screen changes | While A plays, the picture and sound are A's, a small badge says so, and the timeline stays on the scene as it is now | A can be a different length from B, so A's playhead has no true place on B's timeline |
 | Nothing | Files that have not changed are not parsed again | Parsing YAML 28 times per nudge was the whole cost; with this a drag preview takes 2 ms and a release 13 ms |
 

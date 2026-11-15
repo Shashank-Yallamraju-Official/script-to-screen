@@ -22,6 +22,7 @@ from urllib.parse import parse_qs, urlparse
 from ..commands import Refused, address, edit, tune
 from ..performance import Scene, carry_into
 from ..presentation import sound
+from ..presentation.draw import hits
 from ..presentation.render import frame_jpeg, out_path
 from ..presentation.stage import Look, Stage
 from ..readers import inplay, ledger
@@ -283,6 +284,56 @@ class Session:
             out.append(dict(c, value=r["value"], by=r["by"], scope=r["scope"], meaning=t.param.meaning))
         return out
 
+    def hit(self, F, x, y):
+        """A click on the picture at (x, y) in frame pixels -> the address of the value to put on the knob, or None.
+        A syllable in the bubble gives its length; the bubble gives the line's tone; a token gives whatever
+        that entity is doing at this moment, else its own settings."""
+        sid, turn = self.seg["id"], self.scene.turn_at(F / self.stage.fps)
+        for h in hits(self.stage, F):
+            bx, by, bw, bh = h["box"]
+            if not (bx <= x <= bx + bw and by <= y <= by + bh):
+                continue
+            if h["kind"] == "syllable":
+                mine = [b for b in self.scene.speech if turn["start"] * self.scene.step - 1e-9 <= b["start"] < (turn["start"] + turn["length"]) * self.scene.step]
+                before = sum(len(b["sylls"]) for b in mine if b["start"] < h["line"]["start"] - 1e-9)
+                return f"{sid}:{turn['id']}.s{before + h['n'] + 1}.length"
+            if h["kind"] == "bubble":
+                return f"~{h['line']['tone']}.rate"
+            e = h["entity"]
+            doing = [c["address"] for c in self.in_play(F) if c["why"].startswith(e + " ") or c["why"].endswith(" " + e)]
+            return doing[0] if doing else f"@{e}.voice" if turn["line"] and turn["who"] == e else f"@{e}.reflex"
+        return None
+
+    def find(self, words, F):
+        """Values in this scene that a writer might mean by `words` ("bouncy", "the gap", "louder"), the
+        best match first and, among equals, the one nearest the playhead."""
+        want = [w for w in words.lower().split() if w]
+        if not want:
+            return dict(found=[], unseen=[])
+
+        def fit(p):                                              # how well a parameter answers to the words
+            text = [p.label.lower(), p.name.replace("_", " "), *p.words]
+            exact = sum(any(w == t or w in t.split() for t in text) for w in want)
+            loose = sum(any(w in t for t in text + [p.meaning.lower()]) for w in want)
+            return exact * 10 + loose
+        good = {p.key: fit(p) for p in params.PARAMS.values() if fit(p) > 0}
+        steps, sc, found = F / self.stage.fps / self.scene.step, self.scene, {}
+        moments = {s["start"] + s["length"] / 2 for t in sc.turns for s in t["stretches"]} | {t / sc.step for t, *_ in sc.events}
+        for at in moments:
+            for c in inplay.in_play(sc, at):
+                if c["param"] in good:
+                    far = abs((c["span"][0] + c["span"][1]) / 2 - steps)
+                    if c["address"] not in found or far < found[c["address"]][0]:
+                        found[c["address"]] = (far, c)
+        owned = {s["address"] for t in sc.turns for s in t["stretches"]}     # a stretch that is really there beats one that could be added
+        out = []
+        for far, c in sorted(found.values(), key=lambda x: (-good[x[1]["param"]], params.PARAMS[x[1]["param"]].owns_time and x[1]["address"] not in owned, x[0]))[:9]:
+            t = tune.parse(c["address"], self.root)
+            r = tune.resolve(t)
+            out.append(dict(c, value=r["value"], by=r["by"], scope=r["scope"], meaning=t.param.meaning))
+        seen = {c["param"] for c in out}                         # what answers to the words but is not at work anywhere in this scene
+        return dict(found=out, unseen=[params.PARAMS[k].label for k in sorted(good, key=lambda k: -good[k]) if k not in seen][:3])
+
     def nudge(self, address, op, value=None):
         """Set, take off or widen a hand-set value from the knob. Each is written at once; a quick run of
         nudges on one value is one undo step. -> the first frame to redraw, or None if the picture is unchanged."""
@@ -371,6 +422,10 @@ def make_handler(sess):
                         return self.send(sess.state())
                     if url.path == "/value":                 # the knob: what a value is and where it comes from
                         return self.send(sess.value(q["address"][0]))
+                    if url.path == "/hit":                   # a click on the picture
+                        return self.send(dict(address=sess.hit(int(q["f"][0]), float(q["x"][0]), float(q["y"][0]))))
+                    if url.path == "/find":                  # a value, by the words a writer would use for it
+                        return self.send(sess.find(q.get("q", [""])[0], int(q["f"][0])))
                     if url.path == "/in-play":               # the values at work at this frame
                         return self.send(sess.in_play(int(q["f"][0])))
                     if url.path == "/poll":                  # has anything changed underneath?

@@ -61,6 +61,8 @@
   #inplay button.hand::after { content: ""; position: absolute; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); margin: -9px 0 0 9px; }
   #inplay svg { width: 13px; height: 13px; } #inplay span { color: var(--mute); font-size: 10px; align-self: center; padding: 0 3px; cursor: help; }
   .turn.orph::before { content: ""; position: absolute; top: 3px; right: 12px; width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
+  #find { display: none; all: unset; display: none; width: 120px; padding: 2px 8px; border: 1px solid var(--accent); border-radius: 6px; background: var(--bg); color: var(--text); font: 12px ui-monospace, Menlo, monospace; user-select: text; }
+  #view { cursor: pointer; }
   #tl { display: flex; background: var(--panel); }
   #gutter { width: 34px; flex: none; position: relative; border-right: 1px solid var(--line); }
   #gutter div { position: absolute; left: 0; width: 100%; display: grid; place-items: center; color: var(--mute); }
@@ -109,7 +111,7 @@
     <span id="tc"></span>
     <div id="sel" title="Steps for the selected timing. Type a number, or Alt+arrow to nudge a quarter step."><i></i><input id="selv" type="number" step="0.25"></div>
     <div id="knob"><i></i><input id="knobv" type="number"><span class="sc" id="knobs"></span><button id="kreset"><svg viewBox="0 0 16 16"><path d="M3 8a5 5 0 1 0 1.6-3.7M3 3v3h3"/></svg></button><span class="ab" id="kab"><b>A</b><b class="on">B</b></span><button id="kwide"><svg viewBox="0 0 16 16"><path d="M6 3H3v3M10 3h3v3M6 13H3v-3M10 13h3v-3"/></svg></button></div>
-    <div id="inplay"></div>
+    <input id="find" placeholder="/" title="Find a value by how you would describe it: bouncy, gap, louder, snappy. Enter puts the knob on the best match nearest the playhead; Escape closes."><div id="inplay"></div>
     <span id="why" title="Why this turn happens"></span>
     <div id="ledger"></div>
     <button id="flag"><svg viewBox="0 0 16 16"><path d="M8 2.5 14.5 13h-13zM8 7v3M8 11.6v.1"/></svg></button>
@@ -394,7 +396,7 @@ function showInPlay() {
   $('inplay').innerHTML = shown.map((c, i) => `<button data-i="${i}" class="${c.address === pick ? 'on' : ''}${c.by === 'hand' ? ' hand' : ''}" title="${c.label}: ${num(c.value)}${c.by === 'hand' ? ' (set by hand)' : ''}\n${c.why}\n${c.meaning}\n${c.address}">${ICON[c.group] || ICON.time}</button>`).join('') +
     (more > 0 ? `<span title="${more} more at work here; Tab steps through all of them:\n` + cands.slice(9).map(c => `${c.label} \u00b7 ${c.why}`).join('\n') + `">+${more}</span>` : '');
 }
-async function inPlay() { try { const f = F; const r = await api('/in-play?f=' + f); if (f === F) { cands = r; showInPlay(); } } catch (e) {} }
+async function inPlay() { if (finding) return; try { const f = F; const r = await api('/in-play?f=' + f); if (f === F) { cands = r; showInPlay(); } } catch (e) {} }
 const inPlaySoon = () => { clearTimeout(ipT); ipT = setTimeout(inPlay, 160); };
 $('inplay').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { pause(); pickAt(cands[+b.dataset.i].address); } });
 function tab(dir) {                                       // step the knob through everything in play here
@@ -402,6 +404,33 @@ function tab(dir) {                                       // step the knob throu
   const i = cands.findIndex(c => c.address === pick);
   pause(); pickAt(cands[(i + dir + cands.length) % cands.length].address).then(showInPlay);
 }
+
+// ---- picking in the picture, and finding a value by a word ----------------------------------------
+view.addEventListener('click', async e => {               // click a syllable in the bubble, the bubble, or a token
+  if (!S) return;
+  const r = view.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * S.width, y = (e.clientY - r.top) / r.height * S.height;
+  pause();
+  try { const h = await api(`/hit?f=${F}&x=${x.toFixed(1)}&y=${y.toFixed(1)}`); if (h.address) { await inPlay(); pickAt(h.address); } } catch (err) { toast(err.message, true); }
+});
+let finding = false, findT = 0;
+function openFind() { finding = true; const f = $('find'); f.style.display = 'block'; f.value = ''; f.focus(); }
+function closeFind(keep) { finding = false; $('find').style.display = 'none'; $('find').blur(); if (!keep) inPlay(); }
+$('find').addEventListener('input', () => { clearTimeout(findT); findT = setTimeout(async () => {
+  const q = $('find').value.trim(); if (!q) { cands = []; return showInPlay(); }
+  try { cands = (await api(`/find?f=${F}&q=${encodeURIComponent(q)}`)).found; showInPlay(); } catch (e) {}
+}, 120); });
+$('find').addEventListener('keydown', async e => {
+  if (e.key === 'Escape') { closeFind(); e.stopPropagation(); }
+  else if (e.key === 'Enter') {
+    clearTimeout(findT); const q = $('find').value.trim();
+    let r = { found: [], unseen: [] };
+    try { if (q) r = await api(`/find?f=${F}&q=${encodeURIComponent(q)}`); } catch (err) {}
+    cands = r.found;
+    if (cands.length) { const c = cands[0]; closeFind(true); showInPlay(); setF(frameOf(c.span[0]), false); clearTimeout(ipT); pickAt(c.address); }
+    else toast(r.unseen.length ? `${r.unseen.join(', ')} would answer to that, but nothing in this scene shows ${r.unseen.length === 1 ? 'it' : 'them'} at work` : 'Nothing tunable answers to that');
+    e.stopPropagation();
+  }
+});
 
 const ownerAt = f => { const s = stepsOf(f) + 1e-6, t = turnAt(f); return t.stretches.find(x => x.address && s >= x.start && s < x.start + x.length); };
 let nudging = false, nudgeNext = null;
@@ -639,6 +668,7 @@ addEventListener('keydown', e => {
     else bump(k === 'ArrowUp' ? 1 : -1, e.shiftKey);
   }
   else if (k === 'Tab') tab(e.shiftKey ? -1 : 1);
+  else if (k === '/') openFind();
   else if ((k === 'Backspace' || k === 'Delete') && pick) nudge('reset');
   else if (low === 'w' && pick && picked && picked.wider) nudge('widen');
   else if (k === 'Escape' && pick) { clearTimeout(audT); clearTimeout(replayT); stopBefore(); aud = null; pickAt(null); }

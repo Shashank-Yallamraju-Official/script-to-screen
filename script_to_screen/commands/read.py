@@ -160,9 +160,14 @@ def score(a):
 
 
 @command("params", "Every value that can be tuned: what it means, its range, where it is written, and what changing it redoes.",
-         [A("--scope", "only one scope: turn, show, reaction, syllable, tone, entity, feel, sound")], "s2s params --scope feel")
+         [A("--scope", "only one scope: turn, show, reaction, syllable, tone, entity, feel, sound"),
+          A("--find", "only values a writer might describe with these words, e.g. bouncy, \"the gap\", louder")], "s2s params --find bouncy")
 def params_(a):
-    ps = [p.describe() for p in PARAMS.values() if not a.scope or p.scope == a.scope]
+    want = (a.find or "").lower().split()
+    said = lambda p: all(any(w in t for t in [p.label.lower(), p.name.replace("_", " "), p.meaning.lower(), *p.words]) for w in want)
+    ps = [p.describe() for p in PARAMS.values() if (not a.scope or p.scope == a.scope) and said(p)]
+    if not ps and want:
+        raise Refused(f"nothing tunable answers to '{a.find}'", hint="try another word, or list everything with `s2s params`")
     if not ps:
         raise Refused(f"no parameters in scope '{a.scope}'", hint="scopes: " + ", ".join(dict.fromkeys(p.scope for p in PARAMS.values())))
     text = [f"{p['key']:22} {p['lo']:g}..{p['hi']:g} {p['unit']:9} {p['rebuild']:6}  {p['meaning']}" for p in ps]

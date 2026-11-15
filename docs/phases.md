@@ -19,7 +19,21 @@ the phase before. A phase that does mean to change it re-records the reference a
 | N3 | **Nudging: whose time is it, breath, the knob.** Every turn is tiled by stretches, each owned by one value (pause, a tell's latency, syllable, breath, beat, a slow reaction, hold); a test checks there are no gaps or overlaps. Breath is its own value, per syllable and show-wide per kind of pause, and tuning it never moves a bubble break. The editor draws the strip; clicking a stretch puts one knob on its value, with scope marks, reset and widen. A knob nudge takes 21 to 29 ms | Picture and sound identical. Score fingerprint re-recorded on purpose: turns now carry their stretches, syllables their kind of pause | Done (`nudge-3`), byte-identical video |
 | N4 | **Nudging: audition and compare.** After a nudge the moment replays by itself (the value's stretch with a lead-in and lead-out, set in `show.yaml`). Enter replays it; loop repeats it with a gap. The editor keeps the scene as it stood when the value was picked; B flips between before and after and replays | Identical | Done (`nudge-4`), byte-identical video |
 | N5 | **Nudging: in play, widen counts, orphans.** A ranked list of the values at work at any moment (the owner of the time, the syllable's note and stress, what nearby events exercise, their sounds, the tone, the speaker, the voice), each with a moment to replay. In the editor it is a row of icons beside the knob; Tab steps through it. Also `s2s in-play`. Widening reports how many turns or breaths changed. A turn shows when a rewording orphaned its tunes | Identical | Done (`nudge-5`), byte-identical video |
-| N6 | Nudging: picking in the picture, search | Identical | |
+| N6 | **Nudging: picking in the picture, and finding by word.** The renderer reports what is where in a frame; clicking a word in the bubble, the bubble or a token puts the knob on the matching value. `/` finds a value by the words a writer would use, nearest the playhead first, and says so when a match is not at work anywhere in the scene. Also `s2s params --find` | Identical | Done (`nudge-6`), byte-identical video |
+
+## Where the nudging loop ended up
+
+Measured on the demo show, from the action to a rebuilt scene:
+
+| | Prototype | Now |
+|---|---|---|
+| Preview while dragging | 78 ms (and it rebuilt the audience ledger each time) | 2 ms |
+| Letting go: written to the file and journaled | on Save only | 13 ms |
+| A knob nudge, written and journaled | n/a | 21 to 29 ms |
+| A slider that only changes the look | reworked the whole scene | 7 ms, the scene is not reworked |
+
+The seventh slice of the design, a frame cache keyed by content, was not built: its condition
+(a nudge over 100 ms on a real scene) has not been met.
 
 Left until asked for, with room kept: title cards and skins, dramatic events and music
 scoring, cached event replay across a long series, the MCP server.

@@ -261,6 +261,8 @@ reaction, a hold. Click a stretch and the **knob** appears on that value.
 | Do this | To |
 |---|---|
 | Click a stretch in the top strip | Put the knob on the value that owns that time |
+| Click the picture | A word in the bubble puts the knob on that syllable; the bubble, on the line's tone; a token, on whatever that entity is doing at that moment |
+| / then a word, then Enter | Find a value by how you would describe it (gap, snappy, louder, bouncy). The knob goes to the best match nearest the playhead, and the playhead goes to where it shows at work |
 | Up or Down with nothing picked | Pick whatever owns the moment under the playhead |
 | Up, Down (Shift for a fine step); or type a number | Nudge the picked value. Each nudge is written at once; a quick run is one undo step |
 | Backspace | Take the hand-set value off; it goes back to what it inherits |
@@ -315,7 +317,7 @@ command takes `--json`; a command that changes something also takes `--dry-run`,
 | List problems | `s2s check` |
 | Export what a scene decided, as JSON | `s2s score thermostat` |
 | Learn the vocabulary: what can be tuned, what can be observed | `s2s params`, `s2s channels` |
-| Ask what could be tuned at a moment | `s2s in-play the-vase:2+0` |
+| Ask what could be tuned at a moment, or what a word might mean | `s2s in-play the-vase:2+0`, `s2s params --find bouncy` |
 | Look at a moment, or a whole scene at a glance | `s2s still thermostat:2 --xray`, `s2s sheet thermostat` |
 | Render | `s2s render thermostat`, `s2s render --episode s01e01`, `s2s render --all` |
 | Change a line, a feeling, a timing, a reason | `set-line`, `set-feeling`, `set-timing`, `set-why` |
