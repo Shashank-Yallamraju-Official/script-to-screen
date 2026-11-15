@@ -62,7 +62,7 @@ Nothing was saved by hand, and nothing was typed.
 | **Instance** | A parameter at one place in the show | the breath after "saw" in turn 2 |
 | **Scope** | The level a value is set at | syllable, turn, scene, entity, tone, show |
 | **Effective value** | What the engine uses for an instance after looking through the scopes | 1.5 |
-| **Address** | The text name of an instance or a scope | `s01/e01/03#2.s2.breath` |
+| **Address** | The text name of an instance or a scope | `the-thermostat:2.s2.breath` |
 | **Tune** | A value set by hand | everything in a `tune:` block |
 | **Audition span** | The stretch of the scene that replays after a nudge | the gap, with a second either side |
 
@@ -258,10 +258,10 @@ the matching syllables of the new wording; that is a later refinement.
 ### 4.5 Addresses
 
 ```
-<scene>#<turn>.<param>                s01/e01/03#2.hold
-<scene>#<turn>.s<n>.<param>           s01/e01/03#2.s2.breath
-<scene>#<turn>.r<n>.<param>           s01/e01/03#2.r1.beat
-<scene>.<param>                       s01/e01/03.hold
+<scene>:<turn>.<param>                the-thermostat:2.hold
+<scene>:<turn>.s<n>.<param>           the-thermostat:2.s2.breath
+<scene>:<turn>.r<n>.<param>           the-thermostat:2.r1.beat
+<scene>.<param>                       the-thermostat.hold
 @<entity>.<param>                     @otis.reflex
 ~<tone>.<param>                       ~accusing.rate
 <group>.<param>                       feel.overshoot   sounds.thud.pitch
@@ -285,7 +285,7 @@ s2s tune undo | redo
 Each returns the same shape:
 
 ```json
-{"ok": true, "address": "s01/e01/03#2.s2.breath", "scope": "syllable",
+{"ok": true, "address": "the-thermostat:2.s2.breath", "scope": "syllable",
  "before": {"value": 2, "scope": "show", "by": "default"},
  "after":  {"value": 1.5, "scope": "syllable", "by": "hand"},
  "affects": 1, "rebuild": "timing", "audition": [38.0, 56.0], "undo": "j-0142"}
@@ -300,8 +300,8 @@ removes the copy.
   in memory. On release it sends one `set`. Ctrl+Z undoes a gesture, not a keystroke.
 - **Every command writes the file at once**, by writing a temporary file and renaming it.
   There is no Save and no unsaved state.
-- **Undo is a journal** at `<show>/.s2s/journal.jsonl`: one line per command with its
-  address, before and after. It survives closing the editor, covers sliders (which the
+- **Undo is a journal** at `<show>/.s2s/journal.jsonl`: one line per change with its
+  address, before and after, and who made it (a command, or a hand). It survives closing the editor, covers sliders (which the
   prototype could not undo), and is what `s2s tune undo` reads. Not committed to git.
 - **The editor follows the files.** The server checks modification times four times a
   second. If a file changed underneath it, it rebuilds and the page refreshes its state.
@@ -511,8 +511,8 @@ Each slice is usable on its own and ends with something the writer can feel.
 
 | # | Slice | Done when |
 |---|---|---|
-| 1 | **Fast and safe.** Take the ledger and earlier scenes off the nudge path. Autosave by command, journal undo, follow the files | A nudge is under 40 ms. Editing the file in another window while the editor is open loses nothing. Sliders undo |
-| 2 | **Registry and cascade.** `params.py`, `resolve`, `tune:` blocks, the three commands, addresses, schema 2 | `s2s tune set s01/e01/03#2.hold 9 --dry-run --json` works; every value in 4.1 is settable |
+| 1 ✓ | **Fast and safe.** (built: see [phases.md](phases.md)) Take the ledger and earlier scenes off the nudge path. Autosave by command, journal undo, follow the files | A nudge is under 40 ms. Editing the file in another window while the editor is open loses nothing. Sliders undo |
+| 2 | **Registry and cascade.** `params.py`, `resolve`, `tune:` blocks, the three commands, addresses, schema 2 | `s2s tune set the-thermostat:2.hold 9 --dry-run --json` works; every value in 4.1 is settable |
 | 3 | **Ownership.** Breath as its own value, stretches, the strip, the knob and scope chip | The worked example in section 1 can be done up to step 3 without touching the piano roll |
 | 4 | **Audition and compare.** Spans, auto-replay, loop, A/B | Steps 3 and 4 of the worked example |
 | 5 | **In play, widen, anchors.** The candidate row, W with its count, orphans | Steps 5 and 6. "How he turns is wrong" finds flip, ease and overshoot |

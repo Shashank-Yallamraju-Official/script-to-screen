@@ -8,7 +8,6 @@ from script_to_screen.presentation.render import frame_jpeg
 from script_to_screen.presentation.stage import Stage
 from script_to_screen.readers import ledger
 from script_to_screen.script import scene_paths, series
-from script_to_screen.tools.editor import Session
 
 DEMO = Path(__file__).resolve().parents[1] / "shows" / "demo"
 ENTER = dict(id=1, enter={"a": {"slot": 2}, "b": {"slot": 5}}, why="They are here.")
@@ -52,25 +51,6 @@ def test_every_demo_scene_draws_and_sounds():
             draw_frame(surface.getCanvas(), sc, F, xray=F % 2 == 0, slate=True)
         assert frame_jpeg(sc, sc.total // 2, 0.5)[:2] == b"\xff\xd8"
         assert len(sound.mix(sc)) > 44
-
-
-def test_the_editor_saves_only_what_changed(show):
-    path = show.scene("s01/e01/01", [ENTER, dict(id=2, who="a", say="Someone ate the last dumpling.", why="She knows.")])
-    path.write_text("# a comment that must survive\n" + path.read_text())
-    sess = Session(path)
-    before = sess.scene.turns[1]["length"]
-    sess.patch([dict(path=["turns", 1, "hold"], value=12), dict(path=["turns", 1, "melody"], value=[0, 2, 4, 7, 9, 7, 4])])
-    assert sess.scene.turns[1]["length"] == before + 4 and sess.dirty
-    sess.tune("feel", None, "ease", 0.4)
-    sess.save()
-    text = path.read_text()
-    assert "# a comment that must survive" in text and "hold: 12" in text and "melody: [0, 2, 4, 7, 9, 7, 4]" in text
-    assert "ease: 0.4" in (show.root / "library" / "feel.yaml").read_text()
-    again = Scene(path)
-    assert [s["semi"] for s in again.turns[1]["sylls"]] == [0, 2, 4, 7, 9, 7, 4] and again.turns[1]["hold"] == 12
-    sess.patch([dict(path=["turns", 1, "hold"], value=8)])                         # back to the default: no line needed
-    sess.save()
-    assert "hold:" not in path.read_text()
 
 
 def test_the_reference_scenes_have_not_changed():

@@ -125,12 +125,12 @@ project's oldest habit, hand-set values becoming derived ones, turned into a rou
 | Check with precise messages | Mostly. A refused command says what would work; check messages name the turn but not always the fix |
 | Look at stills | Yes. `still` and `sheet` |
 | Stable addresses | Yes for scenes: `scene:turn`, by an id that survives renaming and moving. A turn is still named by its `id` or number |
-| See what the writer did by hand | No |
+| See what the writer did by hand | Yes. `s2s history --by hand` lists every hand change with its address, before and after |
 | **Tuning loop** | |
-| Replay at once after a change | Partly. Changing a note replays its line. Moving a slider discards every frame of the scene and waits |
+| Replay at once after a change | Partly. Changing a note replays its line. A release rebuilds in 35 ms; a sound-only slider keeps every frame. No automatic replay of the moment yet (slice N4) |
 | Loop a stretch | Partly. One turn can be looped; not a line or a chosen stretch |
 | Before and after | No |
-| Undo anything | Partly. Timings and notes; not sliders |
+| Undo anything | Yes. Timings, notes and sliders, across restarts |
 | The real thing | Yes. The editor draws with the renderer and plays the same sound |
 | Every tunable value reachable | Partly. Timings, notes, stress, motion and sounds are. A tone's rate and contour, and a character's voice and reflex, are not |
 | Scope is visible | No. Sliders are silently show-wide; timings are silently per turn |
@@ -139,6 +139,6 @@ project's oldest habit, hand-set values becoming derived ones, turned into a rou
 | Who set each value | No |
 | Warning before discarding tuned values | Partly, by accident: a rhythm that no longer fits its line is an error |
 | Locking | Yes. `set-status <scene> locked`; every change command then refuses |
-| Editor follows the files | **No. The editor keeps its own copy and overwrites the file on save.** |
+| Editor follows the files | Yes. There is no Save; each release is applied on top of the file as it stands, and outside changes appear within half a second |
 
-The entry in bold is the one that can lose work today.
+Nothing in this table can lose work any more.

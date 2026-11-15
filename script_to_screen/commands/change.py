@@ -191,33 +191,27 @@ def remove_turn(a):
     return on_turn(a, fn)
 
 
-@command("history", "The changes made by command, newest last, with the words that caused each.", [], "s2s history", group="history")
+@command("history", "The changes made, newest last: by command or by hand in the editor, with the words that caused each.",
+         [A("--by", "only changes made this way", choices=["command", "hand"])], "s2s history --by hand", group="history")
 def history(a):
     root = address.show_root(a.show)
-    es = edit.entries(root)
-    undone = {e["undoes"] for e in es if "undoes" in e}
-    rows = [dict(id=e["id"], at=e["at"], command=e["command"], because=e.get("because"), path=e["path"], changes=e.get("changes", []),
-                 undone=e["id"] in undone) for e in es if "undoes" not in e]
-    text = [f"{r['id']:>3} {r['at']} {r['command']:12} " + "; ".join(f"{c['address']} {c['field']}" for c in r["changes"]) +
+    done, undone = edit.stacks(root, a.by)
+    gone = {e["id"] for e in undone}
+    rows = [dict(id=e["id"], at=e["at"], by=e.get("by", "command"), command=e["command"], because=e.get("because"), path=e["path"],
+                 changes=e.get("changes", []), undone=e["id"] in gone) for e in sorted(done + undone, key=lambda e: e["id"])]
+    text = [f"{r['id']:>3} {r['at']} {r['by']:7} {r['command']:12} " + "; ".join(f"{c['address']} {c['field']} {json.dumps(c['before'])} -> {json.dumps(c['after'])}" for c in r["changes"]) +
             (f"   \"{r['because']}\"" if r["because"] else "") + ("   (undone)" if r["undone"] else "") for r in rows]
     return dict(history=rows, text="\n".join(text or ["no changes yet"]))
 
 
-@command("undo", "Put back the last change made by command. Refuses if the file has been changed since.", [], "s2s undo", group="history")
+@command("undo", "Put back the last change, whoever made it. Refuses if the file has been changed since.", [], "s2s undo", group="history")
 def undo(a):
-    root = address.show_root(a.show)
-    es = edit.entries(root)
-    undone = {e["undoes"] for e in es if "undoes" in e}
-    live = [e for e in es if "undoes" not in e and e["id"] not in undone]
-    if not live:
-        raise Refused("nothing to undo")
-    e = live[-1]
-    path = Path(root) / e["path"]
-    if path.read_text() != e["after"]:
-        raise Refused(f"{e['path']} has changed since change {e['id']}, so undoing it would lose that work",
-                      hint="undo by hand, or make the opposite change with a command")
-    edit.write(path, e["before"])
-    with open(edit.journal(root), "a") as fh:
-        fh.write(json.dumps(dict(id=len(es) + 1, undoes=e["id"])) + "\n")
-    return dict(undone=e["id"], undid=e["command"], changes=e.get("changes", []),
-                text=f"undid change {e['id']} ({e['command']})")
+    e = edit.undo(address.show_root(a.show))
+    return dict(undone=e["id"], undid=e["command"], by=e.get("by", "command"), changes=e.get("changes", []),
+                text=f"undid change {e['id']} ({e['command']}, by {e.get('by', 'command')})")
+
+
+@command("redo", "Make again the change most recently undone.", [], "s2s redo", group="history")
+def redo(a):
+    e = edit.redo(address.show_root(a.show))
+    return dict(redone=e["id"], redid=e["command"], changes=e.get("changes", []), text=f"redid change {e['id']} ({e['command']})")

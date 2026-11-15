@@ -207,7 +207,13 @@ A changed tell (an arc step) starts its count again.
 
 ## The editor
 
-    s2s edit shows/demo/episodes/s01/e01/01-the-last-dumpling.yaml
+    s2s edit the-thermostat
+
+The editor is for tuning by hand: nudge a value, replay, compare. It does not change words,
+feelings or structure. **There is no Save.** While you drag, the picture previews; when you
+let go, that one value is written to the file (comments and layout kept) and recorded in the
+journal. The editor follows the files, so a change made elsewhere, by the assistant or in a
+text editor, appears within half a second and is never overwritten.
 
 | Do this | To |
 |---|---|
@@ -223,10 +229,14 @@ A changed tell (an arc step) starts its count again.
 | Space, L | Play or pause, loop the current turn |
 | X | X-ray: weight, and felt against shown, drawn below the ground line |
 | [ and ] | Previous and next scene |
-| Ctrl/Cmd+Z, Ctrl/Cmd+S | Undo (not for sliders), save |
+| Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z | Undo and redo your own changes, sliders included. It survives closing the editor |
+
+Undo in the editor only ever takes back changes made by hand; it never undoes the
+assistant's. It refuses if the file has changed since, because that would lose work.
+`s2s history --by hand` lists what was tuned by hand. A locked scene cannot be nudged.
 
 The arrow-into-a-wall icon appears when a scene inherits something; hover it to see what was
-carried in and what happened off-screen. Saving rewrites only the values you changed.
+carried in and what happened off-screen.
 
 ## The command line
 
@@ -253,7 +263,7 @@ command takes `--json`; a command that changes something also takes `--dry-run`,
 | Add or remove | `add-scene`, `add-turn`, `add-reaction`, `remove-turn` |
 | Reorder, or mark how finished a scene is | `move`, `set-status` |
 | Set any other field of a turn | `s2s put thermostat:2 do '{juno: {orient: otis}}'` |
-| See and reverse changes | `s2s history`, `s2s undo` |
+| See and reverse changes | `s2s history`, `s2s undo`, `s2s redo` |
 | Bring an older show up to date | `s2s migrate` |
 
 A change is checked against the whole show before it is written. One that would introduce

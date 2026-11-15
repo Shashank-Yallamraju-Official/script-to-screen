@@ -121,7 +121,7 @@ def apply(a, root, path, mutate, series_file=False):
                       hint="fix the cause, or pass --force to apply it anyway", introduces=introduces, changes=changes)
     if not a.dry_run:
         write(path, after_text)
-        out["undo"] = record(root, a, path, changes, before_text, after_text)
+        out["undo"] = record(root, a.command, a.because, path, changes, before_text, after_text)
     lines = [("would change " if a.dry_run else "changed ") + f"{c['address']} {c['field']}: {json.dumps(c['before'], ensure_ascii=False)} -> {json.dumps(c['after'], ensure_ascii=False)}" for c in changes]
     lines += ["discards hand-set " + d for d in out.get("discards", [])]
     lines += ["introduces: " + p for p in introduces] + ["fixes: " + p for p in out["fixes"]]
@@ -130,12 +130,67 @@ def apply(a, root, path, mutate, series_file=False):
     return out
 
 
-def record(root, a, path, changes, before_text, after_text):
-    """Append a change to the journal. -> its number, which `undo` takes back."""
+def record(root, command, because, path, changes, before_text, after_text, by="command"):
+    """Append a change to the journal. -> its number. `by` is who made it: a command, or a hand in the editor."""
     n = len(entries(root)) + 1
     journal(root).parent.mkdir(exist_ok=True)
     with open(journal(root), "a") as fh:
-        fh.write(json.dumps(dict(id=n, at=time.strftime("%Y-%m-%dT%H:%M:%S"), command=a.command, because=getattr(a, "because", None),
+        fh.write(json.dumps(dict(id=n, at=time.strftime("%Y-%m-%dT%H:%M:%S"), by=by, command=command, because=because,
                                  path=str(Path(path).relative_to(root)), changes=changes,
                                  before=before_text, after=after_text), ensure_ascii=False) + "\n")
     return n
+
+
+def stacks(root, by=None):
+    """-> (done, undone): changes that stand, oldest first, and changes taken back, most recent last.
+    With `by`, only that maker's changes."""
+    done, undone, byid = [], [], {}
+    for e in entries(root):
+        if "undoes" in e:
+            x = byid[e["undoes"]]
+            done.remove(x)
+            undone.append(x)
+        elif "redoes" in e:
+            x = byid[e["redoes"]]
+            undone.remove(x)
+            done.append(x)
+        else:
+            byid[e["id"]] = e
+            done.append(e)
+            undone = [u for u in undone if u.get("by", "command") != e.get("by", "command")]   # a new change ends that maker's redo
+    pick = lambda xs: [x for x in xs if by is None or x.get("by", "command") == by]
+    return pick(done), pick(undone)
+
+
+def _mark(root, key, n):
+    with open(journal(root), "a") as fh:
+        fh.write(json.dumps({"id": len(entries(root)) + 1, key: n}) + "\n")
+
+
+def undo(root, by=None):
+    """Put back the last change that stands. Refuses if its file has changed since, because that would lose work."""
+    done, _ = stacks(root, by)
+    if not done:
+        raise Refused("nothing to undo")
+    e = done[-1]
+    path = Path(root) / e["path"]
+    if path.read_text() != e["after"]:
+        raise Refused(f"{e['path']} has changed since change {e['id']}, so undoing it would lose that work",
+                      hint="undo by hand, or make the opposite change")
+    write(path, e["before"])
+    _mark(root, "undoes", e["id"])
+    return e
+
+
+def redo(root, by=None):
+    """Make again the change most recently taken back."""
+    _, undone = stacks(root, by)
+    if not undone:
+        raise Refused("nothing to redo")
+    e = undone[-1]
+    path = Path(root) / e["path"]
+    if path.read_text() != e["before"]:
+        raise Refused(f"{e['path']} has changed since change {e['id']} was undone, so redoing it would lose that work")
+    write(path, e["after"])
+    _mark(root, "redoes", e["id"])
+    return e

@@ -33,7 +33,6 @@
   button:disabled { opacity: .3; pointer-events: none; }
   button svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
   #play { color: var(--text); }
-  #save.dirty::after { content: ""; position: absolute; top: 5px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
   #carry { display: none; cursor: help; }
   #flag { display: none; color: var(--warn); } #flag.bad { color: var(--bad); }
   .sep { width: 1px; height: 16px; background: var(--line); margin: 0 4px; flex: none; }
@@ -97,7 +96,6 @@
     <span class="sep"></span>
     <button id="undo" title="Undo (Ctrl/Cmd+Z)"><svg viewBox="0 0 16 16"><path d="M5 3 2 6l3 3M2 6h7a4 4 0 0 1 0 8H6"/></svg></button>
     <button id="redo" title="Redo (Ctrl/Cmd+Shift+Z)"><svg viewBox="0 0 16 16"><path d="m11 3 3 3-3 3M14 6H7a4 4 0 0 0 0 8h3"/></svg></button>
-    <button id="save" title="Save (Ctrl/Cmd+S): the scene, and any sliders you moved"><svg viewBox="0 0 16 16"><path d="M3 2h8l3 3v9H3zM5 2v4h5V2M5 14v-4h6v4"/></svg></button>
     <button id="render"><svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M5 3v10M11 3v10M2 6h3M2 10h3M11 6h3M11 10h3"/></svg></button>
   </div>
   <div id="tl">
@@ -120,7 +118,7 @@ const ICON = {
   snd: '<svg viewBox="0 0 16 16"><path d="M3 6h2l3-3v10l-3-3H3zM10.5 5.5a3.5 3.5 0 0 1 0 5M12.5 3.5a6.5 6.5 0 0 1 0 9"/></svg>',
 };
 let S = null, F = 0, pps = 12, playing = false, loop = false, stalled = false, xray = false;
-let frames = new Map(), selected = null, drag = null, undo = [], redo = [];
+let frames = new Map(), selected = null, drag = null;
 let audio = new Audio(), audioRev = -1, muted = false, clock0 = 0, clockBase = 0, range = [0, 0];
 
 const api = async (path, body) => {
@@ -244,9 +242,8 @@ function build() {
       });
     }
   }
-  $('save').classList.toggle('dirty', S.dirty);
-  $('render').disabled = S.dirty; $('render').title = S.dirty ? 'Save first, then render to video' : 'Render the saved scene to video';
-  $('undo').disabled = !undo.length; $('redo').disabled = !redo.length;
+  $('render').title = 'Render this scene to video';
+  $('undo').disabled = !S.can_undo; $('redo').disabled = !S.can_redo;
   const where = `Scene ${S.index + 1} of ${S.count}: ${S.title} (${S.file})`;
   $('prev').title = 'Previous scene ([)\n' + where; $('next').title = 'Next scene (])\n' + where;
   $('prev').disabled = $('next').disabled = S.count < 2;
@@ -259,7 +256,7 @@ function build() {
   flag.title = S.problems.map(p => (p.turn != null ? `Turn ${p.turn}: ` : '') + p.msg).join('\n') + (flag.className ? '\nErrors stop the scene from rendering.' : '');
   $('ledger').innerHTML = S.entities.filter(e => S.ledger[e.id]).map(e => `<span class="led"><i style="background:${e.color}" title="${e.id}: what the audience has had the chance to learn"></i>` +
     Object.entries(S.ledger[e.id]).map(([emo, c]) => `<span title="${e.id} · ${emo}: shown in ${c.seen} of the ${c.need} scenes needed${c.positions.length ? ' (' + c.positions.join(', ') + ')' : ''}. ${c.learned ? 'The audience can read it now.' : 'Not learned yet.'}${c.hidden ? ` Felt but hidden in ${c.hidden}.` : ''}">${pips(c.need, c.seen, S.emotions[emo] || '#888')}</span>`).join('') + '</span>').join('');
-  document.title = (S.dirty ? '• ' : '') + S.title;
+  document.title = S.title;
   showSel();
   setF(Math.min(F, S.total - 1), true);
 }
@@ -285,20 +282,22 @@ function drawRuler() {
 }
 
 // ---- editing ---------------------------------------------------------------------------------
-let sending = false, queued = null;
-async function patch(path, value) {
-  queued = { path, value };
-  if (sending) return;
+let sending = false, queue = [];
+// While a value is dragged it is previewed; letting go commits it: the server writes the file and journals the change.
+async function patch(path, value, commit = false) {
+  if (queue.length && !queue[queue.length - 1].commit) queue.pop();     // a newer preview replaces one not yet sent
+  queue.push({ path, value, commit });
+  if (sending) { while (sending) await new Promise(r => setTimeout(r, 10)); return; }
   sending = true;
-  while (queued) {
-    const op = queued; queued = null;
-    try { const r = await api('/patch', { ops: [op] }); dropFrames(r.dirty_from); S = r.state; build(); }
-    catch (e) { toast(e.message, true); }
+  while (queue.length) {
+    const op = queue.shift();
+    try { const r = await api('/patch', { ops: [{ path: op.path, value: op.value }], commit: op.commit }); if (r.dirty_from != null) dropFrames(r.dirty_from); S = r.state; build(); }
+    catch (e) { toast(e.message, true); try { S = await api('/state'); dropFrames(0); build(); } catch (x) {} }
   }
   sending = false;
 }
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-function commit(path, before, after) { if (!same(before, after)) { undo.push({ path, before, after }); redo = []; } }
+const commit = (path, before, after) => same(before, after) ? Promise.resolve() : patch(path, after, true);
 function showSel() {
   const d = selected && [...track.querySelectorAll('[data-key]')].find(d => d.dataset.key === selected);
   $('sel').style.display = d ? 'flex' : 'none';
@@ -330,7 +329,7 @@ track.addEventListener('dblclick', e => {                 // cycle a syllable's 
   const n = e.target.closest('.note'); if (!n) return;
   const t = S.turns[n._n.ti], q = t.say, arr = q.sylls.map(s => s.stress), path = ['turns', t.index, 'stress'];
   arr[n._n.i] = (arr[n._n.i] + 1) % 3;
-  commit(path, q.stress, arr); patch(path, arr).then(() => hear(t.index));
+  commit(path, q.stress, arr).then(() => hear(t.index));
 });
 const scrubTo = e => setF(frameOf((e.clientX - scroll.getBoundingClientRect().left + scroll.scrollLeft - PAD) / pps), true);
 addEventListener('pointermove', e => {
@@ -354,8 +353,8 @@ addEventListener('pointerup', async () => {
   const d = drag; drag = null;
   if (d.scrub) return;
   while (sending) await new Promise(r => setTimeout(r, 20));
-  if (d.note) { if (!same(d.before, d.last)) { commit(d.path, d.before, d.last); build(); hear(d.note.ti); } return; }   // an untouched note keeps its element, so a double-click still lands on it
-  commit(d.m.path, d.start, d.last);
+  if (d.note) { if (!same(d.before, d.last)) { await commit(d.path, d.before, d.last); build(); hear(d.note.ti); } return; }   // an untouched note keeps its element, so a double-click still lands on it
+  await commit(d.m.path, d.start, d.last);
   build();
   if (d.was && d.start !== d.last) play(true);
 });
@@ -364,23 +363,22 @@ async function hear(ti) {                                 // after changing a no
   loop = false; $('loop').classList.remove('on');
   setF(frameOf(t.start + Math.max(0, t.say.at - 1))); await play(); stopAt = frameOf(t.start + t.say.at + t.say.reveal + 2);
 }
-$('selv').addEventListener('change', () => { const d = showSel(); if (!d) return; const v = Math.min(Math.max(+$('selv').value || 0, d._m.lo), d._m.hi); commit(d._m.path, d._m.value, v); patch(d._m.path, v); $('selv').blur(); });
-async function step(from, to) {
-  const op = from.pop(); if (!op) return;
-  pause(); to.push(op); selected = JSON.stringify(op.path);
-  await patch(op.path, from === undo ? op.before : op.after);
+$('selv').addEventListener('change', () => { const d = showSel(); if (!d) return; const v = Math.min(Math.max(+$('selv').value || 0, d._m.lo), d._m.hi); commit(d._m.path, d._m.value, v); $('selv').blur(); });
+async function step(which) {                              // the journal is on the server, so undo survives a restart and covers sliders
+  pause();
+  try { const r = await api('/' + which, {}); dropFrames(0); S = r.state; build(); if ($('tune').style.display === 'block') buildTune(); }
+  catch (e) { toast(e.message, true); }
 }
-$('undo').onclick = () => step(undo, redo); $('redo').onclick = () => step(redo, undo);
-$('save').onclick = async () => { try { S = (await api('/save', {})).state; build(); toast('Saved'); } catch (e) { toast(e.message, true); } };
+$('undo').onclick = () => step('undo'); $('redo').onclick = () => step('redo');
 $('render').onclick = async () => {
   pause(); $('spin').style.display = 'block'; $('render').disabled = true;
   try { const r = await api('/render', {}); toast('Rendered ' + r.file + '\nClick to open.', false, () => open('/video?t=' + Date.now())); } catch (e) { toast(e.message, true); }
-  $('spin').style.display = 'none'; $('render').disabled = S.dirty;
+  $('spin').style.display = 'none'; $('render').disabled = false;
 };
 async function openScene(dir) {
   pause();
   try { S = (await api('/open', { step: dir })).state; } catch (e) { return toast(e.message, true); }
-  dropFrames(0); undo = []; redo = []; selected = null; F = 0; fit(); build(); scroll.scrollLeft = 0;
+  dropFrames(0); selected = null; F = 0; fit(); build(); scroll.scrollLeft = 0;
 }
 $('prev').onclick = () => openScene(-1); $('next').onclick = () => openScene(1);
 $('xray').onclick = () => { xray = !xray; $('xray').classList.toggle('on', xray); dropFrames(0); fill(); };
@@ -396,7 +394,7 @@ async function sendTune() {
   if (tuning || !tuneQ) return; tuning = true;
   while (tuneQ) {
     const q = tuneQ; tuneQ = null;
-    try { const r = await api('/tune', q); dropFrames(0); S = r.state; build(); } catch (e) { toast(e.message, true); }
+    try { const r = await api('/tune', q); if (r.dirty_from != null) dropFrames(r.dirty_from); S = r.state; build(); } catch (e) { toast(e.message, true); }
   }
   tuning = false;
 }
@@ -406,10 +404,12 @@ $('tune').addEventListener('input', e => {
   tuneQ = { group: d.g, name: d.n, key: d.k, value: +e.target.value };
   clearTimeout(tuneT); tuneT = setTimeout(sendTune, 50);
 });
-$('tune').addEventListener('change', async e => {         // let go of a sound's slider: hear the result
-  const d = e.target.dataset; if (d.g !== 'sounds') return;
-  clearTimeout(tuneT); await sendTune(); while (tuning) await new Promise(r => setTimeout(r, 20));
-  new Audio(`/sfx?name=${encodeURIComponent(d.n)}&t=${Date.now()}`).play().catch(() => {});
+$('tune').addEventListener('change', async e => {         // let go of a slider: the value is written; a sound's is also played
+  const d = e.target.dataset; if (!d.k) return;
+  clearTimeout(tuneT); while (tuning) await new Promise(r => setTimeout(r, 20));
+  tuneQ = { group: d.g, name: d.n, key: d.k, value: +e.target.value, commit: true };
+  await sendTune();
+  if (d.g === 'sounds') new Audio(`/sfx?name=${encodeURIComponent(d.n)}&t=${Date.now()}`).play().catch(() => {});
 });
 $('tune').addEventListener('click', e => { const h = e.target.closest('[data-snd]'); if (h) new Audio(`/sfx?name=${encodeURIComponent(h.dataset.snd)}&t=${Date.now()}`).play().catch(() => {}); });
 $('tuneb').onclick = () => { const on = $('tune').style.display !== 'block'; if (on) buildTune(); $('tune').style.display = on ? 'block' : 'none'; $('stage').style.paddingRight = on ? '298px' : '14px'; $('tuneb').classList.toggle('on', on); };
@@ -474,8 +474,7 @@ addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' && !(e.ctrlKey || e.metaKey)) { if (e.key === 'Escape') e.target.blur(); return; }
   const mod = e.ctrlKey || e.metaKey, k = e.key, low = k.toLowerCase();
   if (k === ' ') { playing ? pause() : play(); }
-  else if (mod && low === 's') $('save').click();
-  else if (mod && low === 'z') step(e.shiftKey ? redo : undo, e.shiftKey ? undo : redo);
+  else if (mod && low === 'z') step(e.shiftKey ? 'redo' : 'undo');
   else if (low === 'l') $('loop').click();
   else if (low === 'x') $('xray').click();
   else if (low === 't') $('tuneb').click();
@@ -483,7 +482,7 @@ addEventListener('keydown', e => {
   else if (k === ']') openScene(1);
   else if ((k === 'ArrowLeft' || k === 'ArrowRight') && e.altKey) {
     const d = showSel(); if (!d) return; const v = Math.min(Math.max(d._m.value + (k === 'ArrowLeft' ? -0.25 : 0.25), d._m.lo), d._m.hi);
-    commit(d._m.path, d._m.value, v); patch(d._m.path, v);
+    commit(d._m.path, d._m.value, v);
   }
   else if (k === 'ArrowLeft' || k === 'ArrowRight') { pause(); const dir = k === 'ArrowLeft' ? -1 : 1; setF(e.shiftKey ? frameOf(Math.round(stepsOf(F)) + dir) : F + dir); }
   else if (k === 'Home') { pause(); setF(0); }
@@ -491,7 +490,16 @@ addEventListener('keydown', e => {
   else return;
   e.preventDefault();
 });
-addEventListener('beforeunload', e => { if (S && S.dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+setInterval(async () => {                                // follow the files: pick up changes made elsewhere
+  if (!S || drag || sending || tuning) return;
+  try {
+    const r = await api('/poll');
+    if (drag || sending || tuning) return;
+    if (r.rev !== S.rev) { S = await api('/state'); dropFrames(0); build(); if ($('tune').style.display === 'block') buildTune(); }
+    else if (r.info_rev !== S.info_rev) { S = await api('/state'); build(); }
+  } catch (e) {}
+}, 500);
 
 (async () => {
   S = await api('/state');
