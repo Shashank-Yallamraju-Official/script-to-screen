@@ -282,7 +282,6 @@ reaction, a hold. Click a stretch and the **knob** appears on that value.
 | Drag a note's right edge | Change a syllable's length |
 | Double-click a note | Cycle its stress: weak, strong, main accent |
 | Hold Shift while dragging | Move in quarter steps |
-| T | Open the sliders for motion and sounds. Click a sound's name to hear it |
 | Space, L | Play or pause; loop the current turn (or, with the knob on a value, the moment around it) |
 | X | X-ray: weight, and felt against shown, drawn below the ground line |
 | [ and ] | Previous and next scene |

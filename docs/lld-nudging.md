@@ -517,7 +517,7 @@ Each slice is usable on its own and ends with something the writer can feel.
 | 4 ✓ | **Audition and compare.** (built) Spans, auto-replay, loop, A/B | Steps 3 and 4 of the worked example |
 | 5 ✓ | **In play, widen, anchors.** (built) The candidate row, W with its count, orphans | Steps 5 and 6. "How he turns is wrong" finds flip, ease and overshoot |
 | 6 ✓ | **Shortcuts.** (built) Picking in the picture, search by word | Clicking a syllable in the bubble selects it |
-| 7 (not needed yet) | **Frame cache.** Only if measured need | Worst nudge under 100 ms on the longest real scene |
+| 7 ✓ | **Frame cache.** (built at the writer's request, ahead of the measured need) Only if measured need | Worst nudge under 100 ms on the longest real scene |
 
 Slices 1 and 2 are the ones that also unblock the writing loop: they are build steps 1 and 2
 of the architecture, done for the tuning commands first.
@@ -541,7 +541,7 @@ of the architecture, done for the tuning commands first.
 
 | Question | Recommendation | Why it is open |
 |---|---|---|
-| **Keep pins?** A mark on a moment with a few words, for the assistant | Yes, minimal: P, one line of text, stored in the scene's `pins:` list. It is the only non-number the editor writes | It is the one place the editor accepts typing, which cuts against "only to tweak params" |
+| **Keep pins?** (decided: no. An address such as `the-vase:2+6` names a moment well enough) | ~~Yes, minimal~~: P, one line of text, stored in the scene's `pins:` list. It is the only non-number the editor writes | It is the one place the editor accepts typing, which cuts against "only to tweak params" |
 | **Default scope of a nudge** | Narrowest, always; widening is deliberate | The alternative, "remember my last scope", saves keystrokes and risks silent show-wide changes |
 | **Motion per entity** | Not yet; show-wide only, with the cascade ready for it | Per-character motion is characterisation, which may belong to tells and the writing loop |
 | **Should widening look for a pattern?** "You shortened 9 of 11 breaths after accusations" | Leave to the assistant, reading `s2s tune list` | It is inference, and the tool holds no AI (decision 13) |

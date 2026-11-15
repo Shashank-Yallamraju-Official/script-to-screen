@@ -20,6 +20,7 @@ the phase before. A phase that does mean to change it re-records the reference a
 | N4 | **Nudging: audition and compare.** After a nudge the moment replays by itself (the value's stretch with a lead-in and lead-out, set in `show.yaml`). Enter replays it; loop repeats it with a gap. The editor keeps the scene as it stood when the value was picked; B flips between before and after and replays | Identical | Done (`nudge-4`), byte-identical video |
 | N5 | **Nudging: in play, widen counts, orphans.** A ranked list of the values at work at any moment (the owner of the time, the syllable's note and stress, what nearby events exercise, their sounds, the tone, the speaker, the voice), each with a moment to replay. In the editor it is a row of icons beside the knob; Tab steps through it. Also `s2s in-play`. Widening reports how many turns or breaths changed. A turn shows when a rewording orphaned its tunes | Identical | Done (`nudge-5`), byte-identical video |
 | N6 | **Nudging: picking in the picture, and finding by word.** The renderer reports what is where in a frame; clicking a word in the bubble, the bubble or a token puts the knob on the matching value. `/` finds a value by the words a writer would use, nearest the playhead first, and says so when a match is not at work anywhere in the scene. Also `s2s params --find` | Identical | Done (`nudge-6`), byte-identical video |
+| N7 | **A frame cache keyed by content.** A frame is found by its turn's fingerprint (what everyone shows and when, its bubbles, who holds the scene, how each entity stood coming in) and how far into the turn it is, so a turn that only moved in time keeps its frames, and anything seen before (an undo, the other side of a before/after, a nudge and its reverse) is not drawn again. A test checks every cached frame against a fresh draw | Identical | Done (`nudge-7`), byte-identical video |
 
 ## Where the nudging loop ended up
 
@@ -32,8 +33,9 @@ Measured on the demo show, from the action to a rebuilt scene:
 | A knob nudge, written and journaled | n/a | 21 to 29 ms |
 | A slider that only changes the look | reworked the whole scene | 7 ms, the scene is not reworked |
 
-The seventh slice of the design, a frame cache keyed by content, was not built: its condition
-(a nudge over 100 ms on a real scene) has not been met.
+
+The slider panel was removed once the knob could reach every value. Pins were dropped: an
+address such as `the-vase:2+6` already names a moment for the assistant.
 
 Left until asked for, with room kept: title cards and skins, dramatic events and music
 scoring, cached event replay across a long series, the MCP server.

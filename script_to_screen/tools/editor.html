@@ -15,13 +15,6 @@
   #view { max-width: 100%; max-height: 100%; border-radius: 6px; background: #000; box-shadow: 0 8px 30px #0008; }
   #spin { position: absolute; width: 26px; height: 26px; border: 2px solid #0003; border-top-color: #000; border-radius: 50%; animation: sp .7s linear infinite; display: none; }
   @keyframes sp { to { transform: rotate(360deg); } }
-  #tune { position: absolute; top: 14px; right: 14px; bottom: 14px; width: 270px; background: #16171aee; border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px 10px; overflow-y: auto; display: none; }
-  #tune h4 { margin: 10px 0 4px; display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500; color: var(--mute); }
-  #tune h4 svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-  #tune h4.snd { cursor: pointer; color: var(--text); } #tune h4.snd:hover { color: var(--accent); }
-  .row { display: grid; grid-template-columns: 88px 1fr 40px; align-items: center; gap: 8px; height: 20px; color: var(--mute); font-size: 11px; }
-  .row span { white-space: nowrap; }
-  .row span:last-child { text-align: right; font-family: ui-monospace, Menlo, monospace; color: var(--text); }
   input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 3px; border-radius: 2px; background: var(--line); outline: none; }
   input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 11px; height: 11px; border-radius: 50%; background: var(--text); cursor: pointer; }
   input[type=range]::-moz-range-thumb { width: 11px; height: 11px; border: 0; border-radius: 50%; background: var(--text); cursor: pointer; }
@@ -98,7 +91,7 @@
 </head>
 <body>
 <div id="app">
-  <div id="stage"><canvas id="view" width="1280" height="720"></canvas><div id="spin"></div><div id="abmark"></div><div id="tune"></div></div>
+  <div id="stage"><canvas id="view" width="1280" height="720"></canvas><div id="spin"></div><div id="abmark"></div></div>
   <div id="bar">
     <button id="prev"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5"/></svg></button>
     <button id="next"><svg viewBox="0 0 16 16"><path d="m6 3 5 5-5 5"/></svg></button>
@@ -106,7 +99,6 @@
     <button id="play" title="Play or pause (Space)"></button>
     <button id="loop" title="Loop (L): the current turn, or, with the knob on a value, the moment around it, with a short gap between passes"><svg viewBox="0 0 16 16"><path d="M3 7V6a2 2 0 0 1 2-2h7M10 2l2 2-2 2M13 9v1a2 2 0 0 1-2 2H4M6 14l-2-2 2-2"/></svg></button>
     <button id="xray" title="X-ray (X): the director's view. Everything below the ground line is for you, not the audience. The bar is an entity's weight in the room. Ringed pips are what it feels; filled pips are what shows."><svg viewBox="0 0 16 16"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg></button>
-    <button id="tuneb" title="Tune (T): sliders for the small details and for every sound. Click a sound's name to hear it."><svg viewBox="0 0 16 16"><path d="M2 4.5h7M12 4.5h2M2 11.5h2M7 11.5h7"/><circle cx="10.5" cy="4.5" r="1.5"/><circle cx="5.5" cy="11.5" r="1.5"/></svg></button>
     <button id="carry"><svg viewBox="0 0 16 16"><path d="M2 8h8M7 5l3 3-3 3M13 3v10"/></svg></button>
     <span id="tc"></span>
     <div id="sel" title="Steps for the selected timing. Type a number, or Alt+arrow to nudge a quarter step."><i></i><input id="selv" type="number" step="0.25"></div>
@@ -448,7 +440,6 @@ async function nudge(op, value) {                        // each nudge is writte
       if (r.dirty_from != null || picked.rebuild === 'sound') replaySoon();
       if (q.op === 'widen' && r.value) toast(`${picked.param.label} ${num(picked.value)} now holds for the whole ${picked.chain[0].scope}` + (r.affects != null ? ` \u00b7 ${r.affects} other${picked.param.label === 'Breath' ? ' breath' : ' turn'}${r.affects === 1 ? '' : 's'} changed` : '') + '\nUndo takes it back.');
       inPlaySoon();
-      if ($('tune').style.display === 'block') buildTune();
     } catch (e) { toast(e.message, true); }
   }
   nudging = false;
@@ -543,7 +534,7 @@ async function hear(ti) {                                 // after changing a no
 $('selv').addEventListener('change', () => { const d = showSel(); if (!d) return; const v = Math.min(Math.max(+$('selv').value || 0, d._m.lo), d._m.hi); commit(d._m.path, d._m.value, v); $('selv').blur(); });
 async function step(which) {                              // the journal is on the server, so undo survives a restart and covers sliders
   pause();
-  try { const r = await api('/' + which, {}); dropFrames(0); S = r.state; build(); if ($('tune').style.display === 'block') buildTune(); if (pick) pickAt(pick, true); }
+  try { const r = await api('/' + which, {}); dropFrames(0); S = r.state; build(); if (pick) pickAt(pick, true); }
   catch (e) { toast(e.message, true); }
 }
 $('undo').onclick = () => step('undo'); $('redo').onclick = () => step('redo');
@@ -560,36 +551,6 @@ async function openScene(dir) {
 $('prev').onclick = () => openScene(-1); $('next').onclick = () => openScene(1);
 $('xray').onclick = () => { xray = !xray; $('xray').classList.toggle('on', xray); dropFrames(0); fill(); };
 
-// ---- tuning panel: sliders for the small details and for every sound -------------------------
-function buildTune() {
-  const row = (group, name, p) => `<label class="row" title="${p.tip}"><span>${p.key.replace(/_/g, ' ')}</span><input type="range" min="${p.min}" max="${p.max}" step="${p.step}" value="${p.value}" data-g="${group}" data-n="${name}" data-k="${p.key}"><span>${num(p.value)}</span></label>`;
-  $('tune').innerHTML = `<h4 title="How things move">${ICON.feel}motion</h4>` + S.feel.map(p => row('feel', '', p)).join('') +
-    S.sounds.map(s => `<h4 class="snd" data-snd="${s.name}" title="Click to hear it">${ICON.snd}${s.name}</h4>` + s.params.map(p => row('sounds', s.name, p)).join('')).join('');
-}
-let tuneT = 0, tuneQ = null, tuning = false;
-async function sendTune() {
-  if (tuning || !tuneQ) return; tuning = true;
-  while (tuneQ) {
-    const q = tuneQ; tuneQ = null;
-    try { const r = await api('/tune', q); if (r.dirty_from != null) dropFrames(r.dirty_from); S = r.state; build(); } catch (e) { toast(e.message, true); }
-  }
-  tuning = false;
-}
-$('tune').addEventListener('input', e => {
-  const d = e.target.dataset; if (!d.k) return;
-  e.target.nextElementSibling.textContent = num(+e.target.value);
-  tuneQ = { group: d.g, name: d.n, key: d.k, value: +e.target.value };
-  clearTimeout(tuneT); tuneT = setTimeout(sendTune, 50);
-});
-$('tune').addEventListener('change', async e => {         // let go of a slider: the value is written; a sound's is also played
-  const d = e.target.dataset; if (!d.k) return;
-  clearTimeout(tuneT); while (tuning) await new Promise(r => setTimeout(r, 20));
-  tuneQ = { group: d.g, name: d.n, key: d.k, value: +e.target.value, commit: true };
-  await sendTune();
-  if (d.g === 'sounds') new Audio(`/sfx?name=${encodeURIComponent(d.n)}&t=${Date.now()}`).play().catch(() => {});
-});
-$('tune').addEventListener('click', e => { const h = e.target.closest('[data-snd]'); if (h) new Audio(`/sfx?name=${encodeURIComponent(h.dataset.snd)}&t=${Date.now()}`).play().catch(() => {}); });
-$('tuneb').onclick = () => { const on = $('tune').style.display !== 'block'; if (on) buildTune(); $('tune').style.display = on ? 'block' : 'none'; $('stage').style.paddingRight = on ? '298px' : '14px'; $('tuneb').classList.toggle('on', on); };
 
 // ---- playback: audio is the clock; if the next frame is not ready, wait for it ---------------
 let stopAt = null;
@@ -660,7 +621,6 @@ addEventListener('keydown', e => {
   else if (mod && low === 'z') step(e.shiftKey ? 'redo' : 'undo');
   else if (low === 'l') $('loop').click();
   else if (low === 'x') $('xray').click();
-  else if (low === 't') $('tuneb').click();
   else if (k === '[') openScene(-1);
   else if (k === ']') openScene(1);
   else if (k === 'ArrowUp' || k === 'ArrowDown') {        // nudge the picked value; with nothing picked, pick whatever owns this moment
@@ -684,11 +644,11 @@ addEventListener('keydown', e => {
 });
 
 setInterval(async () => {                                // follow the files: pick up changes made elsewhere
-  if (!S || drag || sending || tuning || nudging) return;
+  if (!S || drag || sending || nudging) return;
   try {
     const r = await api('/poll');
-    if (drag || sending || tuning || nudging) return;
-    if (r.rev !== S.rev) { S = await api('/state'); dropFrames(0); build(); if ($('tune').style.display === 'block') buildTune(); if (pick) pickAt(pick, true); }
+    if (drag || sending || nudging) return;
+    if (r.rev !== S.rev) { S = await api('/state'); dropFrames(0); build(); if (pick) pickAt(pick, true); }
     else if (r.info_rev !== S.info_rev) { S = await api('/state'); build(); }
   } catch (e) {}
 }, 500);

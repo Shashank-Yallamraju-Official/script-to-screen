@@ -60,12 +60,12 @@ def test_every_change_by_hand_is_journaled_with_its_address(sess):
     assert done[-1]["changes"] == [dict(address="s01/e01/01:2.hold", field="hold", before=8, after=12)]
 
 
-def test_a_slider_is_written_as_a_hand_set_value_beside_the_written_one(sess):
+def test_a_show_wide_setting_is_written_as_a_hand_set_value_beside_the_written_one(sess):
     feel = sess.root / "library" / "feel.yaml"
-    sess.tune("feel", None, "ease", 0.4, commit=True)
+    sess.nudge("feel.ease", "set", 0.4)
     assert "ease: 0.26" in feel.read_text() and "tune: {ease: 0.4}" in feel.read_text()
-    assert sess.stage.look.feel["ease"] == 0.4 and sess.state()["feel"][0]["value"] == 0.4
-    sess.tune("feel", None, "ease", 0.26, commit=True)
+    assert sess.stage.look.feel["ease"] == 0.4 and sess.value("feel.ease")["value"] == 0.4
+    sess.nudge("feel.ease", "set", 0.26)
     assert "tune" not in feel.read_text()
 
 
@@ -74,7 +74,7 @@ def test_undo_and_redo_cover_timings_and_sliders_and_survive_a_restart(sess):
     feel = sess.root / "library" / "feel.yaml"
     feel_before = feel.read_text()
     sess.patch(HOLD, commit=True)
-    sess.tune("feel", None, "ease", 0.4, commit=True)
+    sess.nudge("feel.ease", "set", 0.4)
     assert "tune: {ease: 0.4}" in feel.read_text() and "#" in feel.read_text()  # the library keeps its comments too
     again = Session(sess.path)                                         # the editor was closed and opened
     again.step("undo")
@@ -126,14 +126,14 @@ def test_a_nudge_does_not_rebuild_the_ledger_or_earlier_scenes(sess, monkeypatch
     monkeypatch.setattr(editor, "carry_into", lambda *a, **k: calls.append(1) or {})
     sess.patch(HOLD)
     sess.patch(HOLD, commit=True)
-    sess.tune("feel", None, "overshoot", 0.9, commit=True)
+    sess.nudge("feel.overshoot", "set", 0.9)
     assert calls == []
 
 
-def test_a_slider_that_only_changes_the_look_does_not_work_the_scene_out_again(sess):
+def test_a_value_that_only_changes_the_look_does_not_work_the_scene_out_again(sess):
     score = sess.scene
-    assert sess.tune("feel", None, "overshoot", 0.9) == 0              # redraw every frame
-    assert sess.tune("feel", None, "voice_ring", 0.5) is None          # sound only: frames are kept
+    assert sess.nudge("feel.overshoot", "set", 0.9) == 0               # redraw every frame
+    assert sess.nudge("feel.voice_ring", "set", 0.5) is None           # sound only: frames are kept
     assert sess.scene is score
 
 

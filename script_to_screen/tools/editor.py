@@ -23,20 +23,20 @@ from ..commands import Refused, address, edit, tune
 from ..performance import Scene, carry_into
 from ..presentation import sound
 from ..presentation.draw import hits
-from ..presentation.render import frame_jpeg, out_path
+from ..presentation.framecache import FrameCache
+from ..presentation.render import out_path
 from ..presentation.stage import Look, Stage
 from ..readers import inplay, ledger
 from ..script import find_root, load_yaml, scene_paths, series, tuning
 from ..vocabulary import params
 
 HERE = Path(__file__).parent
+FRAMES = FrameCache()                    # shared by every scene opened in this editor
 NUMBERS = {p.name: p.hi for p in params.group("turn")}     # editable timings and their upper limit, in steps
 LISTS = ("rhythm", "melody", "stress")
 POSITION = {"unopposed": "nobody has taken sides", "even": "evenly matched", "alone": "alone against {others}",
             "minority": "outnumbered, {mine} against {others}", "majority": "in the majority, {mine} against {others}"}
-# sliders: key, min, max, step, what it does; all from the declarations in vocabulary/params.py
-FEEL = [(p.name, p.lo, p.hi, p.step, p.meaning.rstrip(".")) for p in params.group("feel")]
-SOUND = [(p.name, p.lo, p.hi, p.step, p.meaning.rstrip(".")) for p in params.group("sound")]
+
 
 
 LIST_OF = {"rhythm": ("length", "len"), "melody": ("pitch", "semi"), "stress": ("stress", "stress")}
@@ -130,7 +130,7 @@ class Session:
             self.carry = {}
         self.stamps = self.stamp()
         self.work()
-        self.before = (self.stage, {})                           # until the knob picks something, "before" is simply now
+        self.before = (self.stage, None)                         # until the knob picks something, "before" is simply now
         self.clean = (self.path.read_text(), self.scene)         # the file's text, and the scene as that text plays
         self.inform()
 
@@ -145,7 +145,6 @@ class Session:
         """Work the scene out again (or, for a change of look only, just restage it)."""
         if score:
             self.scene = Scene(self.path, script=self.doc, carry=self.carry).score
-            self.cache = {}
         self.stage = Stage(self.scene, Look.load(self.root, self.scene.cast, self.lib), self.root)
         self.rev += 1
 
@@ -186,7 +185,6 @@ class Session:
                               pause=t["pause"], hold=t["hold"], say=say, lanes=lanes, reacts=t["reacts"], stretches=t["stretches"],
                               orphans=sum(len(v) for v in tuning.syllable_tunes(self.doc["turns"][t["index"]])[1].values())))
         mine = [p for p in self.problems if p["scene"] == sc.id]
-        feel, sounds = look.feel, look.sounds                    # as in force: hand-set values laid over written ones
         done, undone = edit.stacks(self.root, by="hand")
         return dict(rev=self.rev, info_rev=self.info_rev, can_undo=bool(done), can_redo=bool(undone), status=self.seg["status"], fps=stage.fps, step=sc.step, tempo=sc.tempo,
                     spb=sc.grid["steps_per_beat"], scale=list(sc.grid["scale"]), lead=self.lead,
@@ -197,10 +195,7 @@ class Session:
                     carried=[f"{e} still feels {f[0]} {f[1]}" + (f" about {f[2]}" if f[2] else "") for e, f in sc.carried.items() if e in sc.cast],
                     offscreen=list(sc.offscreen),
                     ledger={e: {emo: {k: c[k] for k in ("seen", "need", "learned", "positions", "hidden")}
-                                for emo, c in row.items()} for e, row in self.table.items()},
-                    feel=[dict(key=k, min=lo, max=hi, step=st, tip=tip, value=float(feel[k])) for k, lo, hi, st, tip in FEEL],
-                    sounds=[dict(name=str(n), params=[dict(key=k, min=lo, max=hi, step=st, tip=tip, value=float(p.get(k, p.get("freq", 440) if k == "to" else 0)))
-                                                      for k, lo, hi, st, tip in SOUND]) for n, p in sounds.items()])
+                                for emo, c in row.items()} for e, row in self.table.items()})
 
     # ---- changing values ------------------------------------------------------------------------
     def _locked(self):
@@ -234,29 +229,6 @@ class Session:
         self.work()
         self.clean = (after_text, self.scene)
         return self.frame_of(first)
-
-    def tune(self, group, name, key, value, commit=False):
-        """One slider: a feel setting, or one setting of one sound. -> the first frame to redraw, or None."""
-        file = self.root / "library" / f"{group}.yaml"
-        t = (tune.Target(self.root, "feel." + key, "feel", file) if group == "feel" else
-             tune.Target(self.root, "sound." + key, "sound", file, sound=name))
-        if commit:
-            before_text = file.read_text()
-            lib = edit.yaml().load(before_text)
-            changes = []
-            hand(lib, t, value, changes, tune.resolve(t, lib)["value"])
-            after_text = edit.dump(lib)
-            self.lib[group] = lib
-            if after_text != before_text:
-                edit.write(file, after_text)
-                edit.record(self.root, "nudge", None, file, changes, before_text, after_text, by="hand")
-            self.stamps = self.stamp()
-        else:
-            hand(self.lib[group], t, value, [], None)
-        if t.param.rebuild == "look":
-            self.cache = {}
-        self.work(score=False)                                   # the score does not depend on the look
-        return 0 if t.param.rebuild == "look" else None
 
     # ---- the knob: any tunable value, by its address ---------------------------------------------
     def value(self, address):
@@ -358,8 +330,6 @@ class Session:
         elif t.file.parent.name == "library" and t.file.stem in self.lib:
             self.lib[t.file.stem] = edit.load(t.file)
         self.stamps = self.stamp()
-        if t.param.rebuild == "look":
-            self.cache = {}
         self.work(score=score)
         if score:
             self.clean = (self.path.read_text(), self.scene)
@@ -381,18 +351,15 @@ class Session:
 
     def pick(self):
         """The knob has been put on a value: remember the scene as it stands now, to compare against later."""
-        self.before = (self.stage, {})
+        self.before = (self.stage, None)
         return dict(total=self.stage.total, rev=self.rev)
 
     def frame(self, F, full, xray, before=False):
-        stage, cache = self.before if before else (self.stage, self.cache)
+        """A frame of the scene now, or as it stood when the knob picked a value. Frames are kept by what
+        they show, so anything seen before (an undo, the other side of a comparison) is not drawn again."""
+        stage = self.before[0] if before else self.stage
         F = min(max(F, 0), stage.total - 1)
-        key = (F, full, xray)
-        if key not in cache:
-            if len(cache) > 12000:
-                cache.clear()
-            cache[key] = frame_jpeg(stage, F, 1.0 if full else 0.5, 90 if full else 82, xray)
-        return cache[key]
+        return FRAMES.get(stage, F, 1.0 if full else 0.5, 90 if full else 82, xray)
 
 
 def make_handler(sess):
@@ -434,9 +401,6 @@ def make_handler(sess):
                         return self.send(sess.frame(int(q["f"][0]), flag("full"), flag("xray"), q.get("build") == ["A"]), "image/jpeg")
                     if url.path == "/audio":
                         return self.send(sound.mix(sess.before[0] if q.get("build") == ["A"] else sess.stage), "audio/wav")
-                    if url.path == "/sfx":                   # one sound on its own, to audition it
-                        p = sound.sound_for(sess.stage.look.sounds, q["name"][0])
-                        return self.send(sound.wav_bytes(sound.effect(p)), "audio/wav")
                     if url.path == "/video":
                         return self.send(out_path(sess.stage).read_bytes(), "video/mp4")
                 self.send(dict(error="not found"), status=404)
@@ -466,8 +430,6 @@ def make_handler(sess):
                     out = {}
                     if self.path == "/patch":
                         out["dirty_from"] = sess.patch(body["ops"], bool(body.get("commit")))
-                    elif self.path == "/tune":
-                        out["dirty_from"] = sess.tune(body["group"], body.get("name"), body["key"], body["value"], bool(body.get("commit")))
                     elif self.path == "/pick":
                         return self.send(sess.pick())
                     elif self.path == "/nudge":

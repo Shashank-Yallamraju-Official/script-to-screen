@@ -134,7 +134,7 @@ project's oldest habit, hand-set values becoming derived ones, turned into a rou
 | The real thing | Yes. The editor draws with the renderer and plays the same sound |
 | Every tunable value reachable | Yes. By command, all 32 declared parameters. In the editor, the knob reaches whatever is in play at the playhead: time, notes, stress, motion, sounds, tones and entities |
 | Scope is visible | Yes. The knob shows one mark per scope and which one the value comes from; widening is a deliberate key and says what it now covers |
-| A pin | No |
+| A pin | Dropped. An address such as `the-vase:2+6`, and `s2s in-play` at that moment, do the job |
 | **Where they meet** | |
 | Who set each value | Yes. Hand-set values live in `tune:` blocks; `s2s tune get` shows every scope's say and `s2s tune list` shows all of them |
 | Warning before discarding tuned values | Yes. Rewording a line sets its per-syllable tunes aside and says so; they are kept until the new wording is tuned |

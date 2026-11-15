@@ -28,8 +28,7 @@ def test_the_demo_library_matches_the_declarations():
     assert set(feel) == {p.name for p in params.group("feel")}
 
 
-def test_the_editors_sliders_come_from_the_declarations():
-    assert [row[0] for row in editor.FEEL] == [p.name for p in params.group("feel")]
+def test_the_editors_timing_limits_come_from_the_declarations():
     assert editor.NUMBERS == {"pause": 200, "hold": 400}
 
 
