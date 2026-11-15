@@ -69,15 +69,23 @@ Time is counted in **steps** of a tempo grid (`tempo` and `steps_per_beat` in `s
 at the defaults one step is an eighth of a second). Pauses, holds and syllables all land on
 the grid, and fractions of a step are allowed for nudges. A scene can set its own `tempo`.
 
-A line is split into syllables. Each syllable is one note, and its text appears on the frame
-that note starts. Each syllable also has a **stress**, which is what stops speech sounding
-like a drum pattern:
+A line appears in its bubble all at once. It is split into syllables, each syllable is one
+note, and an **indicator** travels under the text in time with the voice:
 
-| Stress | Length | Loudness | Pitch | Speaker | Text |
-|---|---|---|---|---|---|
-| 0 weak | Half the tone's rate | Quiet | On the contour | Still | Just appears |
-| 1 strong | The tone's rate | Louder | A note higher | Small rise | Small pop |
-| 2 main accent of the phrase | Half as long again | Loudest | A note higher (lower on a falling line) | Full rise | Full pop |
+| What the indicator does | What it shows |
+|---|---|
+| How fast it crosses a syllable | Rhythm: it takes exactly as long as the syllable is voiced |
+| How high it rides | Pitch, scaled to the line's own highest and lowest notes |
+| How big it is | Stress |
+| Stopping and shrinking | The breath after punctuation |
+
+Each syllable has a **stress**, which is what stops speech sounding like a drum pattern:
+
+| Stress | Length | Loudness | Pitch | Indicator |
+|---|---|---|---|---|
+| 0 weak | Half the tone's rate | Quiet | On the contour | Small |
+| 1 strong | The tone's rate | Louder | A note higher | Medium |
+| 2 main accent of the phrase | Half as long again | Loudest | A note higher (lower on a falling line) | Large |
 
 Stress, rhythm and melody are worked out from the words and the tone; a line can set its own:
 
@@ -93,7 +101,7 @@ to break a word (some·one) or a caret before the syllable that should be strong
 |---|---|
 | `library/tones.yaml` | Per tone: rhythm, melody contour, voice, letter size, and the note shown on sung lines |
 | `library/sounds.yaml` | One synthesised sound per kind of event: enter, exit, move, turn, look, posture, bubble, feel |
-| `library/feel.yaml` | The small motions (settle time, overshoot, paper flip, stretch, the speaker's rise, pops) and how voiced or plucked a syllable sounds |
+| `library/feel.yaml` | The small motions (settle time, overshoot, paper flip, stretch, the bubble's pop), the speech indicator, and how voiced or plucked a syllable sounds |
 
 A turn can also place a sound by hand: `sfx: [{at: 4, sound: thud}]`.
 

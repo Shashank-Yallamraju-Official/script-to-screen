@@ -3,9 +3,9 @@ ease: 0.26            # seconds a change takes to settle
 overshoot: 0.6        # how far a move swings past its mark before settling (0 = none)
 flip: 1.0             # how thin a token gets mid-turn, like a sheet of paper flipping (0 = none)
 squash: 0.10          # stretch while travelling, as a fraction of size
-talk_hop: 6           # pixels the speaker rises on a phrase's main accent; strong syllables get about half, weak ones none
+cursor_size: 5.5      # size of the indicator that travels under a spoken line (it grows on stressed syllables)
+cursor_lift: 12       # how far the indicator rises and falls with the voice's pitch, in pixels
+cursor_tail: 0.12     # seconds of trail the indicator leaves behind it
 voice_attack: 0.015   # seconds a syllable's note takes to swell (short is percussive, long is soft)
 voice_ring: 0.7       # how much of its level a note keeps to its end (0 plucked, 1 held so syllables run together)
 bubble_pop: 0.14      # seconds a bubble takes to pop open
-text_pop: 0.09        # seconds a syllable takes to pop in
-text_pop_scale: 1.25  # how big a syllable starts before settling to size

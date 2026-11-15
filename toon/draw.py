@@ -2,13 +2,14 @@
 
 A token shows only what the model says is observable: where it stands, which way its body
 faces (the toe at its base), where its attention is (the dot), and how it holds itself.
-The small motions on top (flip, stretch, hop, pops) are sized by library/feel.yaml.
+The small motions on top (flip, stretch, the bubble's pop) are sized by library/feel.yaml.
+A line of speech appears whole; an indicator then travels under it in time with the voice.
 """
 import math
 
 import skia
 
-from .model import SLOTS, back
+from .model import SLOTS, back, smooth
 
 BODY_W, BODY_H, MARGIN = 66, 156, 170
 INK, PAPER, RULE = "#1d1d1f", "#f5f3ee", "#c9c5bb"
@@ -40,14 +41,14 @@ def font(size=28, mono=False):
     return skia.Font(skia.Typeface("DejaVu Sans Mono" if mono else "DejaVu Sans", skia.FontStyle.Bold()), size)
 
 
-def draw_token(c, ent, o, W, H, feel, hop=0.0):
+def draw_token(c, ent, o, W, H, feel):
     a = 255 * o["alpha"]
     if a < 1:
         return
     stretch = o["travel"] * float(feel["squash"])
     thin = 1 - 0.9 * float(feel["flip"]) * o["flip"]
     c.save()
-    c.translate(slot_x(o["slot"], W), ground(H) - hop)
+    c.translate(slot_x(o["slot"], W), ground(H))
     c.skew(-math.tan(math.radians(9 * o["lean"])), 0)            # lean pivots at the base
     c.scale(o["sx"] * (1 + stretch) * thin, o["sy"] * (1 - stretch))
     f = o["facing"]
@@ -108,7 +109,7 @@ def draw_note(c, x, y, tone, secs, ring):
 
 
 def layout(line, tone):
-    """Place every syllable once: which row it sits on and how far along."""
+    """Place every syllable once: which row it sits on, how far along, and how wide."""
     if "_layout" not in line:
         size = 21 if tone.get("text") == "small" else 28
         f, rows, chunks, row, word = font(size), [], [], "", []
@@ -130,16 +131,49 @@ def layout(line, tone):
                 flush()
         flush()
         rows.append(row)
-        line["_layout"] = (f, size, max(f.measureText(r.rstrip()) for r in rows), len(rows), chunks)
+        line["_layout"] = (f, size, max(f.measureText(r.rstrip()) for r in rows), [r.rstrip() for r in rows], chunks)
     return line["_layout"]
 
 
-def draw_bubble(c, scene, line, t, o, ent, hop):
+WEIGHT = (0.7, 1.0, 1.4)       # the indicator's size on a weak syllable, a strong one, a main accent
+
+
+def indicator(line, chunks, t):
+    """Where the speech indicator is at time t -> (row, x, height 0..1, weight), or None before the line.
+
+    It travels across each syllable for as long as that syllable is voiced, so its speed is the
+    rhythm. It glides up and down with the pitch, swells on stressed syllables, and stops and
+    shrinks in the breath after punctuation.
+    """
+    syl = line["sylls"]
+    if t < syl[0]["start"] - 1e-6:
+        return None
+    lo, hi = min(s["semi"] for s in syl), max(s["semi"] for s in syl)
+    height = lambda k: (syl[k]["semi"] - lo) / (hi - lo) if hi > lo else 0.5
+    i = max(k for k, s in enumerate(syl) if s["start"] <= t + 1e-6)
+    s, prev = syl[i], max(i - 1, 0)
+    p = min(1.0, (t - s["start"]) / max(s["voiced"], 1e-3))
+    row, cx, _, cw = chunks[i]
+    same_row = i + 1 < len(syl) and chunks[i + 1][0] == row
+    x = cx + ((chunks[i + 1][1] if same_row else cx + cw) - cx) * p
+    g = smooth(min(1.0, p / 0.35))                              # glide into this syllable's pitch and weight
+    h = height(prev) + (height(i) - height(prev)) * g
+    w = WEIGHT[syl[prev]["stress"]] + (WEIGHT[s["stress"]] - WEIGHT[syl[prev]["stress"]]) * g
+    rest = t - (s["start"] + s["voiced"])
+    if rest > 0:                                                # the breath: it waits, smaller
+        w *= 1 - 0.45 * smooth(min(1.0, rest / 0.08))
+    return row, x, h, w
+
+
+def draw_bubble(c, scene, line, t, o, ent):
     feel, tone = scene.show.feel, scene.show.tones[line["tone"]]
-    f, size, tw, nrows, chunks = layout(line, tone)
-    W, H, pad, lh = scene.W, scene.H, 22, size + 10
-    w, h = max(150, tw + 2 * pad), nrows * lh + 2 * pad - 8
-    hx, top = slot_x(o["slot"], W), ground(H) - BODY_H * o["sy"] - 24 - hop
+    f, size, tw, rows, chunks = layout(line, tone)
+    W, H, pad = scene.W, scene.H, 22
+    lift, rad = float(feel["cursor_lift"]), float(feel["cursor_size"])
+    lane = lift + 2 * rad * WEIGHT[2] + 4                        # room under each row for the indicator
+    lh = size + 6 + lane
+    w, h = max(150, tw + 2 * pad), len(rows) * lh + 2 * pad - 14
+    hx, top = slot_x(o["slot"], W), ground(H) - BODY_H * o["sy"] - 24
     bx = min(max(hx - w / 2, 24), W - w - 40)
     by = top - h - 24
     tx = min(max(hx, bx + 36), bx + w - 36)
@@ -162,18 +196,25 @@ def draw_bubble(c, scene, line, t, o, ent, hop):
     c.drawPath(shape, fill("#ffffff"))
     c.drawPath(shape, stroke(ent["color"], 4))
     ink = fill(INK)
-    tp, ts = float(feel["text_pop"]), float(feel["text_pop_scale"])
-    for i, (row, cx, text, cw) in enumerate(chunks):
-        a = t - line["sylls"][i]["start"]
-        if a < -1e-6:
-            continue
-        accent = (0.0, 0.6, 1.0)[line["sylls"][i]["stress"]]                # weak syllables just appear
-        s = 1 + (ts - 1) * accent * (1 - a / tp) if tp > 0 and a < tp else 1.0
-        c.save()
-        c.translate(bx + pad + cx + cw / 2, by + pad + size - 4 + row * lh)
-        c.scale(s, s)
-        c.drawString(text.rstrip(), -cw / 2, 0, f, ink)
-        c.restore()
+    for r, text in enumerate(rows):                              # the whole line is there from the start
+        c.drawString(text, bx + pad, by + pad + size - 6 + r * lh, f, ink)
+
+    def place(q):                                                # indicator -> a point under its row
+        row, x, hgt, wt = q
+        return bx + pad + x, by + pad + size + 4 + row * lh + rad * WEIGHT[2] + (1 - hgt) * lift, rad * wt
+
+    end = line["sylls"][-1]["start"] + line["sylls"][-1]["voiced"]
+    fade = 1 - smooth((t - end) / 0.3) if t > end else 1.0       # it leaves once the line is said
+    here = indicator(line, chunks, min(t, end))
+    if here and fade > 0.01:
+        n, span = 16, float(feel["cursor_tail"])
+        for k in range(n, 0, -1):                                # a short tail shows which way it is moving
+            past = indicator(line, chunks, min(t, end) - span * k / n) if span > 0 else None
+            if past and past[0] == here[0]:
+                x, y, r = place(past)
+                c.drawCircle(x, y, r * (1 - 0.6 * k / n), fill(ent["color"], 150 * fade * (1 - k / n)))
+        x, y, r = place(here)
+        c.drawCircle(x, y, r, fill(ent["color"], 255 * fade))
     if line["sung"]:
         draw_note(c, bx + w - 2, by + 2, tone, max(age, 0), ent["color"])
     c.restore()
@@ -210,16 +251,10 @@ def draw_frame(c, scene, F, xray=False, slate=False):
     if xray:
         draw_xray(c, scene, states)
     line = scene.line_at(t)
-    hop = 0.0
-    if line:                                                    # the speaker nods on stressed syllables only
-        hit = [(t - s["start"], s["stress"]) for s in line["sylls"] if s["stress"] and s["start"] <= t + 1e-6]
-        if hit and min(hit)[0] < 0.24:
-            age, stress = min(hit)
-            hop = float(feel["talk_hop"]) * (0.55 if stress == 1 else 1.0) * math.sin(math.pi * age / 0.24)
     for e in sorted(states, key=lambda e: bool(line and line["who"] == e)):
-        draw_token(c, scene.ents[e], states[e], W, H, feel, hop if line and line["who"] == e else 0.0)
+        draw_token(c, scene.ents[e], states[e], W, H, feel)
     if line and line["who"] in states:
-        draw_bubble(c, scene, line, t, states[line["who"]], scene.ents[line["who"]], hop)
+        draw_bubble(c, scene, line, t, states[line["who"]], scene.ents[line["who"]])
     if slate:
         turn = scene.turn_at(t)
         c.drawString(f"T{turn['id']} · {t / scene.step - turn['start']:.2f}", 20, 32, font(16, mono=True), fill(INK, 150))

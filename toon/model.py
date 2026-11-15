@@ -291,7 +291,7 @@ class Scene:
                 reveal = sum(s["len"] for s in sylls)
                 react = say_at + reveal
                 line = dict(who=who, text="".join(s["text"] for s in sylls), tone=tone, sung="sing" in raw, start=(t0 + say_at) * sec,
-                            sylls=[dict(text=s["text"], start=(t0 + say_at + s["at"]) * sec, dur=s["len"] * sec, semi=s["semi"], stress=s["stress"])
+                            sylls=[dict(text=s["text"], start=(t0 + say_at + s["at"]) * sec, dur=s["len"] * sec, voiced=(s["len"] - s["rest"]) * sec, semi=s["semi"], stress=s["stress"])
                                    for s in sylls])
             length = (react if say else float(T["settle"])) + hold
             for e, o in a.items():

@@ -32,12 +32,12 @@ FEEL = [("ease", 0.05, 0.8, 0.01, "Seconds a change takes to settle"),
         ("overshoot", 0, 2, 0.05, "How far a move swings past its mark before settling"),
         ("flip", 0, 1, 0.05, "How thin a token gets mid-turn, like paper flipping"),
         ("squash", 0, 0.4, 0.01, "Stretch while travelling"),
-        ("talk_hop", 0, 16, 0.5, "Pixels the speaker rises on a phrase's main accent (strong syllables get about half, weak ones none)"),
+        ("cursor_size", 1, 10, 0.5, "Size of the indicator that travels under a spoken line (it grows on stressed syllables)"),
+        ("cursor_lift", 0, 24, 1, "How far the indicator rises and falls with the voice's pitch, in pixels"),
+        ("cursor_tail", 0, 0.4, 0.01, "Seconds of trail the indicator leaves behind it"),
         ("voice_attack", 0.001, 0.08, 0.001, "Seconds a syllable's note takes to swell. Short is percussive, long is soft"),
         ("voice_ring", 0, 1, 0.05, "How much of its level a note keeps to its end. 0 is plucked, 1 is held so syllables run together"),
-        ("bubble_pop", 0, 0.5, 0.01, "Seconds a bubble takes to pop open"),
-        ("text_pop", 0, 0.3, 0.01, "Seconds a syllable takes to pop in"),
-        ("text_pop_scale", 1, 2, 0.05, "How big a syllable starts before settling")]
+        ("bubble_pop", 0, 0.5, 0.01, "Seconds a bubble takes to pop open")]
 SOUND = [("vol", 0, 1, 0.01, "Volume (0 is off)"), ("freq", 40, 2000, 5, "Starting pitch in Hz"),
          ("to", 40, 2000, 5, "Pitch it glides to, in Hz"), ("dur", 0.01, 0.6, 0.01, "Length in seconds")]
 

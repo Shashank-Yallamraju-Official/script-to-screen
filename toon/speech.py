@@ -96,8 +96,8 @@ def semi_of(degree, scale):
 
 
 def plan(text, tone, scale, rhythm=None, melody=None, stress=None):
-    """-> [{text, at, len, semi, stress}]: each syllable's start and length in steps, its pitch in
-    semitones and its stress.
+    """-> [{text, at, len, semi, stress, rest}]: each syllable's start and length in steps, its pitch
+    in semitones, its stress, and how much of its length is the breath after punctuation.
 
     Anything not given is worked out. Stress comes from the words. Rhythm is the tone's `rate`
     (steps for a strong syllable), halved for weak ones and half as long again for a phrase's
@@ -126,8 +126,8 @@ def plan(text, tone, scale, rhythm=None, melody=None, stress=None):
                 d += (0, 0, 0, -1)[(seed >> ((k % 16) * 2)) & 3]
             melody.append(semi_of(round(d), scale))
     out, at = [], 0
-    for s, ln, m in zip(syl, rhythm, melody):
-        out.append(dict(text=s["text"], at=at, len=ln, semi=m, stress=s["stress"]))
+    for s, ln, m in zip(syl, rhythm, melody):                 # `rest` is the silent part at the end of `len`
+        out.append(dict(text=s["text"], at=at, len=ln, semi=m, stress=s["stress"], rest=max(0, min(s["rest"], ln - 0.5))))
         at += ln
     return out
 
@@ -195,7 +195,7 @@ def mix(scene):
         ent, tone = scene.ents[line["who"]], scene.show.tones[line["tone"]]
         for s in line["sylls"]:
             hz = ent["voice"] * tone.get("pitch", 1) * 2 ** (s["semi"] / 12)
-            add(s["start"], note(hz, min(s["dur"], 0.6), tone.get("vol", 0.5) * LOUD[s["stress"]], ent.get("timbre", "sine"),
+            add(s["start"], note(hz, min(s["voiced"], 0.6), tone.get("vol", 0.5) * LOUD[s["stress"]], ent.get("timbre", "sine"),
                                  float(feel["voice_attack"]), float(feel["voice_ring"])))
     for at, name, _ in scene.events:
         p = sound_for(scene.show.sounds, name)
