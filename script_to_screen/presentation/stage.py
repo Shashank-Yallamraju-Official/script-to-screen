@@ -8,9 +8,9 @@ from ..script import Show, load_yaml, tuning
 
 
 class Look:
-    def __init__(self, W, H, fps, feel, tones, sounds, emotions, cast):
+    def __init__(self, W, H, fps, feel, tones, sounds, emotions, cast, music=None):
         self.W, self.H, self.fps = W, H, fps
-        self.feel, self.tones, self.sounds, self.emotions, self.cast = feel, tones, sounds, emotions, cast
+        self.feel, self.tones, self.sounds, self.emotions, self.cast, self.music = feel, tones, sounds, emotions, cast, music or {}
 
     @classmethod
     def load(cls, root, entities, lib=None):
@@ -21,7 +21,7 @@ class Look:
         for e in entities:
             sheet = tuning.overlay(load_yaml(root / "entities" / f"{e}.yaml"))
             cast[e] = {k: sheet[k] for k in ("color", "voice", "timbre", "kind") if k in sheet}
-        return cls(cfg["width"], cfg["height"], cfg["fps"], show.feel, show.tones, show.sounds, show.emotions, cast)
+        return cls(cfg["width"], cfg["height"], cfg["fps"], show.feel, show.tones, show.sounds, show.emotions, cast, show.music)
 
 
 class Stage:

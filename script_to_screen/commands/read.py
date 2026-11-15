@@ -194,6 +194,21 @@ def in_play_(a):
     return dict(moment=address.of(root, path, t["id"]) + f"+{steps:g}", values=rows, text="\n".join(text))
 
 
+@command("drama", "What happens dramatically in a scene, as the audience takes it: who, good or bad, how surprising, and which moments get music.",
+         [A("scene", "the scene")], "s2s drama the-vase")
+def drama_(a):
+    root, path = address.scene(a.scene, a.show)
+    sc = built(root, path)[0].score
+    turn_of = lambda t: sc.turn_at(t)["id"]
+    events = [dict(d, turn=turn_of(d["t"]), strength=round(d["surprise"] * d["weight"], 3)) for d in sc.drama]
+    cues = [dict(c, turn=turn_of(c["t"])) for c in sc.music]
+    text = ["what happens:"] + [f"  {address.of(root, path, d['turn']):26} {d['why']}\n{'':30}surprise {d['surprise']:.2f} x weight {d['weight']:.1f} ({d['place']}) = {d['strength']:.2f}"
+                                for d in events]
+    text += ["music:"] + ([f"  {address.of(root, path, c['turn']):26} {c['kind']:10} strength {c['strength']:.2f}   {c['subject'] if isinstance(c['subject'], str) else ', '.join(c['subject'])}"
+                           for c in cues] or ["  none: nothing in this scene is surprising and prominent enough"])
+    return dict(scene=sc.id, events=events, cues=cues, text="\n".join(text))
+
+
 @command("check", "Every problem in the show, or in one scene. Exit code 3 if there are errors.",
          [A("scene", "limit to one scene", nargs="?")], "s2s check thermostat")
 def check(a):

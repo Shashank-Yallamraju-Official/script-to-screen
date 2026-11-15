@@ -6,7 +6,7 @@ into a short, ranked list of the values that could be responsible:
   1. the value that owns the stretch of time under the playhead (a pause, a syllable, a breath, a hold)
   2. the note and stress of the syllable being spoken
   3. for each thing that happens nearby (someone turns, moves, a bubble opens): the motion values it
-     shows at work, nearest first, then its sound
+     shows at work, nearest first, then its sound; and the music, where a cue plays
   4. the tone of the line being spoken, and its speaker's own settings
   5. the voice and the indicator
 
@@ -57,6 +57,10 @@ def in_play(score, steps, window=4.0):
         kind = name.split(".")[0]
         for key in ("vol", "freq", "to", "dur"):
             add(f"sounds.{kind}.{key}", "the sound when " + WHAT.get(kind, name).format(e=e or "something"), (at, at + 2))
+    for c in score.music:                                        # ...and the music, where a cue plays
+        at = c["t"] / score.step
+        if at - 1 <= steps <= at + 10:
+            add("feel.music_volume", f"music marks this moment ({c['kind']})", (at, at + 8))
     if line and line[0] - window <= steps < line[1] + window:    # 4. the tone of the line, and its speaker
         who, tone = turn["who"], turn["line"]["tone"]
         for name in ("rate", "pitch", "vol", "range", "stretch"):

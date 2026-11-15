@@ -314,6 +314,25 @@ earlier scenes, which is where its speed comes from.
 
 **Costs.** To merge or split bubbles the script has to change, through the assistant.
 
+## 23. Music is scored for the audience: what surprises them, and whose side they are on
+
+**Decision.** This settles two questions decision 15 left open. *Expected by whom?* By the
+audience: a feeling is surprising to the degree that it departs from where its character just
+was and from the mood of the room so far. *Good or bad for whom?* For the audience: a
+feeling's valence is multiplied by the audience's `sympathy` for whoever has it, which the
+script sets in a turn and which carries like status. A feeling that does not show gets no music.
+
+**Instead of** scoring surprise from a character's point of view, or treating every emotion's
+valence as the same for everyone.
+
+**Because** the first scoring of the reference scene called the villain's laugh good news.
+Music speaks to the audience, so it has to take their side. Departure from the room's mood is
+simple enough to explain in one sentence, which every rule in this project must be.
+
+**Costs.** Music cannot yet tell the audience something a character is hiding, which is a
+real technique. `sympathy` is one more thing to write, though only where it changes. The
+surprise measure knows nothing of plot: a twist that changes no feeling is silent.
+
 ## Open questions
 
 These are not decided, because the conversation has not yet produced the evidence.
@@ -324,9 +343,8 @@ These are not decided, because the conversation has not yet produced the evidenc
 - **Does a background sighting count toward the audience learning a tell?** It does today.
 - **Is there ever more than one stage in view?** Cross-cutting between two rooms would make
   "the scene" a weaker unit than it is now.
-- **Expected by whom?** A stinger for a surprise can follow what the audience expected or
-  what a character expected. They differ exactly when the audience knows more than the
-  character, which is the root of dramatic irony.
+- **Should music ever reveal what a character hides?** As decided (23) it never does. Scoring a
+  held-in feeling is how film music creates dramatic irony.
 - **Is music heard by the characters?** A title card's theme is not. A character singing is.
   The `sing:` line already sits on this boundary.
 - **Should the tool itself hold changes for approval?** As designed it does not: rehearsing

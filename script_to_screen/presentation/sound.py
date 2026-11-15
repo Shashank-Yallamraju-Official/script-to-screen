@@ -57,6 +57,19 @@ def sound_for(sounds, name):
     return sounds.get(name) or sounds.get(name.split(".")[0])
 
 
+# One short figure per kind of cue, unless library/music.yaml says otherwise. `key` is the pitch of note 0 in Hz.
+# A note is [steps after the cue, semitones above the key, steps long].
+MUSIC = {"key": 220, "attack": 0.03, "ring": 0.35,
+         "turn.bad": {"wave": "tri", "vol": 0.5, "notes": [[0, -12, 7], [0, -6, 7], [2, -13, 6]]},              # low, with a tritone: it sinks
+         "turn.good": {"wave": "sine", "vol": 0.45, "notes": [[0, 0, 2], [1, 4, 2], [2, 7, 2], [3, 12, 6]]},      # a rising bright arpeggio
+         "question": {"wave": "sine", "vol": 0.35, "notes": [[0, 14, 9], [0.5, 19, 8]]}}                          # two high held notes: unresolved
+
+
+def figure(music, kind):
+    """A cue kind's figure: the show's own, else the built-in one."""
+    return {**MUSIC.get(kind, {}), **(music.get(kind) or {})}
+
+
 def mix(stage):
     """The whole scene's sound: one note per syllable, plus an effect per event."""
     audio = np.zeros(int((stage.score.dur + 0.6) * RATE), dtype=np.float64)
@@ -78,4 +91,11 @@ def mix(stage):
         p = sound_for(stage.look.sounds, name)
         if p and float(p.get("vol", 0)) > 0:
             add(at, effect(p) * (aside if quiet else 1.0))
+    music, step = stage.look.music, stage.score.step
+    key, vol = float(music.get("key", MUSIC["key"])), float(feel.get("music_volume", 0.6))
+    for cue in stage.score.music if vol > 0 else []:             # the score names the cue; the look says what it sounds like
+        fig = figure(music, cue["kind"])
+        for at, semi, length in fig.get("notes", []):
+            add(cue["t"] + at * step, note(key * 2 ** (semi / 12), min(length * step, 1.6), float(fig.get("vol", 0.4)) * vol * (0.5 + 0.5 * cue["strength"]),
+                                           fig.get("wave", "sine"), float(music.get("attack", MUSIC["attack"])), float(music.get("ring", MUSIC["ring"]))))
     return wav_bytes(audio)

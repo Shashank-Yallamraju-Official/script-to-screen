@@ -140,6 +140,8 @@ class Show:
         for name in LIBRARY:                 # the editor passes its copies in `lib`, to preview a value before it is written
             raw = (lib or {}).get(name) or load_yaml(root / "library" / f"{name}.yaml")
             setattr(self, name, tuning.overlay(raw) if name == "feel" else tuning.each(raw))     # hand-set values laid over written ones
+        music = root / "library" / "music.yaml"              # what each kind of cue sounds like; a show without the file gets the built-in figures
+        self.music = (lib or {}).get("music") or (load_yaml(music) if music.exists() else {})
         self.emotions = self.cfg["emotions"]
 
     def known(self):

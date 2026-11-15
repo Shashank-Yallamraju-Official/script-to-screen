@@ -12,7 +12,7 @@ from pathlib import Path
 
 from ..script import ScriptError, Show, find_root, load_yaml, scene_key, scene_paths, tuning
 from ..world import World
-from . import speech
+from . import drama, scoring, speech
 from .expression import observe
 from .score import Score
 
@@ -81,6 +81,8 @@ class Scene:
                 world.side(e, v)
             for e, v in (raw.get("status") or {}).items():
                 world.status(e, v)
+            for e, v in (raw.get("sympathy") or {}).items():
+                world.sympathy(e, v)
             for e, spec in (raw.get("do") or {}).items():
                 world.do(e, spec)
 
@@ -239,6 +241,10 @@ class Scene:
                     if f1["felt"] and (f1["felt"], f1["intensity"]) != (f0["felt"], f0["intensity"]):
                         self.events.append((t, "feel." + f1["felt"], e))
                 prev = o
+        # what happened dramatically, and which of it gets music: two derivation steps over what was just worked out
+        music = self.show.cfg.get("music") or {}
+        self.drama = drama.dramatic_events(self.keys, self.focus, self.quiet, self.show.cfg.get("valence"))
+        self.music = scoring.cues(self.drama, sec, float(music.get("threshold", scoring.THRESHOLD)), float(music.get("apart", scoring.APART)))
         # the fourth value says the event belongs to a reaction in passing; how much quieter that is, is presentation's call
         self.events = sorted(((t, n, e, (round(t, 4), e) in self.quiet) for t, n, e in self.events), key=lambda ev: ev[0])
 
@@ -303,6 +309,7 @@ class Scene:
                 id=self.key, title=self.title, tempo=self.tempo, step=self.step, steps=self.steps, dur=self.dur,
                 grid=dict(steps_per_beat=cfg["steps_per_beat"], scale=list(cfg["scale"]), timing=dict(cfg["timing"])),
                 turns=self.turns, pose=self.keys, speech=self.lines, events=self.events, focus=self.focus,
+                drama=self.drama, music=self.music,
                 cast={e: dict(tells=ent["tells"]) for e, ent in self.ents.items()},
                 carried=self.carried, offscreen=self.offscreen, carry_out=self.carry_out, problems=self.problems)
         return self._score

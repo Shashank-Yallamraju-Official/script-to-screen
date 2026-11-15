@@ -18,7 +18,7 @@ def observe(st, ents, gcfg, flag, tid):
     total = sum(st[e]["status"] for e in sided) or 1
     out = {}
     for e, s in st.items():
-        info = dict(side=s["side"], status=s["status"], weight=None, gain=1.0, klass="unopposed",
+        info = dict(side=s["side"], status=s["status"], sympathy=s.get("sympathy", 1), weight=None, gain=1.0, klass="unopposed",
                     mine=1, others=0, felt=None, intensity=0, level=0, at=None)
         if s["side"] and len(sides) > 1 and s["present"]:
             mine = [x for x in sided if st[x]["side"] == s["side"]]

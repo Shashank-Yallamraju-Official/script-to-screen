@@ -56,6 +56,9 @@
   .turn.orph::before { content: ""; position: absolute; top: 3px; right: 12px; width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
   #find { display: none; all: unset; display: none; width: 120px; padding: 2px 8px; border: 1px solid var(--accent); border-radius: 6px; background: var(--bg); color: var(--text); font: 12px ui-monospace, Menlo, monospace; user-select: text; }
   #view { cursor: pointer; }
+  .cue { position: absolute; width: 0; height: 0; margin: -11px 0 0 -5px; border-left: 5px solid transparent; border-right: 5px solid transparent; cursor: help; z-index: 3; }
+  .cue.good { border-bottom: 8px solid #e0a01e; } .cue.bad { border-top: 8px solid #c8372d; margin-top: -11px; }
+  .cue.ask { border: 0; width: 7px; height: 7px; margin: -11px 0 0 -3.5px; border-radius: 50%; background: #2f9e8f; }
   #tl { display: flex; background: var(--panel); }
   #gutter { width: 34px; flex: none; position: relative; border-right: 1px solid var(--line); }
   #gutter div { position: absolute; left: 0; width: 100%; display: grid; place-items: center; color: var(--mute); }
@@ -181,7 +184,7 @@ async function pump() {                                  // a few loaders at onc
     const e = epoch, rev = S.rev, f = nextNeeded();
     if (f < 0) break;
     frames.set(f, null);                                 // claimed
-    try { const img = await loadImg(f, false, rev); if (e === epoch && rev === S.rev) { frames.set(f, img); if (f === F && !playing) paint(); drawRuler(); } }
+    try { const img = await loadImg(f, false, rev); if (e === epoch) { frames.set(f, img); if (f === F && !playing) paint(); drawRuler(); } }   // frames go stale only when dropFrames says so: a change to the sound alone keeps them
     catch (err) { if (e === epoch) frames.delete(f); await new Promise(r => setTimeout(r, 300)); }
   }
   pumps--;
@@ -225,12 +228,16 @@ function build() {
   const H = top + 8;
   $('gutter').innerHTML = lanes.map(l => `<div style="top:${y[l[0]] - l[3] / 2}px;height:${l[3]}px" title="${l[2]}">${l[1]}</div>`).join('');
   $('gutter').style.height = H + 'px';
-  track.querySelectorAll('.turn,.cut,.beat,.felt,.say,.note,.rx,.own').forEach(d => d.remove());
+  track.querySelectorAll('.turn,.cut,.beat,.felt,.say,.note,.rx,.own,.cue').forEach(d => d.remove());
   track.style.width = x(S.steps) + PAD + 'px'; track.style.height = H + 'px'; $('head').style.height = H + 'px';
   const all = S.turns.flatMap(t => t.say ? t.say.sylls.map(s => s.semi) : []);
   rollLo = Math.min(-3, ...all) - 2; rollHi = Math.max(9, ...all) + 2;
   if (S.spb * pps >= 18) for (let b = 0; b <= S.steps; b += S.spb) el('beat', { left: x(b) + 'px', top: RULER + 'px', height: H - RULER + 'px' });
   const mark = (d, path, hi, value, color) => { d.dataset.key = JSON.stringify(path); d._m = { path, lo: 0, hi, value, color }; if (selected === d.dataset.key) d.classList.add('sel'); };
+  for (const c of S.music) {                               // where the music marks a turn in the scene: up is good news, down is bad, a dot is undecided
+    const d = el('cue ' + ({ 'turn.good': 'good', 'turn.bad': 'bad' }[c.kind] || 'ask'), { left: x(c.at) + 'px', top: y.own + 'px', opacity: 0.45 + 0.55 * c.strength },
+      `Music: ${{ 'turn.good': 'a surprise, and good news', 'turn.bad': 'a surprise, and bad news', question: 'a surprise, not yet good or bad' }[c.kind] || c.kind} (strength ${num(c.strength)})\n${c.why.split('; ').join('\n')}`);
+  }
   for (const t of S.turns) {
     for (const s of t.stretches) {                         // who owns each stretch of this turn's time
       const kind = s.param ? s.param.split('.')[1] : 'fixed', spk = t.who && S.entities.find(e => e.id === t.who);

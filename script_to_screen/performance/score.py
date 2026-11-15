@@ -10,13 +10,15 @@ how a scene is worked out, and a score can be saved, compared or sent somewhere 
     speech      bubbles in order: who, tone, and every syllable's note           seconds
     events      everything that happened that could make a sound                 seconds
     focus       who holds the scene during a featured reaction                   seconds
+    drama       what happened dramatically: to whom, good or bad, how surprising seconds
+    music       which of those get a cue, and what kind                          seconds
     cast        per entity: its tells as they stand in this scene
     carried     what entities brought in; `carry_out` is what they take away
     grid        the tempo grid and the show's default timings
 
 A score holds nothing about how things look or sound: no colours, sizes, voices or volumes.
 """
-FIELDS = ("id", "title", "tempo", "step", "steps", "dur", "grid", "turns", "pose", "speech", "events", "focus",
+FIELDS = ("id", "title", "tempo", "step", "steps", "dur", "grid", "turns", "pose", "speech", "events", "focus", "drama", "music",
           "cast", "carried", "offscreen", "carry_out", "problems")
 
 

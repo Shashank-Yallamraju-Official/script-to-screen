@@ -191,6 +191,42 @@ to break a word (some·one) or a caret before the syllable that should be strong
 
 A turn can also place a sound by hand: `sfx: [{at: 4, sound: thud}]`.
 
+## Music
+
+Music is scored from what happens, not placed by hand. Two steps run after a scene is worked out:
+
+1. **Drama** names what happened: each feeling that lands, for whom, whether it is good or bad
+   news, how surprising it is, and how prominent the moment is.
+2. **Scoring** gives a cue to the moments that are surprising and prominent enough. Music is
+   sparse: it marks a turn in the scene, not every feeling.
+
+| The moment is | Cue | Sounds like (set in `library/music.yaml`) |
+|---|---|---|
+| A surprise, and bad news | `turn.bad` | A low figure with a tritone that sinks |
+| A surprise, and good news | `turn.good` | A bright rising arpeggio |
+| A surprise, not yet good or bad (someone is surprised) | `question` | Two high held notes, unresolved |
+
+**Surprising to whom?** To the audience, who expect a scene to go on as it is going. A feeling
+is surprising to the degree that it departs from where that character just was and from the
+mood of the room so far. More of the same gets no music.
+
+**Good or bad for whom?** Also the audience. `valence` in `show.yaml` says whether each emotion
+is good or bad for whoever has it, and `sympathy` says whose side the audience is on. It is set
+in a turn, like `side`, and carries between scenes:
+
+    - id: 11
+      who: michael
+      sympathy: {michael: -1}          # from here the audience is against him
+      feel: {michael: {joy: 3}}        # ...so his delight is scored as bad news
+      why: The mask comes off as a laugh.
+
+Other rules: a feeling that does not show gets no music (the audience cannot be surprised by
+what it cannot see); a reaction in passing is too slight alone, but a room reacting together
+is one moment and its strengths add; two cues never crowd each other, the stronger is kept.
+`music: {threshold, apart}` in `show.yaml` sets how strong a moment must be and how far apart
+cues stay. `s2s drama <scene>` explains every event and cue; in the editor, cues are the small
+marks above the top strip, and `feel.music_volume` sets how loud the music is.
+
 ## The audience ledger
 
     s2s ledger
@@ -314,6 +350,7 @@ command takes `--json`; a command that changes something also takes `--dry-run`,
 | See what is true as a turn ends | `s2s state thermostat:2` |
 | Ask why someone looks the way they do | `s2s explain thermostat:2 otis` |
 | List problems | `s2s check` |
+| See what happens dramatically and which moments get music | `s2s drama the-vase` |
 | Export what a scene decided, as JSON | `s2s score thermostat` |
 | Learn the vocabulary: what can be tuned, what can be observed | `s2s params`, `s2s channels` |
 | Ask what could be tuned at a moment, or what a word might mean | `s2s in-play the-vase:2+0`, `s2s params --find bouncy` |

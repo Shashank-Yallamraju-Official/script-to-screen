@@ -14,6 +14,15 @@ scale: [0, 2, 4, 7, 9]      # the notes voices sing in, as semitones above the v
 # The felt states every entity shares. Colours appear only in the director's x-ray view.
 emotions: {fear: "#7b5ea7", anger: "#c8372d", sadness: "#4a6fa5", joy: "#e0a01e", shame: "#d6457a", surprise: "#2f9e8f"}
 
+# Whether each feeling is good or bad for whoever has it: -1 bad, +1 good, 0 neither. Music is
+# scored from this: a feeling that lands as a surprise gets a sinking figure if it is bad and a
+# rising one if it is good. An emotion at 0 (surprise itself) gets an unresolved one.
+valence: {fear: -1, anger: -1, sadness: -1, shame: -1, joy: 1, surprise: 0}
+
+# Music is sparse: only a dramatic event at least this strong gets a cue (strength = how
+# surprising it was x how prominent), and two cues are kept at least `apart` steps from each other.
+music: {threshold: 0.35, apart: 4}
+
 # Position in the room. weight = status on my side / status of everyone who has taken a side.
 # How many tells show = felt intensity x gain, where gain = slope x weight, kept within min..max.
 # At equal weight (0.5) the gain is 1: what is felt is what shows.

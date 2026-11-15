@@ -192,6 +192,7 @@ class Session:
                     title=sc.title, file=str(self.path.relative_to(self.root)), index=self.i, count=len(self.paths),
                     entities=[dict(id=e, color=ent["color"], kind=str(ent.get("kind", ""))) for e, ent in look.cast.items()],
                     emotions=look.emotions, turns=turns, problems=mine,
+                    music=[dict(at=c["t"] / sc.step, kind=c["kind"], strength=c["strength"], why=c["why"]) for c in sc.music],
                     carried=[f"{e} still feels {f[0]} {f[1]}" + (f" about {f[2]}" if f[2] else "") for e, f in sc.carried.items() if e in sc.cast],
                     offscreen=list(sc.offscreen),
                     ledger={e: {emo: {k: c[k] for k in ("seen", "need", "learned", "positions", "hidden")}

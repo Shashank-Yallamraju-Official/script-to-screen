@@ -1,0 +1,11 @@
+# What each kind of music cue sounds like. The engine decides WHEN there is a cue and of what
+# kind (see `s2s drama <scene>`); this file decides what that kind sounds like.
+#   key     the pitch of note 0, in Hz
+#   notes   [steps after the cue, semitones above the key, steps long], so a figure stays on the tempo grid
+#   wave    sine, tri, square or noise;  vol 0 to 1 (also scaled by how strong the cue is)
+key: 220
+attack: 0.03          # seconds a note takes to swell
+ring: 0.35            # how much of its level a note keeps to its end
+turn.bad: {wave: tri, vol: 0.5, notes: [[0, -12, 7], [0, -6, 7], [2, -13, 6]]}            # low, with a tritone: it sinks
+turn.good: {wave: sine, vol: 0.45, notes: [[0, 0, 2], [1, 4, 2], [2, 7, 2], [3, 12, 6]]}   # a rising bright arpeggio
+question: {wave: sine, vol: 0.35, notes: [[0, 14, 9], [0.5, 19, 8]]}                       # two high held notes: unresolved

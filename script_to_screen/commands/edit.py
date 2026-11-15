@@ -13,7 +13,7 @@ from ..script import ScriptError, rehearsing, series
 from . import Refused
 from . import address
 
-TURN_KEYS = ("id", "who", "say", "sing", "tone", "enter", "exit", "side", "status", "do", "feel", "react", "sfx",
+TURN_KEYS = ("id", "who", "say", "sing", "tone", "enter", "exit", "side", "status", "sympathy", "do", "feel", "react", "sfx",
              "rhythm", "melody", "stress", "pause", "hold", "relies_on", "why")
 
 

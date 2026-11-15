@@ -56,6 +56,9 @@ class World:
         for e, v in (ev.get("status") or {}).items():
             self.carry.setdefault(e, {})["status"] = v
             self._note("offscreen.status", e, v)
+        for e, v in (ev.get("sympathy") or {}).items():
+            self.carry.setdefault(e, {})["sympathy"] = v
+            self._note("offscreen.sympathy", e, v)
 
     # ---- in the room -------------------------------------------------------------------------
     def enter(self, e, spec):
@@ -70,7 +73,8 @@ class World:
         got = self.carry.get(e, {})
         self.st[e] = dict(present=True, slot=spec["slot"], orient=spec.get("orient", "out"),
                           attention=spec.get("attention", "ahead"), posture=spec.get("posture", "upright"),
-                          side=None, status=got.get("status", self.ents[e].get("status", 1)), felt=got.get("felt"))
+                          side=None, status=got.get("status", self.ents[e].get("status", 1)), felt=got.get("felt"),
+                          sympathy=got.get("sympathy", self.ents[e].get("sympathy", 1)))
         self._note("enter", e, spec["slot"])
 
     def exit(self, e):
@@ -84,6 +88,14 @@ class World:
     def status(self, e, v):
         self.need(e)["status"] = v
         self._note("status", e, v)
+
+    def sympathy(self, e, v):
+        """Where the audience stands toward e: +1 with them, -1 against them, 0 neither. What is good for
+        someone the audience is against is bad news, and music is scored that way."""
+        if not -1 <= v <= 1:
+            self.flag("error", self.cause, f"sympathy for {e} is {v}; it runs from -1 (against) to 1 (with)")
+        self.need(e)["sympathy"] = v
+        self._note("sympathy", e, v)
 
     def do(self, e, spec):
         """A deliberate action: it sets the baseline that tells are laid over."""
@@ -125,5 +137,5 @@ class World:
         """What every entity takes into the next scene. Those not in this scene pass through untouched."""
         out = dict(self.carry)
         for e, s in self.st.items():
-            out[e] = dict(felt=s["felt"], status=s["status"])
+            out[e] = dict(felt=s["felt"], status=s["status"], sympathy=s["sympathy"])
         return out

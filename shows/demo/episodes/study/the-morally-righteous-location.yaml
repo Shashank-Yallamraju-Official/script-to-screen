@@ -76,6 +76,7 @@ turns:
   - id: 11
     who: michael
     say: Ha. Ha ha. Ha ha ha ha ha!
+    sympathy: {michael: -1}
     feel: {michael: {joy: 3, at: eleanor}, eleanor: calm, tahani: {fear: 2, at: michael}}
     why: The mask comes off as a laugh. He stops pretending and leans back into it, and closes in on her.
     pause: 0

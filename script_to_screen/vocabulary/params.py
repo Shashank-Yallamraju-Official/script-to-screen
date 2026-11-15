@@ -115,6 +115,8 @@ PARAMS = {p.key: p for p in [
       "library/feel.yaml focus_dim", "look", exercised_by=("beat",), words=("spotlight", "fade the others", "attention")),
     _("feel.aside_volume", "Aside volume", "How loud a background reaction's sounds are, next to a featured one.", "level", 0, 1, 0.05,
       "library/feel.yaml aside_volume", "sound", exercised_by=("feel", "look", "turn", "posture"), words=("background reaction", "side-eye volume")),
+    _("feel.music_volume", "Music volume", "How loud the music is: the short figures that mark a turn in the scene. 0 is no music.", "level", 0, 1, 0.05,
+      "library/feel.yaml music_volume", "sound", exercised_by=("cue",), words=("music", "score", "sting", "underscore", "louder music", "quieter music")),
     # ---- a sound: library/sounds.yaml -------------------------------------------------------------------
     _("sound.vol", "Volume", "Volume (0 is off).", "level", 0, 1, 0.01, "library/sounds.yaml <sound>.vol", "sound", words=("louder", "quieter", "mute")),
     _("sound.freq", "Pitch", "Starting pitch in Hz.", "Hz", 40, 2000, 5, "library/sounds.yaml <sound>.freq", "sound", words=("higher", "lower", "thud", "ping")),
