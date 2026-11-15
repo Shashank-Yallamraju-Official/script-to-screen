@@ -33,6 +33,8 @@ this document, and [How the first predictions did](#how-the-first-predictions-di
 | 19 | Music scoring that knows surprising-and-bad from surprising-and-good | The engine must know what happened dramatically, not only what moved |
 | 20 | Track scenes, episodes and seasons so they are easy to compare | The author needs to see the series from above |
 | 21 | Easy for an AI to use, through MCP and a great command line; no AI in the tool itself. Writers iterate with Claude, and Claude uses the tool | The primary operator is an assistant, and the author may never open a file |
+| 22 | MCP is the end state, not the start | The command line is the interface that has to be good now |
+| 23 | I touch the tool only to tweak values and replay; everything else goes through Claude. Two loops; cover both | The tool has two users with different speeds and needs. See [how-it-is-used.md](how-it-is-used.md) |
 
 ## Five patterns
 

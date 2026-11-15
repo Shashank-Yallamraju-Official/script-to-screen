@@ -150,8 +150,8 @@ shows what changed between versions.
 
 ## 12. Every change is a command, and the tool is built to be operated by an assistant
 
-**Decision.** There is one set of typed, validated, undoable commands. The command line and
-the MCP server are both generated from it, so they stay equal, and the editor uses it too.
+**Decision.** There is one set of typed, validated, undoable commands. The command line is
+generated from it, as the MCP server will be (decision 18), and the editor uses it too.
 Every command can be rehearsed with a dry run, can answer in JSON, and never asks a
 question. Each applied change records who asked and in what words.
 
@@ -209,6 +209,50 @@ and overview telling the same story.
 **Costs.** Emotions must declare a valence, and "expected by whom" must be answered; the
 audience ledger is the first answer. A wrong reading of an event is now wrong in three
 places at once, which is also what makes it noticeable.
+
+## 16. The editor is a tuning instrument, not an authoring tool
+
+**Decision.** By hand, the writer nudges values and replays: timings, pitch, stress, motion,
+sound. The editor never changes words, feelings, structure or characters' rules. It shows
+them, read-only, because knowing why something happens helps judge how it feels.
+
+**Instead of** growing the editor until a scene can be written in it.
+
+**Because** the writer's stated use is "only to tweak params and replay scenes to check if
+the tweaks match my feeling". Tuning is perceptual and fast; anything that makes the editor
+heavier slows the one loop the writer runs by hand. Authoring already has a better operator.
+
+**Costs.** Fixing a typo needs the assistant. A pin on the moment is the bridge.
+
+## 17. Every value remembers who set it, and hand-tuned values are protected
+
+**Decision.** A value is derived by the engine, set by the assistant, or tuned by hand, and
+records which. Hand-tuned outranks the others. A command that would discard hand-tuned
+values reports that when rehearsed. A unit can be locked, after which commands refuse to
+change it. The editor follows the files on disk and merges value by value.
+
+**Instead of** treating all values in a file alike, and letting the editor save its own copy
+over the file, which is what the prototype does.
+
+**Because** the two loops alternate on the same scene. Tuning is slow, careful work that
+leaves no trace except numbers; without this, one rewrite by the assistant erases it
+silently. It also lets the assistant list what the writer keeps changing by hand and
+propose a rule, which is how every derived value in this project began.
+
+**Costs.** More bookkeeping per value, and a merge to get right.
+
+## 18. The command line first; MCP is the end state
+
+**Decision.** The assistant's way in is a command line built for it. An MCP server comes
+much later and is generated from the same commands.
+
+**Instead of** building the MCP server first.
+
+**Because** a good command line is enough for an assistant working in a terminal, is usable
+by scripts and people too, and proves the commands before a second interface is built on
+them.
+
+**Costs.** An assistant without a terminal cannot operate the tool until the server exists.
 
 ## Open questions
 

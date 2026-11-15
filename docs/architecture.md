@@ -5,15 +5,17 @@ enough to be a real project (a package, a command, tests, a file-format version)
 rebuilt to this design. The section [From here to there](#from-here-to-there) says exactly
 what exists and in what order the rest should be built.
 
-Read [requirements-history.md](requirements-history.md) first: the design answers the
+Read [how-it-is-used.md](how-it-is-used.md) first: it describes the two loops this design
+has to serve. Then [requirements-history.md](requirements-history.md): the design answers the
 patterns and predictions in it, and was revised once already when four new requirements
 arrived (title screens, music scoring, series tracking, and AI as the main way of working).
 
 ## The idea in one paragraph
 
 The tool contains no AI. A writer talks to an assistant such as Claude, and the assistant
-operates the tool through its command line or its MCP server, both built to be easy for an
-assistant to use. Either way, what it sends are **commands**, the only way anything changes. Commands edit the **script**, which is what the author means. From the
+operates the tool through its command line (and, much later, an MCP server offering the same
+commands). The writer's own hands touch the tool for one thing: nudging a value and replaying
+to see if it feels right. Either way, what it sends are **commands**, the only way anything changes. Commands edit the **script**, which is what the author means. From the
 script the engine computes the **world** (everything true at each moment), then the
 **performance** (everything that could be seen or heard, as tracks on a timeline), then the
 **presentation** (pixels and sound). Readers such as the checks, the audience ledger and the
@@ -72,11 +74,12 @@ There are three ways in, and they are equals in what they can do:
 | Way in | Used by | For |
 |---|---|---|
 | **The command line**, `toon ...` | An assistant working in a terminal; scripts; a person | Everything |
-| **The MCP server**, `toon mcp` | An assistant connected over MCP | Everything, plus reading the show as resources |
-| **The editor** | A person, by hand | Timing, pitch, sliders; watching an assistant's changes arrive |
+| **The editor** | The writer, by hand | Tuning only: nudge a value, replay, compare. It never changes words, feelings or structure |
+| **The MCP server**, `toon mcp` (later) | An assistant that is not at a terminal | The same commands, plus reading the show as resources |
 
-The command line and the MCP server are generated from the same list of commands, so neither
-can do something the other cannot, and neither can fall behind.
+The command line comes first and is enough on its own. The MCP server is the end state: when
+it is built it is generated from the same list of commands, so it cannot do something the
+command line cannot, or fall behind it.
 
 **What makes the command line good for an assistant.** An assistant uses a command line the
 way a careful stranger would: it reads the help, runs something, and reads what comes back.
@@ -98,7 +101,8 @@ can produce a file that parses and means nothing. An assistant that calls `add_r
 word, feeling)` cannot misspell a key, and gets back a precise refusal if the word is not in
 the line. The files stay readable and hand-editable (decision 11), but nobody has to.
 
-**What the MCP server exposes.** MCP has three kinds of thing, and each has a job here:
+**What the MCP server will expose, when it is built.** MCP has three kinds of thing, and each
+has a job here:
 
 | Kind | Contents | Why |
 |---|---|---|
@@ -333,7 +337,7 @@ The target:
 ```
 toon/commands/        every operation on a show; validation, dry runs, undo, provenance
 toon/cli/             the command line, generated from the commands
-toon/mcp/             the MCP server, generated from the same commands
+toon/mcp/             (later) the MCP server, generated from the same commands
 toon/script/          schemas, manifests, loading, migrations
 toon/world/           events, replay, state queries
 toon/perform/         the score, the registries, derivation steps (one file each)
@@ -350,18 +354,20 @@ Each step leaves the tests passing and the demo show rendering the same.
 | Step | What changes | Why this order |
 |---|---|---|
 | 0. Done | Package, `toon` command, show separated from engine, schema number, tests, CI | A base that can be changed without fear |
-| 1 | **Commands, the command line and the MCP server**, over the prototype as it is: read the show, apply typed changes, rehearse, check, explain, render stills | An assistant is how the tool is used, and today it edits files by hand. This pays back at once and needs no other step |
-| 2 | **Manifests, identities and the series index** | Tracking and comparing are wanted now; title cards need segments; stable IDs get harder to add later |
-| 3 | **The score.** The model writes tracks; drawing and audio read only tracks | The contract everything else depends on |
-| 4 | **Skins and cards.** The token becomes one skin; the title card is the first card | Presentation changes most; the title screen proves the seam |
-| 5 | **Derivation steps**, with provenance; then **Drama** and **Scoring** | Opens the door to music, appraisal and masking |
-| 6 | **Registries**; the editor generated from them | Removes the per-feature editor work |
-| 7 | **The world as an event log**, with caching | Before a series gets long, and before facts |
-| 8 | **Schemas and migrations** for every file type | Before a second show or a second author exists |
+| 1 | **Commands and the command line**, over the prototype as it is: read the show, change it with typed commands, rehearse, check, explain, stills and contact sheets, short addresses. Every value records who set it | The writing loop. Today the assistant edits files by hand, which is the main way work can go wrong |
+| 2 | **The tuning loop, made safe and fast.** The editor follows the files and never overwrites them; undo for everything; replay at once after any change; loop a chosen stretch; before and after; pins; locking | The writer's only direct contact with the tool. Two of its gaps can lose work today |
+| 3 | **Manifests, identities and the series index** | Tracking and comparing; title cards need segments; stable identities get harder to add later |
+| 4 | **The score.** The model writes tracks; drawing and audio read only tracks | The contract everything else depends on |
+| 5 | **Skins and cards.** The token becomes one skin; the title card is the first card | Presentation changes most; the title screen proves the seam |
+| 6 | **Derivation steps**, with provenance; then **Drama** and **Scoring** | Opens the door to music, appraisal and masking |
+| 7 | **Registries.** Every tunable value reachable in the editor, with its scope shown and promotable | Finishes the tuning loop and removes the per-feature editor work |
+| 8 | **The world as an event log**, with caching | Before a series gets long, and before facts |
+| 9 | **Schemas and migrations** for every file type | Before a second show or a second author exists |
+| Later | **The MCP server**, generated from the commands | The end state. Nothing above waits for it, and by then the commands are proven |
 
-Steps 1 and 2 changed places with the rest when AI-first working and series tracking became
-requirements: they are the two things the author touches directly, and neither has to wait
-for the internals.
+Steps 1 and 2 come first because they are the two loops in
+[how-it-is-used.md](how-it-is-used.md): the assistant's way in and the writer's. Neither has
+to wait for the internals to be rebuilt.
 
 ## How the asks land
 
