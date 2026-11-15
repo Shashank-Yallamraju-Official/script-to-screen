@@ -1,6 +1,6 @@
 """The audience ledger: what a viewer has had the chance to learn, scene by scene.
 
-    toon ledger [show folder]
+    s2s ledger [show folder]
 
 A viewer only sees outputs. One sighting of a tell is ambiguous, so a tell counts as learned
 after it has shown in `learn_after` separate scenes. Rules checked here:

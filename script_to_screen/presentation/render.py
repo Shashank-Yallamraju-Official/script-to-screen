@@ -1,9 +1,9 @@
 """Render a scene to video.
 
-    toon render shows/demo/episodes/s01/e01/01-the-last-dumpling.yaml
-    toon render --show shows/demo --episode s01/e01
-    toon render --show shows/demo --all
-    toon render <scene> --still 2:6          # turn 2, six steps in, as a PNG
+    s2s render shows/demo/episodes/s01/e01/01-the-last-dumpling.yaml
+    s2s render --show shows/demo --episode s01/e01
+    s2s render --show shows/demo --all
+    s2s render <scene> --still 2:6          # turn 2, six steps in, as a PNG
     --xray shows the director's view (felt against shown, weight in the room); --slate adds turn and step
 
 A scene with errors (a turn with no `why`, a feeling with no tell, a payoff the audience

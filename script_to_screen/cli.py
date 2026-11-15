@@ -1,9 +1,9 @@
-"""The `toon` command.
+"""The `s2s` command.
 
-    toon edit <scene>        open the editor on a scene
-    toon render <scene>      render a scene (or --episode, --all) to video
-    toon ledger [show]       what the audience has had the chance to learn
-    toon parity record|check <scene>    has this scene's score, picture or sound changed?
+    s2s edit <scene>        open the editor on a scene
+    s2s render <scene>      render a scene (or --episode, --all) to video
+    s2s ledger [show]       what the audience has had the chance to learn
+    s2s parity record|check <scene>    has this scene's score, picture or sound changed?
 """
 import sys
 
@@ -17,7 +17,7 @@ def main():
         print(__doc__.strip())
         sys.exit(0 if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help") else 2)
     name = sys.argv.pop(1)
-    sys.argv[0] = f"toon {name}"
+    sys.argv[0] = f"s2s {name}"
     commands[name]()
 
 

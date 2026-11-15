@@ -73,9 +73,9 @@ There are three ways in, and they are equals in what they can do:
 
 | Way in | Used by | For |
 |---|---|---|
-| **The command line**, `toon ...` | An assistant working in a terminal; scripts; a person | Everything |
+| **The command line**, `s2s ...` | An assistant working in a terminal; scripts; a person | Everything |
 | **The editor** | The writer, by hand | Tuning only: nudge a value, replay, compare. It never changes words, feelings or structure |
-| **The MCP server**, `toon mcp` (later) | An assistant that is not at a terminal | The same commands, plus reading the show as resources |
+| **The MCP server**, `s2s mcp` (later) | An assistant that is not at a terminal | The same commands, plus reading the show as resources |
 
 The command line comes first and is enough on its own. The MCP server is the end state: when
 it is built it is generated from the same list of commands, so it cannot do something the
@@ -87,7 +87,7 @@ So:
 
 | Property | Meaning |
 |---|---|
-| It describes itself | `toon help`, `toon help <command>` and `toon commands --json` list every command, its arguments and an example. Nothing has to be known in advance |
+| It describes itself | `s2s help`, `s2s help <command>` and `s2s commands --json` list every command, its arguments and an example. Nothing has to be known in advance |
 | Every command can answer in JSON | `--json` gives the same result a person sees, as data |
 | It never asks a question | No prompts and no confirmations. A command runs or refuses |
 | It can be rehearsed | `--dry-run` reports exactly what would change and what would then be wrong, and changes nothing |
@@ -326,7 +326,7 @@ rendering choice.
 Today:
 
 ```
-toon/                 the engine (prototype modules: model, speech, draw, render, ledger, editor)
+script_to_screen/                 the engine (prototype modules: model, speech, draw, render, ledger, editor)
 shows/demo/           a show: show.yaml, library/, entities/, episodes/<season>/<episode>/<scene>.yaml
 tests/                34 tests of behaviour, each named for the rule it protects
 docs/                 this design
@@ -335,15 +335,15 @@ docs/                 this design
 The target:
 
 ```
-toon/commands/        every operation on a show; validation, dry runs, undo, provenance
-toon/cli/             the command line, generated from the commands
-toon/mcp/             (later) the MCP server, generated from the same commands
-toon/script/          schemas, manifests, loading, migrations
-toon/world/           events, replay, state queries
-toon/perform/         the score, the registries, derivation steps (one file each)
-toon/present/         skins, stages, cards, voices, instruments, camera, the renderers
-toon/readers/         checks, the ledger, the series index
-toon/editor/          the server and the page
+script_to_screen/commands/        every operation on a show; validation, dry runs, undo, provenance
+script_to_screen/cli/             the command line, generated from the commands
+script_to_screen/mcp/             (later) the MCP server, generated from the same commands
+script_to_screen/script/          schemas, manifests, loading, migrations
+script_to_screen/world/           events, replay, state queries
+script_to_screen/perform/         the score, the registries, derivation steps (one file each)
+script_to_screen/present/         skins, stages, cards, voices, instruments, camera, the renderers
+script_to_screen/readers/         checks, the ledger, the series index
+script_to_screen/editor/          the server and the page
 shows/<name>/         a show is data and can live in its own repository
 ```
 
@@ -353,7 +353,7 @@ Each step leaves the tests passing and the demo show rendering the same.
 
 | Step | What changes | Why this order |
 |---|---|---|
-| 0. Done | Package, `toon` command, show separated from engine, schema number, tests, CI | A base that can be changed without fear |
+| 0. Done | Package, `s2s` command, show separated from engine, schema number, tests, CI | A base that can be changed without fear |
 | 1 | **Commands and the command line**, over the prototype as it is: read the show, change it with typed commands, rehearse, check, explain, stills and contact sheets, short addresses. Every value records who set it | The writing loop. Today the assistant edits files by hand, which is the main way work can go wrong |
 | 2 | **The tuning loop, made safe and fast.** The editor follows the files and never overwrites them; undo for everything; replay at once after any change; loop a chosen stretch; before and after; pins; locking | The writer's only direct contact with the tool. Two of its gaps can lose work today |
 | 3 | **Manifests, identities and the series index** | Tracking and comparing; title cards need segments; stable identities get harder to add later |

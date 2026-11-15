@@ -2,13 +2,13 @@
 
 The restructure and the nudging loop are built in phases. **Every phase ends the same way:**
 the reference scene (`shows/demo/episodes/study/the-reveal.yaml`, the staging study of a
-scene from The Good Place) is rendered and compared with `toon parity check`. Unless a
+scene from The Good Place) is rendered and compared with `s2s parity check`. Unless a
 phase says it means to change the scene, its score, picture and sound must be identical to
 the phase before. A phase that does mean to change it re-records the reference and says why.
 
 | # | Phase | Reference scene must be | Status |
 |---|---|---|---|
-| 0 | **Parity gate.** `toon parity record|check`; references for every demo scene | Recorded | Done (`phase-0`) |
+| 0 | **Parity gate.** `s2s parity record|check`; references for every demo scene | Recorded | Done (`phase-0`) |
 | 1 | **Four layers.** `script`, `world`, `performance`, `presentation` as packages that only import downward, enforced by a test. The world changes only through its methods and logs every change with its cause | Identical | Done (`phase-1`), byte-identical video |
 | 2 | **Commands and the command line.** Read, change, rehearse, check, explain, still; JSON out; addresses | Identical | |
 | 3 | **Identities and manifests.** Seasons, episodes and segments with IDs; an episode is an ordered list; schema 2 with a migration | Identical | |

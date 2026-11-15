@@ -1,8 +1,8 @@
 import pytest
 
-from toon.performance import Scene
-from toon.presentation.motion import pose
-from toon.script import ScriptError
+from script_to_screen.performance import Scene
+from script_to_screen.presentation.motion import pose
+from script_to_screen.script import ScriptError
 
 ENTER = dict(id=1, enter={"a": {"slot": 2}, "b": {"slot": 5}}, why="They are here.")
 

@@ -141,7 +141,7 @@ cover every parameter; the last two are shortcuts.
 
 ### 4.1 The parameter registry
 
-One declaration per parameter, in `toon/params.py`. The editor, the commands and the checks
+One declaration per parameter, in `script_to_screen/params.py`. The editor, the commands and the checks
 are driven by it (decision 5).
 
 ```python
@@ -250,7 +250,7 @@ A syllable-level tune is only meaningful for the words it was tuned against.
 | Differs | **Not applied.** Reported as orphaned, kept in the file | Applied, flagged *tuned against earlier wording* |
 
 Orphans are a warning in the checks, visible in the editor as a mark on the turn, and
-listed by `toon tune list --orphans`. The assistant's line-changing command reports
+listed by `s2s tune list --orphans`. The assistant's line-changing command reports
 "discards 4 hand-tuned values" when rehearsed, which is rule 2 of
 [how-it-is-used.md](how-it-is-used.md). First version: no attempt to carry tunes across to
 the matching syllables of the new wording; that is a later refinement.
@@ -275,11 +275,11 @@ line, so "the pause before turn 2 in the thermostat scene" is one string in both
 Three, shared by the editor and the command line (decision 12).
 
 ```
-toon tune set   <address> <value> [--scope S] [--dry-run] [--json]
-toon tune reset <address>         [--scope S]
-toon tune widen <address>         [--to S]
-toon tune list  [<scene>] [--orphans] [--json]     # every hand-set value beside what it replaced
-toon tune undo | redo
+s2s tune set   <address> <value> [--scope S] [--dry-run] [--json]
+s2s tune reset <address>         [--scope S]
+s2s tune widen <address>         [--to S]
+s2s tune list  [<scene>] [--orphans] [--json]     # every hand-set value beside what it replaced
+s2s tune undo | redo
 ```
 
 Each returns the same shape:
@@ -300,9 +300,9 @@ removes the copy.
   in memory. On release it sends one `set`. Ctrl+Z undoes a gesture, not a keystroke.
 - **Every command writes the file at once**, by writing a temporary file and renaming it.
   There is no Save and no unsaved state.
-- **Undo is a journal** at `<show>/.toon/journal.jsonl`: one line per command with its
+- **Undo is a journal** at `<show>/.s2s/journal.jsonl`: one line per command with its
   address, before and after. It survives closing the editor, covers sliders (which the
-  prototype could not undo), and is what `toon tune undo` reads. Not committed to git.
+  prototype could not undo), and is what `s2s tune undo` reads. Not committed to git.
 - **The editor follows the files.** The server checks modification times four times a
   second. If a file changed underneath it, it rebuilds and the page refreshes its state.
   Because the editor holds nothing unsaved, there is nothing to merge: the only conflict
@@ -471,15 +471,15 @@ The editor's server becomes a thin layer over the commands.
 
 | File | Change |
 |---|---|
-| `toon/params.py` (new) | The registry, `resolve`, address parsing |
-| `toon/tune.py` (new) | The three commands, the journal, atomic writes, anchors and orphans |
-| `toon/speech.py` | `breath` separate from `length`; accepts sparse per-syllable values |
-| `toon/model.py` | Reads values through `resolve`; emits `stretches`; accepts carry-over from a cache |
-| `toon/draw.py` | Returns a hit map |
-| `toon/editor.py` | Becomes the server of section 6; holds two builds and no file copy; watches files |
-| `toon/editor.html` | Ownership strip, knob, scope chip, in-play row, A/B; slider panel removed |
-| `toon/cli.py` | `toon tune ...` |
-| `toon/ledger.py` | No change; no longer called on a nudge |
+| `script_to_screen/params.py` (new) | The registry, `resolve`, address parsing |
+| `script_to_screen/tune.py` (new) | The three commands, the journal, atomic writes, anchors and orphans |
+| `script_to_screen/speech.py` | `breath` separate from `length`; accepts sparse per-syllable values |
+| `script_to_screen/model.py` | Reads values through `resolve`; emits `stretches`; accepts carry-over from a cache |
+| `script_to_screen/draw.py` | Returns a hit map |
+| `script_to_screen/editor.py` | Becomes the server of section 6; holds two builds and no file copy; watches files |
+| `script_to_screen/editor.html` | Ownership strip, knob, scope chip, in-play row, A/B; slider panel removed |
+| `script_to_screen/cli.py` | `s2s tune ...` |
+| `script_to_screen/ledger.py` | No change; no longer called on a nudge |
 
 ## 8. Migration
 
@@ -503,7 +503,7 @@ Schema 1 to 2, with a script (decision 8):
 | Undo is exact, including after restart | File bytes equal after set then undo, with the process restarted between |
 | Undo refuses when the value moved underneath | Outside edit between set and undo |
 | The loop is fast | `tune set` on the benchmark scene: median under 40 ms, worst under 100 ms, in CI with a generous multiplier |
-| The picture is honest | A frame from the editor's B build equals the same frame from `toon render` |
+| The picture is honest | A frame from the editor's B build equals the same frame from `s2s render` |
 
 ## 10. Build order
 
@@ -512,7 +512,7 @@ Each slice is usable on its own and ends with something the writer can feel.
 | # | Slice | Done when |
 |---|---|---|
 | 1 | **Fast and safe.** Take the ledger and earlier scenes off the nudge path. Autosave by command, journal undo, follow the files | A nudge is under 40 ms. Editing the file in another window while the editor is open loses nothing. Sliders undo |
-| 2 | **Registry and cascade.** `params.py`, `resolve`, `tune:` blocks, the three commands, addresses, schema 2 | `toon tune set s01/e01/03#2.hold 9 --dry-run --json` works; every value in 4.1 is settable |
+| 2 | **Registry and cascade.** `params.py`, `resolve`, `tune:` blocks, the three commands, addresses, schema 2 | `s2s tune set s01/e01/03#2.hold 9 --dry-run --json` works; every value in 4.1 is settable |
 | 3 | **Ownership.** Breath as its own value, stretches, the strip, the knob and scope chip | The worked example in section 1 can be done up to step 3 without touching the piano roll |
 | 4 | **Audition and compare.** Spans, auto-replay, loop, A/B | Steps 3 and 4 of the worked example |
 | 5 | **In play, widen, anchors.** The candidate row, W with its count, orphans | Steps 5 and 6. "How he turns is wrong" finds flip, ease and overshoot |
@@ -529,5 +529,5 @@ of the architecture, done for the tuning commands first.
 | **Keep pins?** A mark on a moment with a few words, for the assistant | Yes, minimal: P, one line of text, stored in the scene's `pins:` list. It is the only non-number the editor writes | It is the one place the editor accepts typing, which cuts against "only to tweak params" |
 | **Default scope of a nudge** | Narrowest, always; widening is deliberate | The alternative, "remember my last scope", saves keystrokes and risks silent show-wide changes |
 | **Motion per entity** | Not yet; show-wide only, with the cascade ready for it | Per-character motion is characterisation, which may belong to tells and the writing loop |
-| **Should widening look for a pattern?** "You shortened 9 of 11 breaths after accusations" | Leave to the assistant, reading `toon tune list` | It is inference, and the tool holds no AI (decision 13) |
+| **Should widening look for a pattern?** "You shortened 9 of 11 breaths after accusations" | Leave to the assistant, reading `s2s tune list` | It is inference, and the tool holds no AI (decision 13) |
 | **Carrying tunes across a reworded line** | Later, by matching unchanged syllables | Needs real cases to see what the writer expects |

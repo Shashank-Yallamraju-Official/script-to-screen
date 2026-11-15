@@ -1,6 +1,6 @@
 """The editor: scrub, play, drag timings, set every syllable's note, tune the small details.
 
-    toon edit shows/demo/episodes/s01/e01/01-the-last-dumpling.yaml
+    s2s edit shows/demo/episodes/s01/e01/01-the-last-dumpling.yaml
 
 Runs a small server on this machine only and opens the editor in your browser. Edits live in
 memory until you save; saving rewrites only the changed values and keeps comments and layout.
@@ -249,7 +249,7 @@ def make_handler(sess):
                         if sess.dirty:
                             return self.send(dict(error="Save first, then render."), status=409)
                         path, root = str(sess.path), sess.root
-                    run = subprocess.run([sys.executable, "-m", "toon.render", path], cwd=root, capture_output=True, text=True)
+                    run = subprocess.run([sys.executable, "-m", "script_to_screen.render", path], cwd=root, capture_output=True, text=True)
                     if run.returncode:
                         lines = [ln for ln in run.stderr.splitlines() if "Fontconfig" not in ln]
                         return self.send(dict(error="\n".join(lines[-6:])), status=500)

@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "toon"
+name = "script-to-screen"
 version = "0.1.0"
 description = "A turn-based animation engine: scenes are data, and every detail has a reason."
 readme = "README.md"
@@ -14,13 +14,14 @@ dependencies = ["skia-python", "pyyaml", "ruamel.yaml", "numpy"]
 dev = ["pytest"]
 
 [project.scripts]
-toon = "toon.cli:main"
+s2s = "script_to_screen.cli:main"
+script-to-screen = "script_to_screen.cli:main"
 
 [tool.setuptools]
-packages = ["toon", "toon.script", "toon.world", "toon.performance", "toon.presentation", "toon.readers", "toon.tools"]
+packages = ["script_to_screen", "script_to_screen.script", "script_to_screen.world", "script_to_screen.performance", "script_to_screen.presentation", "script_to_screen.readers", "script_to_screen.tools"]
 
 [tool.setuptools.package-data]
-"toon.tools" = ["editor.html"]
+"script_to_screen.tools" = ["editor.html"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

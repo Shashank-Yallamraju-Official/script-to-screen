@@ -3,8 +3,8 @@ import wave
 
 import numpy as np
 
-from toon.performance import Scene, speech
-from toon.presentation import sound
+from script_to_screen.performance import Scene, speech
+from script_to_screen.presentation import sound
 
 TONE, SCALE = dict(rate=2, contour="rise", range=3), [0, 2, 4, 7, 9]
 

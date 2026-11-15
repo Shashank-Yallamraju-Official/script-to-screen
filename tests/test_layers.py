@@ -2,7 +2,7 @@
 import ast
 from pathlib import Path
 
-TOON = Path(__file__).resolve().parents[1] / "toon"
+TOON = Path(__file__).resolve().parents[1] / "script_to_screen"
 MAY_USE = {                                   # a layer may import these, and nothing else of ours
     "script": set(),
     "world": {"script"},
@@ -22,7 +22,7 @@ def uses(py, layer):
             if node.level > depth:                               # reaches out of its own layer
                 names = [node.module.split(".")[0]] if node.module else [a.name for a in node.names]
                 out.update(names)
-        elif isinstance(node, ast.ImportFrom) and (node.module or "").startswith("toon."):
+        elif isinstance(node, ast.ImportFrom) and (node.module or "").startswith("script_to_screen."):
             out.add(node.module.split(".")[1])
     return out - {layer}
 
@@ -42,7 +42,7 @@ def test_the_story_layers_cannot_draw_or_make_sound():
 
 
 def test_the_world_keeps_a_log_of_every_change_and_its_cause(show):
-    from toon.performance import Scene
+    from script_to_screen.performance import Scene
     sc = Scene(show.scene("one", [dict(id=1, enter={"a": {"slot": 2}, "b": {"slot": 6}}, why="They arrive."),
                                   dict(id=2, who="a", say="You.", feel={"b": {"shame": 2}}, why="She accuses.")]))
     log = sc.world.log

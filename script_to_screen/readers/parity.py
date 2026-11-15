@@ -2,8 +2,8 @@
 compares against them later. Used as the gate on every restructuring phase: the reference
 scene must come out identical unless the phase meant to change it.
 
-    toon parity record <scene>      write <show>/reference/<scene name>.json
-    toon parity check  <scene>      compare; exit 1 on any difference
+    s2s parity record <scene>      write <show>/reference/<scene name>.json
+    s2s parity check  <scene>      compare; exit 1 on any difference
 
 The score digest is exact on any machine. Picture and sound digests depend on the fonts and
 maths library installed, so they are only meaningful on the machine that recorded them.

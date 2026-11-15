@@ -115,7 +115,7 @@ update must never quietly change what an old scene means.
 
 ## 9. The engine and a show are separate
 
-**Decision.** `toon/` is the engine. `shows/<name>/` is a show, and can move to its own
+**Decision.** `script_to_screen/` is the engine. `shows/<name>/` is a show, and can move to its own
 repository. Tests build their own throwaway show.
 
 **Instead of** show files at the top of the engine's repository, as in the prototype.

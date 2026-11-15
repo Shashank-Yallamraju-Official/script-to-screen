@@ -1,22 +1,24 @@
-# toon
+# script-to-screen
+
+A script goes in; a rendered episode comes out. The command is `s2s` (or `script-to-screen`).
 
 A turn-based animation engine. The frame starts empty. Something appears on screen only
 because the script says so, and every turn has to say why.
 
     pip install -e ".[dev]"        # plus ffmpeg on the PATH, for rendering
-    toon edit shows/demo/episodes/s01/e01/01-the-last-dumpling.yaml
-    toon render --show shows/demo --episode s01/e01
-    toon ledger shows/demo
-    toon parity check shows/demo/episodes/study/the-reveal.yaml
+    s2s edit shows/demo/episodes/s01/e01/01-the-last-dumpling.yaml
+    s2s render --show shows/demo --episode s01/e01
+    s2s ledger shows/demo
+    s2s parity check shows/demo/episodes/study/the-reveal.yaml
     pytest
 
 | | |
 |---|---|
-| `toon/script/` | Layer 1: reads a show's files |
-| `toon/world/` | Layer 2: what is true, and a log of every change and its cause |
-| `toon/performance/` | Layer 3: the scene played out on the tempo grid (the score) |
-| `toon/presentation/` | Layer 4: how the score looks and sounds |
-| `toon/readers/`, `toon/tools/` | The audience ledger and parity check; the editor |
+| `script_to_screen/script/` | Layer 1: reads a show's files |
+| `script_to_screen/world/` | Layer 2: what is true, and a log of every change and its cause |
+| `script_to_screen/performance/` | Layer 3: the scene played out on the tempo grid (the score) |
+| `script_to_screen/presentation/` | Layer 4: how the score looks and sounds |
+| `script_to_screen/readers/`, `script_to_screen/tools/` | The audience ledger and parity check; the editor |
 | `shows/demo/` | A small show used for development: one episode of three scenes, plus a staging study |
 | `tests/` | What the engine promises, as tests |
 | [docs/how-it-is-used.md](docs/how-it-is-used.md) | The two loops the tool serves: writing through an assistant, tuning by hand |
@@ -171,7 +173,7 @@ A turn can also place a sound by hand: `sfx: [{at: 4, sound: thud}]`.
 
 ## The audience ledger
 
-    toon ledger shows/demo
+    s2s ledger shows/demo
 
 A viewer sees only the outputs, and one sighting of a tell is ambiguous. The ledger walks
 every scene in order and counts, per entity and emotion, how many scenes have shown that
@@ -185,7 +187,7 @@ A changed tell (an arc step) starts its count again.
 
 ## The editor
 
-    toon edit shows/demo/episodes/s01/e01/01-the-last-dumpling.yaml
+    s2s edit shows/demo/episodes/s01/e01/01-the-last-dumpling.yaml
 
 | Do this | To |
 |---|---|
@@ -208,10 +210,10 @@ carried in and what happened off-screen. Saving rewrites only the values you cha
 
 ## Render
 
-    toon render shows/demo/episodes/s01/e01/01-the-last-dumpling.yaml
-    toon render --show shows/demo --episode s01/e01      # every scene in the episode, joined
-    toon render --show shows/demo --all
-    toon render <scene> --still 2:6                      # turn 2, six steps in, as a PNG
+    s2s render shows/demo/episodes/s01/e01/01-the-last-dumpling.yaml
+    s2s render --show shows/demo --episode s01/e01      # every scene in the episode, joined
+    s2s render --show shows/demo --all
+    s2s render <scene> --still 2:6                      # turn 2, six steps in, as a PNG
 
 Add `--xray` for the director's view or `--slate` for a turn and step label. A scene with
 errors does not render: a turn with no `why`, a feeling with no tell, a rhythm or melody
