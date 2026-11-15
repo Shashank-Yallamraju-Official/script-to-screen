@@ -244,3 +244,38 @@ def test_how_much_replays_around_a_nudge_is_a_show_setting(talk):
     f = talk.root / "show.yaml"
     f.write_text(f.read_text() + "\neditor: {lead_in: 12, lead_out: 4}\n")
     assert talk.poll()["changed"] and talk.state()["lead"] == [12, 4]
+
+
+# ---- in play: from a moment to the values at work in it ---------------------------------------------
+def test_where_someone_turns_the_values_that_shape_a_turn_come_first_after_the_owner():
+    from script_to_screen.readers.inplay import in_play
+    sc = Scene(series(DEMO).by_id["the-vase"]["path"]).score
+    at = next(t / sc.step for t, name, e, _ in sc.events if name == "turn")
+    found = in_play(sc, at)
+    assert [c["address"] for c in found[:3]] == ["the-vase:2.pause", "feel.ease", "feel.flip"]
+    assert all(c["why"].endswith("turns") for c in found[1:3])
+    assert "sounds.turn.vol" in [c["address"] for c in found]
+    assert len({c["address"] for c in found}) == len(found)                 # nothing twice
+
+
+def test_mid_line_the_syllable_then_the_tone_then_the_speaker_then_the_voice():
+    from script_to_screen.readers.inplay import in_play
+    sc = Scene(series(DEMO).by_id["the-vase"]["path"]).score
+    t = sc.turns[2]
+    found = [c["address"] for c in in_play(sc, t["start"] + t["say_at"] + 0.5)]
+    order = [found.index(a) for a in ("the-vase:3.s1.length", "the-vase:3.s1.pitch", f"~{t['line']['tone']}.rate", "@otis.voice", "feel.voice_ring")]
+    assert order == sorted(order)
+
+
+def test_every_candidate_can_be_put_on_the_knob_and_has_a_moment_to_replay(talk):
+    for f in range(0, talk.stage.total, 20):
+        for c in talk.in_play(f):
+            v = talk.value(c["address"])
+            assert v["value"] == c["value"] and c["span"][0] < c["span"][1] <= talk.scene.steps, c["address"]
+
+
+def test_a_turn_says_how_many_of_its_tunes_were_orphaned_by_a_rewording(talk):
+    talk.nudge("s01/e01/01:2.s2.breath", "set", 0.5)
+    assert talk.state()["turns"][1]["orphans"] == 0
+    talk.path.write_text(talk.path.read_text().replace("say: I saw. You took it.", "say: I saw you take it."))
+    assert talk.poll()["changed"] and talk.state()["turns"][1]["orphans"] == 1

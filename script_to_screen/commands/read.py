@@ -2,7 +2,7 @@
 import json
 
 from ..performance import Scene
-from ..readers import ledger, parity
+from ..readers import inplay, ledger, parity
 from ..script import ScriptError, Show, series
 from ..vocabulary import CHANNELS, PARAMS, params
 from . import A, COMMANDS, FAILED, Refused, address, command, describe, edit
@@ -177,6 +177,16 @@ def channels_(a):
         text += [f"{c['key']:10} {c['meaning']}"] + ([f"{'':10}   a tell may set: {', '.join(c['tell'])}"] if c["tell"] else []) + \
                 ([f"{'':10}   an action may set: {', '.join(c['do'])}"] if c["do"] else [])
     return dict(channels=cs, text="\n".join(text))
+
+
+@command("in-play", "The tunable values at work at one moment, most likely first. Turns \"something about that moment feels off\" into candidates.",
+         [A("moment", "scene:turn, or scene:turn+steps for a moment inside the turn")], "s2s in-play the-vase:2+0")
+def in_play_(a):
+    root, path, tid, steps = address.turn(a.moment, a.show)
+    sc, t = built(root, path, tid)
+    rows = inplay.in_play(sc.score, t["start"] + steps)
+    text = [f"{c['address']:30} {c['label']:14} {c['why']}" for c in rows]
+    return dict(moment=address.of(root, path, t["id"]) + f"+{steps:g}", values=rows, text="\n".join(text))
 
 
 @command("check", "Every problem in the show, or in one scene. Exit code 3 if there are errors.",

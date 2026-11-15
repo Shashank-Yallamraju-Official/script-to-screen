@@ -408,8 +408,12 @@ def tune(a):
         reset_in(docs[t.file], t) if t.file in docs else None
         set_in(cfg if to == "show" else docs[wide.file], wide, value)
     if t.name == "breath":                               # every breath after that kind of pause, unless it has its own
-        affects = sum(1 for p in scene_paths(t.root) for turn in scene_of(p).turns for k, s in enumerate(turn["sylls"], 1)
-                      if s["mark"] == wide.where["mark"] and s["rest"] != value and not (p == t.file and str(turn["id"]) == str(t.where["turn"]) and k == t.n))
+        affects, carry = 0, {}
+        for p in scene_paths(t.root):                    # each scene is worked out once, handing on to the next
+            sc = Scene(p, carry=carry)
+            carry = sc.carry_out
+            affects += sum(1 for turn in sc.turns for k, s in enumerate(turn["sylls"], 1) if s["mark"] == wide.where["mark"] and s["rest"] != value
+                           and not (p == t.file and str(turn["id"]) == str(t.where["turn"]) and k == t.n))
     else:
         affects = turns_affected(wide, both)
     group = f"widen-{len(edit.entries(t.root)) + 1}"

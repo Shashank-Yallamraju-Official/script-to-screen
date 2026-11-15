@@ -132,7 +132,7 @@ project's oldest habit, hand-set values becoming derived ones, turned into a rou
 | Before and after | Yes. B flips between the scene as it was when the value was picked and the scene now |
 | Undo anything | Yes. Timings, notes and sliders, across restarts |
 | The real thing | Yes. The editor draws with the renderer and plays the same sound |
-| Every tunable value reachable | By command, yes: all 32 declared parameters. In the editor: everything that owns time through the knob, plus notes, stress, motion and sounds. A tone's or an entity's settings reach the knob in slice N5 |
+| Every tunable value reachable | Yes. By command, all 32 declared parameters. In the editor, the knob reaches whatever is in play at the playhead: time, notes, stress, motion, sounds, tones and entities |
 | Scope is visible | Yes. The knob shows one mark per scope and which one the value comes from; widening is a deliberate key and says what it now covers |
 | A pin | No |
 | **Where they meet** | |

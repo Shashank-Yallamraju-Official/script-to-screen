@@ -515,7 +515,7 @@ Each slice is usable on its own and ends with something the writer can feel.
 | 2 ✓ | **Registry and cascade.** (built) `params.py`, `resolve`, `tune:` blocks, the three commands, addresses, schema 2 | `s2s tune set the-thermostat:2.hold 9 --dry-run --json` works; every value in 4.1 is settable |
 | 3 ✓ | **Ownership.** (built) Breath as its own value, stretches, the strip, the knob and scope chip | The worked example in section 1 can be done up to step 3 without touching the piano roll |
 | 4 ✓ | **Audition and compare.** (built) Spans, auto-replay, loop, A/B | Steps 3 and 4 of the worked example |
-| 5 | **In play, widen, anchors.** The candidate row, W with its count, orphans | Steps 5 and 6. "How he turns is wrong" finds flip, ease and overshoot |
+| 5 ✓ | **In play, widen, anchors.** (built) The candidate row, W with its count, orphans | Steps 5 and 6. "How he turns is wrong" finds flip, ease and overshoot |
 | 6 | **Shortcuts.** Picking in the picture, search by word | Clicking a syllable in the bubble selects it |
 | 7 | **Frame cache.** Only if measured need | Worst nudge under 100 ms on the longest real scene |
 
@@ -531,6 +531,8 @@ of the architecture, done for the tuning commands first.
 | A syllable's `length` | It is the voiced length; the slot on the grid is length plus breath | So shortening a gap cannot look like lengthening a word, which was the complaint in section 1 |
 | The knob previews while a key is held and writes on release | Each nudge is written at once, and a quick run of them is merged into one journal entry | A nudge takes 21 to 29 ms end to end, so a preview path was not needed; undo still takes back the gesture |
 | The strip replaces the handles for hold, pause and beat; the slider panel is retired | The strip and knob were added; the old handles and the slider panel still work | Nothing is lost while the knob proves itself. Remove them once the in-play row (slice 5) reaches every value |
+| "How he turns is wrong" finds flip, ease and overshoot | It finds ease and flip, then the turn's sound | Overshoot swings position and posture, not facing, so a turn does not show it at work. It is listed where someone moves or changes posture |
+| Widen shows how many instances change before it applies | In the editor it applies and then says how many changed, with undo one key away; `s2s tune widen --dry-run` gives the count beforehand | One key and a count is quicker than a confirm step, and nothing is lost |
 | While A plays, nothing else on screen changes | While A plays, the picture and sound are A's, a small badge says so, and the timeline stays on the scene as it is now | A can be a different length from B, so A's playhead has no true place on B's timeline |
 | Nothing | Files that have not changed are not parsed again | Parsing YAML 28 times per nudge was the whole cost; with this a drag preview takes 2 ms and a release 13 ms |
 

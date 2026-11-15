@@ -56,6 +56,11 @@
   #knob .ab { display: flex; gap: 1px; cursor: pointer; font: 600 10px ui-monospace, Menlo, monospace; color: var(--mute); }
   #knob .ab b { padding: 1px 4px; border-radius: 3px; } #knob .ab b.on { background: var(--accent); color: #fff; }
   #abmark { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); padding: 2px 9px; border-radius: 10px; background: #000a; color: #fff; font: 600 11px ui-monospace, Menlo, monospace; display: none; pointer-events: none; }
+  #inplay { display: flex; gap: 2px; flex: none; }
+  #inplay button { width: 22px; height: 22px; opacity: .55; } #inplay button:hover { opacity: 1; } #inplay button.on { opacity: 1; color: var(--accent); background: #6e79d622; border-radius: 5px; }
+  #inplay button.hand::after { content: ""; position: absolute; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); margin: -9px 0 0 9px; }
+  #inplay svg { width: 13px; height: 13px; } #inplay span { color: var(--mute); font-size: 10px; align-self: center; padding: 0 3px; cursor: help; }
+  .turn.orph::before { content: ""; position: absolute; top: 3px; right: 12px; width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
   #tl { display: flex; background: var(--panel); }
   #gutter { width: 34px; flex: none; position: relative; border-right: 1px solid var(--line); }
   #gutter div { position: absolute; left: 0; width: 100%; display: grid; place-items: center; color: var(--mute); }
@@ -104,6 +109,7 @@
     <span id="tc"></span>
     <div id="sel" title="Steps for the selected timing. Type a number, or Alt+arrow to nudge a quarter step."><i></i><input id="selv" type="number" step="0.25"></div>
     <div id="knob"><i></i><input id="knobv" type="number"><span class="sc" id="knobs"></span><button id="kreset"><svg viewBox="0 0 16 16"><path d="M3 8a5 5 0 1 0 1.6-3.7M3 3v3h3"/></svg></button><span class="ab" id="kab"><b>A</b><b class="on">B</b></span><button id="kwide"><svg viewBox="0 0 16 16"><path d="M6 3H3v3M10 3h3v3M6 13H3v-3M10 13h3v-3"/></svg></button></div>
+    <div id="inplay"></div>
     <span id="why" title="Why this turn happens"></span>
     <div id="ledger"></div>
     <button id="flag"><svg viewBox="0 0 16 16"><path d="M8 2.5 14.5 13h-13zM8 7v3M8 11.6v.1"/></svg></button>
@@ -123,6 +129,13 @@ const $ = id => document.getElementById(id);
 const view = $('view'), ctx = view.getContext('2d'), scroll = $('scroll'), track = $('track'), ruler = $('ruler');
 const PAD = 14, RULER = 24, ROW = 26, ROLL = 84;
 const ICON = {
+  time: '<svg viewBox="0 0 16 16"><circle cx="8" cy="8.5" r="5"/><path d="M8 6v2.5l2 1.5M6.5 2h3"/></svg>',
+  pitch: '<svg viewBox="0 0 16 16"><path d="M6 12.5V4l6-1.2v7.8"/><circle cx="4.3" cy="12.5" r="1.7"/><circle cx="10.3" cy="10.6" r="1.7"/></svg>',
+  stress: '<svg viewBox="0 0 16 16"><path d="M4 3l8 4.5L4 12"/></svg>',
+  motion: '<svg viewBox="0 0 16 16"><path d="M2 12c2 0 2-8 5-8s3 6 4.5 6S13 8 14 8"/></svg>',
+  sound: '<svg viewBox="0 0 16 16"><path d="M3 6h2l3-3v10l-3-3H3zM10.5 5.5a3.5 3.5 0 0 1 0 5"/></svg>',
+  tone: '<svg viewBox="0 0 16 16"><path d="M3 3h10v7H8l-3 3v-3H3z"/></svg>',
+  entity: '<svg viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.5"/><path d="M3.5 13.5a4.5 4.5 0 0 1 9 0"/></svg>',
   own: '<svg viewBox="0 0 16 16"><path d="M2 5v6M14 5v6M2 8h12M6 6.5v3M10 6.5v3"/></svg>',
   play: '<svg viewBox="0 0 16 16"><path d="M5 3v10l8-5z" fill="currentColor"/></svg>',
   pause: '<svg viewBox="0 0 16 16"><path d="M5 3v10M11 3v10" stroke-width="2.4"/></svg>',
@@ -134,6 +147,7 @@ const ICON = {
 };
 let S = null, F = 0, pps = 12, playing = false, loop = false, stalled = false, xray = false;
 let frames = new Map(), selected = null, drag = null, pick = null, picked = null;
+let cands = [], pickSpan = null;                       // the values in play at the playhead; and where the picked one shows at work, if it owns no time
 let aud = null, audT = 0, side = 'B', A = null;        // aud: the frames being auditioned; side: which build plays; A: the scene as it stood when the value was picked   // pick: the address the knob is on; picked: what the server says about it
 let audio = new Audio(), audioRev = -1, muted = false, clock0 = 0, clockBase = 0, range = [0, 0];
 
@@ -200,6 +214,7 @@ function setF(f, keepView) {
   document.querySelectorAll('.turn').forEach(d => d.classList.toggle('cur', d.dataset.id == t.id));
   if (!keepView) { const px = x(s) - scroll.scrollLeft; if (px < 30 || px > scroll.clientWidth - 30) scroll.scrollLeft = x(s) - scroll.clientWidth * (playing ? 0.15 : 0.5); }
   paint(); drawRuler(); fill();
+  if (!playing && !aud) inPlaySoon();
 }
 
 // ---- timeline --------------------------------------------------------------------------------
@@ -234,6 +249,7 @@ function build() {
     }
     const b = el('turn', { left: x(t.start) + 'px', top: y.turns - 12 + 'px', width: t.length * pps - 2 + 'px' }, `Turn ${t.id} · ${num(t.length)} steps (${(t.length * S.step).toFixed(2)}s)\n${t.why}`);
     b.textContent = t.id; b.dataset.id = t.id;
+    if (t.orphans) { b.classList.add('orph'); b.title += `\n\n${t.orphans} hand-tuned syllable value${t.orphans === 1 ? ' was' : 's were'} tuned for an earlier wording of this line and ${t.orphans === 1 ? 'is' : 'are'} not applied. Tune the new wording and ${t.orphans === 1 ? 'it is' : 'they are'} cleared.`; }
     const g = document.createElement('div'); g.className = 'grip'; g.title = `Hold: ${num(t.hold)} steps after the turn finishes. Drag to change; hold Shift for quarter steps.`; b.appendChild(g);
     mark(g, ['turns', t.index, 'hold'], 400, t.hold, '#6e79d6');
     if (t.start) el('cut', { left: x(t.start) - 1 + 'px', top: RULER + 'px', height: H - RULER + 'px' });
@@ -323,9 +339,11 @@ function showKnob() {
   const changed = A && A.rev !== S.rev;
   $('kab').style.display = changed ? 'flex' : 'none'; $('kab').children[0].className = side === 'A' ? 'on' : ''; $('kab').children[1].className = side === 'B' ? 'on' : '';
   $('kab').title = 'B is the scene now; A is the scene as it was when you picked this value. Press B to flip between them and replay.';
+  showInPlay();
   $('kwide').style.display = picked.wider ? '' : 'none'; $('kwide').title = picked.wider ? `Widen (W): use this value for the whole ${picked.wider}` : '';
 }
 async function pickAt(addr, jump) {
+  if (!jump) { const c = cands.find(c => c.address === addr); pickSpan = c ? c.span : null; }
   pick = addr; picked = null; selected = null; showSel();
   if (!addr) return showKnob();
   try { picked = await api('/value?address=' + encodeURIComponent(addr)); } catch (e) { pick = null; toast(e.message, true); }
@@ -337,7 +355,8 @@ async function pickAt(addr, jump) {
 // ---- audition: after a nudge, replay just the moment that changed -------------------------------
 function span() {                                         // the picked value's stretch, with a lead-in and lead-out, in frames
   const s = pick && S.turns.flatMap(t => t.stretches).find(x => x.address === pick);
-  return s ? [frameOf(Math.max(0, s.start - S.lead[0])), Math.min(S.total, frameOf(s.start + s.length + S.lead[1]))] : null;
+  const at = s ? [s.start, s.start + s.length] : pick && pickSpan;         // its own stretch, or the moment that shows it at work
+  return at ? [frameOf(Math.max(0, at[0] - S.lead[0])), Math.min(S.total, frameOf(at[1] + S.lead[1]))] : null;
 }
 async function audition() {
   clearTimeout(audT);
@@ -368,6 +387,22 @@ function flip() { if (!pick || !A || A.rev === S.rev) return; stopBefore(); side
 let replayT = 0;
 const replaySoon = () => { clearTimeout(replayT); replayT = setTimeout(() => { side = 'B'; showKnob(); audition(); }, 220); };   // once the nudging stops
 
+// ---- in play: the values at work at the playhead, most likely first ------------------------------
+let ipT = 0;
+function showInPlay() {
+  const shown = cands.slice(0, 9), more = cands.length - shown.length;
+  $('inplay').innerHTML = shown.map((c, i) => `<button data-i="${i}" class="${c.address === pick ? 'on' : ''}${c.by === 'hand' ? ' hand' : ''}" title="${c.label}: ${num(c.value)}${c.by === 'hand' ? ' (set by hand)' : ''}\n${c.why}\n${c.meaning}\n${c.address}">${ICON[c.group] || ICON.time}</button>`).join('') +
+    (more > 0 ? `<span title="${more} more at work here; Tab steps through all of them:\n` + cands.slice(9).map(c => `${c.label} \u00b7 ${c.why}`).join('\n') + `">+${more}</span>` : '');
+}
+async function inPlay() { try { const f = F; const r = await api('/in-play?f=' + f); if (f === F) { cands = r; showInPlay(); } } catch (e) {} }
+const inPlaySoon = () => { clearTimeout(ipT); ipT = setTimeout(inPlay, 160); };
+$('inplay').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { pause(); pickAt(cands[+b.dataset.i].address); } });
+function tab(dir) {                                       // step the knob through everything in play here
+  if (!cands.length) return;
+  const i = cands.findIndex(c => c.address === pick);
+  pause(); pickAt(cands[(i + dir + cands.length) % cands.length].address).then(showInPlay);
+}
+
 const ownerAt = f => { const s = stepsOf(f) + 1e-6, t = turnAt(f); return t.stretches.find(x => x.address && s >= x.start && s < x.start + x.length); };
 let nudging = false, nudgeNext = null;
 async function nudge(op, value) {                        // each nudge is written at once; a quick run of them is one undo step
@@ -382,7 +417,8 @@ async function nudge(op, value) {                        // each nudge is writte
       if (r.dirty_from != null) dropFrames(r.dirty_from);
       S = r.state; picked = r.value || picked; build(); showKnob();
       if (r.dirty_from != null || picked.rebuild === 'sound') replaySoon();
-      if (q.op === 'widen' && r.value) toast(`${picked.param.label} ${num(picked.value)} now holds for the whole ${picked.chain[0].scope}`);
+      if (q.op === 'widen' && r.value) toast(`${picked.param.label} ${num(picked.value)} now holds for the whole ${picked.chain[0].scope}` + (r.affects != null ? ` \u00b7 ${r.affects} other${picked.param.label === 'Breath' ? ' breath' : ' turn'}${r.affects === 1 ? '' : 's'} changed` : '') + '\nUndo takes it back.');
+      inPlaySoon();
       if ($('tune').style.display === 'block') buildTune();
     } catch (e) { toast(e.message, true); }
   }
@@ -602,6 +638,7 @@ addEventListener('keydown', e => {
     if (!pick) { const o = ownerAt(F); if (o) { pause(); pickAt(o.address); } }
     else bump(k === 'ArrowUp' ? 1 : -1, e.shiftKey);
   }
+  else if (k === 'Tab') tab(e.shiftKey ? -1 : 1);
   else if ((k === 'Backspace' || k === 'Delete') && pick) nudge('reset');
   else if (low === 'w' && pick && picked && picked.wider) nudge('widen');
   else if (k === 'Escape' && pick) { clearTimeout(audT); clearTimeout(replayT); stopBefore(); aud = null; pickAt(null); }

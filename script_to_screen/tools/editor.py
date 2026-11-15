@@ -24,8 +24,8 @@ from ..performance import Scene, carry_into
 from ..presentation import sound
 from ..presentation.render import frame_jpeg, out_path
 from ..presentation.stage import Look, Stage
-from ..readers import ledger
-from ..script import find_root, load_yaml, scene_paths, series
+from ..readers import inplay, ledger
+from ..script import find_root, load_yaml, scene_paths, series, tuning
 from ..vocabulary import params
 
 HERE = Path(__file__).parent
@@ -182,7 +182,8 @@ class Session:
                            melody=list(t["melody"]) if t["melody"] is not None else None,
                            stress=list(t["stress"]) if t["stress"] is not None else None)
             turns.append(dict(id=t["id"], index=t["index"], start=t["start"], length=t["length"], why=t["why"], who=t["who"],
-                              pause=t["pause"], hold=t["hold"], say=say, lanes=lanes, reacts=t["reacts"], stretches=t["stretches"]))
+                              pause=t["pause"], hold=t["hold"], say=say, lanes=lanes, reacts=t["reacts"], stretches=t["stretches"],
+                              orphans=sum(len(v) for v in tuning.syllable_tunes(self.doc["turns"][t["index"]])[1].values())))
         mine = [p for p in self.problems if p["scene"] == sc.id]
         feel, sounds = look.feel, look.sounds                    # as in force: hand-set values laid over written ones
         done, undone = edit.stacks(self.root, by="hand")
@@ -269,6 +270,19 @@ class Session:
                     param=dict(label=t.param.label, meaning=t.param.meaning, unit=t.param.unit, lo=t.param.lo, hi=t.param.hi,
                                step=t.param.step, fine=t.param.fine if t.param.fine is not None else t.param.step / 4, scopes=scopes))
 
+    def in_play(self, F):
+        """The values at work at frame F, most likely first, each with what it is now."""
+        steps = F / self.stage.fps / self.scene.step
+        out = []
+        for c in inplay.in_play(self.scene, steps):
+            try:
+                t = tune.parse(c["address"], self.root)
+                r = tune.resolve(t)
+            except Refused:                                      # e.g. an event with no sound of its own
+                continue
+            out.append(dict(c, value=r["value"], by=r["by"], scope=r["scope"], meaning=t.param.meaning))
+        return out
+
     def nudge(self, address, op, value=None):
         """Set, take off or widen a hand-set value from the knob. Each is written at once; a quick run of
         nudges on one value is one undo step. -> the first frame to redraw, or None if the picture is unchanged."""
@@ -280,7 +294,7 @@ class Session:
         ask = SimpleNamespace(action=op, address=address, value=value, to=None, orphans=False, show=str(self.root),
                               dry_run=False, because=None, by="hand")
         try:
-            tune.tune(ask)
+            self.last = tune.tune(ask)                           # what the command reported: for a widening, how much it changed
         except Refused as e:
             if "nothing" not in str(e):                          # already that value: not an error for a knob
                 raise ValueError(str(e) + (f". {e.hint}" if e.hint else ""))
@@ -357,6 +371,8 @@ def make_handler(sess):
                         return self.send(sess.state())
                     if url.path == "/value":                 # the knob: what a value is and where it comes from
                         return self.send(sess.value(q["address"][0]))
+                    if url.path == "/in-play":               # the values at work at this frame
+                        return self.send(sess.in_play(int(q["f"][0])))
                     if url.path == "/poll":                  # has anything changed underneath?
                         return self.send(sess.poll())
                     if url.path == "/frame":                 # build=A is the scene as it stood when the knob was put on a value
@@ -400,7 +416,9 @@ def make_handler(sess):
                     elif self.path == "/pick":
                         return self.send(sess.pick())
                     elif self.path == "/nudge":
+                        sess.last = None
                         out["dirty_from"] = sess.nudge(body["address"], body["op"], body.get("value"))
+                        out["affects"] = (sess.last or {}).get("affects")
                         try:
                             out["value"] = sess.value(body["address"])
                         except Refused:

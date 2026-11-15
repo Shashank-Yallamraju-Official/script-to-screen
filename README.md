@@ -265,6 +265,7 @@ reaction, a hold. Click a stretch and the **knob** appears on that value.
 | Up, Down (Shift for a fine step); or type a number | Nudge the picked value. Each nudge is written at once; a quick run is one undo step |
 | Backspace | Take the hand-set value off; it goes back to what it inherits |
 | W | Widen: use this value for the next scope out (a turn's hold for its scene, then the show; a breath for every pause of its kind) |
+| Tab, Shift+Tab; or click an icon beside the knob | Step the knob through everything **in play** at the playhead: the value that owns the moment, then the syllable's note and stress, then what nearby events show at work (ease and flip where someone turns), their sounds, the line's tone, its speaker, the voice. Hover an icon to see what it is and why it is listed |
 | (after any nudge) | The moment replays by itself: the value's stretch with a second before and after, with sound |
 | Enter | Replay that moment again |
 | B | Flip between **A**, the scene as it was when you picked the value, and **B**, the scene now, and replay. A badge on the picture says when A is showing |
@@ -287,7 +288,8 @@ reaction, a hold. Click a stretch and the **knob** appears on that value.
 
 Undo in the editor only ever takes back changes made by hand; it never undoes the
 assistant's. It refuses if the file has changed since, because that would lose work.
-`s2s history --by hand` lists what was tuned by hand. A locked scene cannot be nudged.
+`s2s history --by hand` lists what was tuned by hand. A locked scene cannot be nudged. A turn
+with an amber dot has hand-tuned syllable values left over from an earlier wording.
 
 How much replays around a nudge is set in `show.yaml`: `editor: {lead_in: 8, lead_out: 8}`, in steps.
 
@@ -313,6 +315,7 @@ command takes `--json`; a command that changes something also takes `--dry-run`,
 | List problems | `s2s check` |
 | Export what a scene decided, as JSON | `s2s score thermostat` |
 | Learn the vocabulary: what can be tuned, what can be observed | `s2s params`, `s2s channels` |
+| Ask what could be tuned at a moment | `s2s in-play the-vase:2+0` |
 | Look at a moment, or a whole scene at a glance | `s2s still thermostat:2 --xray`, `s2s sheet thermostat` |
 | Render | `s2s render thermostat`, `s2s render --episode s01e01`, `s2s render --all` |
 | Change a line, a feeling, a timing, a reason | `set-line`, `set-feeling`, `set-timing`, `set-why` |
