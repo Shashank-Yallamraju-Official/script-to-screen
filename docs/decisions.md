@@ -254,6 +254,36 @@ them.
 
 **Costs.** An assistant without a terminal cannot operate the tool until the server exists.
 
+## 19. Where a value is stored says who set it
+
+**Decision.** Hand-set values live in `tune:` blocks at the scope they apply to, written
+only by the tune commands. A value resolves from the narrowest scope outward, hand-set
+before written. Syllable-level tunes carry the words they were tuned against and are set
+aside, not applied, when the words change. See [lld-nudging.md](lld-nudging.md).
+
+**Instead of** a marker on every value recording its author.
+
+**Because** it makes decision 17 visible in the file and in a git diff, and deleting a block
+always restores what the engine or the assistant chose.
+
+**Costs.** A value can now be in two places in one file, and a reader must know that
+`tune:` wins.
+
+## 20. The tuning loop keeps one renderer and no cleverness it has not earned
+
+**Decision.** Replay draws frames with the final renderer as it plays, and remixes the whole
+scene's sound on each nudge. The audience ledger and earlier scenes are never recomputed by
+a nudge. A frame cache is designed and deferred until a measured nudge exceeds 100 ms.
+
+**Instead of** a second renderer in the browser, per-turn audio stems, or a cache built up
+front.
+
+**Because** measured on the prototype the renderer is eight times faster than playback and
+a full mix takes 12 ms; 70 of a nudge's 78 ms was work a nudge cannot affect.
+
+**Costs.** The numbers hold for tokens and short scenes. Richer skins or long scenes will
+reopen this, which is why the cache is designed now.
+
 ## Open questions
 
 These are not decided, because the conversation has not yet produced the evidence.

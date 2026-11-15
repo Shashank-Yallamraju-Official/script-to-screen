@@ -16,6 +16,7 @@ because the script says so, and every turn has to say why.
 | `tests/` | What the engine promises, as tests |
 | [docs/how-it-is-used.md](docs/how-it-is-used.md) | The two loops the tool serves: writing through an assistant, tuning by hand |
 | [docs/architecture.md](docs/architecture.md) | The target design, and the order to build it in |
+| [docs/lld-nudging.md](docs/lld-nudging.md) | Low-level design of the hand-tuning loop: identify, change, test |
 | [docs/requirements-history.md](docs/requirements-history.md) | How the requirements evolved, and what is likely to be asked next |
 | [docs/decisions.md](docs/decisions.md) | The choices that would be expensive to reverse |
 
