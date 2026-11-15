@@ -34,7 +34,7 @@ def _r(x):
 def look_print(stage):
     """Everything about the look that a frame depends on."""
     look = stage.look
-    return _digest([stage.W, stage.H, stage.fps, {k: look.feel[k] for k in LOOK_SETTINGS}, look.tones, look.emotions,
+    return _digest([stage.W, stage.H, stage.fps, {k: look.feel[k] for k in LOOK_SETTINGS}, look.tones, look.emotions, look.style,
                     {e: {k: v for k, v in sheet.items() if k in CAST_LOOK} for e, sheet in look.cast.items()}])
 
 

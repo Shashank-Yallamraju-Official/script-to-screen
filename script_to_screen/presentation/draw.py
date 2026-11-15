@@ -209,18 +209,50 @@ def draw_bubble(c, stage, line, t, o, ent):
         c.translate(-hx, -top)
     c.drawPath(shape, fill("#ffffff"))
     c.drawPath(shape, stroke(ent["color"], 4))
+    style = stage.look.style.get("indicator", "dot")             # how the voice is shown moving through the words
     ink = fill(INK)
-    for r, text in enumerate(rows):                              # the whole line is there from the start
-        c.drawString(text, bx + pad, by + pad + size - 6 + r * lh, f, ink)
+    end = line["sylls"][-1]["start"] + line["sylls"][-1]["voiced"]
+    fade = 1 - smooth((t - end) / 0.3) if t > end else 1.0       # it leaves once the line is said
+    here = indicator(line, chunks, min(t, end))
+    base = lambda r: by + pad + size - 6 + r * lh                 # a row's text baseline
 
     def place(q):                                                # indicator -> a point under its row
         row, x, hgt, wt = q
         return bx + pad + x, by + pad + size + 4 + row * lh + rad * WEIGHT[2] + (1 - hgt) * lift, rad * wt
 
-    end = line["sylls"][-1]["start"] + line["sylls"][-1]["voiced"]
-    fade = 1 - smooth((t - end) / 0.3) if t > end else 1.0       # it leaves once the line is said
-    here = indicator(line, chunks, min(t, end))
-    if here and fade > 0.01:
+    if style == "pill" and here and fade > 0.01:                 # a soft block of the speaker's colour sits behind the syllable being said
+        i = max(k for k, s in enumerate(line["sylls"]) if s["start"] <= min(t, end) + 1e-6)
+        s, (row, x0, _, cw) = line["sylls"][i], chunks[i]
+        g = smooth(min(1.0, (min(t, end) - s["start"]) / max(0.35 * s["voiced"], 1e-3)))
+        prow, px0, _, pcw = chunks[max(i - 1, 0)]
+        if prow == row and i:                                    # it slides from the last syllable on the same row
+            x0, cw = px0 + (x0 - px0) * g, pcw + (cw - pcw) * g
+        grow = 2 + 3 * WEIGHT[s["stress"]]                       # a stressed syllable gets a taller block
+        c.drawRoundRect(skia.Rect.MakeXYWH(bx + pad + x0 - 5, base(row) - size + 2 - grow, cw + 10, size + 6 + 2 * grow), 9, 9,
+                        fill(ent["color"], 95 * fade))
+    if style == "fill":                                          # the words wait in grey and take ink as they are said
+        for r, text in enumerate(rows):
+            c.drawString(text, bx + pad, base(r), f, fill(INK, 70))
+        if here:
+            for r, text in enumerate(rows[:here[0] + 1]):
+                c.save()
+                right = bx + w if r < here[0] else bx + pad + here[1] + 2
+                c.clipRect(skia.Rect.MakeLTRB(bx, base(r) - size - 6, right, base(r) + size))
+                c.drawString(text, bx + pad, base(r), f, ink)
+                c.restore()
+    else:
+        for r, text in enumerate(rows):                          # the whole line is there from the start
+            c.drawString(text, bx + pad, base(r), f, ink)
+    if style == "trace" and here:                                # the voice leaves a line under the words: its height is pitch, its weight is stress
+        t0, n = line["sylls"][0]["start"], max(2, int((min(t, end) - line["sylls"][0]["start"]) * 240))
+        for k in range(n + 1):
+            q = indicator(line, chunks, t0 + (min(t, end) - t0) * k / n)
+            if q:
+                x, y, r = place(q)
+                c.drawCircle(x, y, max(1.2, r * 0.42), fill(ent["color"], 255))
+        x, y, r = place(here)
+        c.drawCircle(x, y, r * 0.75, fill(INK, 255 * fade))      # the tip, where the voice is now
+    if style == "dot" and here and fade > 0.01:
         n, span = 16, float(feel["cursor_tail"])
         for k in range(n, 0, -1):                                # a short tail shows which way it is moving
             past = indicator(line, chunks, min(t, end) - span * k / n) if span > 0 else None

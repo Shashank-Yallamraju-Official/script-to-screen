@@ -56,3 +56,17 @@ def test_changing_the_look_does_not_change_the_score(show):
     feel = show.root / "library" / "feel.yaml"
     feel.write_text(feel.read_text().replace("aside_volume:", "aside_volume: 0.01 #"))
     assert json.dumps(Scene(path).score.to_data(), sort_keys=True) == before
+
+
+def test_each_way_of_showing_the_voice_draws_and_the_default_is_unchanged():
+    """`style: {indicator: ...}` in show.yaml chooses how the voice is shown moving through a bubble."""
+    path = series(DEMO).by_id["the-vase"]["path"]
+    plain = Stage.of(Scene(path))
+    line = plain.score.speech[0]
+    F = round((line["sylls"][2]["start"] + 0.05) * plain.fps)
+    seen = {}
+    for style in ("dot", "fill", "trace", "pill"):
+        stage = Stage.of(Scene(path))
+        stage.look.style = dict(indicator=style)
+        seen[style] = picture(stage, [F])
+    assert len(set(seen.values())) == 4 and seen["dot"] == picture(plain, [F])
