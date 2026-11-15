@@ -26,6 +26,7 @@ ZONES = {"intimate": 1, "personal": 2, "social": 3, "public": 4}   # distance in
 POSTURE = {"upright": (1.0, 1.0, 0), "contracted": (1.12, 0.8, 0), "lean_in": (1.0, 1.0, 1), "lean_back": (1.0, 1.0, -1)}
 TELL_KEYS = {"attention", "orient", "distance", "posture", "tone", "latency"}
 LIBRARY = ("tones", "sounds", "feel")
+SCHEMA = 1                                  # the file format this engine reads; see docs/architecture.md
 
 
 class ScriptError(Exception):
@@ -78,6 +79,8 @@ class Show:
     def __init__(self, root, lib=None):
         self.root = root
         self.cfg = load_yaml(root / "show.yaml")
+        if self.cfg.get("schema", SCHEMA) != SCHEMA:
+            raise ScriptError(f"this show is written for schema {self.cfg['schema']}, and this engine reads schema {SCHEMA}")
         for name in LIBRARY:                 # the editor passes its unsaved copies in `lib`
             setattr(self, name, (lib or {}).get(name) or load_yaml(root / "library" / f"{name}.yaml"))
         self.emotions = self.cfg["emotions"]

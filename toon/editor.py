@@ -1,6 +1,6 @@
 """The editor: scrub, play, drag timings, set every syllable's note, tune the small details.
 
-    python -m toon.editor episodes/pilot/scene01.yaml
+    toon edit shows/demo/episodes/s01/e01/01-the-last-dumpling.yaml
 
 Runs a small server on this machine only and opens the editor in your browser. Edits live in
 memory until you save; saving rewrites only the changed values and keeps comments and layout.

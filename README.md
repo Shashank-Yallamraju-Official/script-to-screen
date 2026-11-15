@@ -1,9 +1,29 @@
 # toon
 
-A bare-bones, turn-based animation pipeline. The frame starts empty. Something appears on
-screen only because the script says so, and every turn has to say why.
+A turn-based animation engine. The frame starts empty. Something appears on screen only
+because the script says so, and every turn has to say why.
 
-The earlier paper cut-out renderer is kept in git history under the tag `paper-v1`.
+    pip install -e ".[dev]"        # plus ffmpeg on the PATH, for rendering
+    toon edit shows/demo/episodes/s01/e01/01-the-last-dumpling.yaml
+    toon render --show shows/demo --episode s01/e01
+    toon ledger shows/demo
+    pytest
+
+| | |
+|---|---|
+| `toon/` | The engine |
+| `shows/demo/` | A small show used for development: one episode of three scenes, plus a staging study |
+| `tests/` | What the engine promises, as tests |
+| [docs/architecture.md](docs/architecture.md) | The target design, and the order to build it in |
+| [docs/requirements-history.md](docs/requirements-history.md) | How the requirements evolved, and what is likely to be asked next |
+| [docs/decisions.md](docs/decisions.md) | The choices that would be expensive to reverse |
+
+**Status.** This is a working prototype in a real project's clothes: it is packaged, tested
+and versioned, but its internals have not yet been rebuilt to the design in `docs/`. Two
+earlier stages are kept as git tags: `paper-v1` (the paper cut-out renderer) and
+`prototype-v1` (the prototype before this restructure).
+
+Everything below describes how a show is written. Paths are relative to a show's folder.
 
 ## The model
 
@@ -142,7 +162,7 @@ A turn can also place a sound by hand: `sfx: [{at: 4, sound: thud}]`.
 
 ## The audience ledger
 
-    python -m toon.ledger
+    toon ledger shows/demo
 
 A viewer sees only the outputs, and one sighting of a tell is ambiguous. The ledger walks
 every scene in order and counts, per entity and emotion, how many scenes have shown that
@@ -156,8 +176,7 @@ A changed tell (an arc step) starts its count again.
 
 ## The editor
 
-    pip install -r requirements.txt           # plus ffmpeg on the PATH
-    python -m toon.editor episodes/s01/e01/01-the-last-dumpling.yaml
+    toon edit shows/demo/episodes/s01/e01/01-the-last-dumpling.yaml
 
 | Do this | To |
 |---|---|
@@ -180,10 +199,10 @@ carried in and what happened off-screen. Saving rewrites only the values you cha
 
 ## Render
 
-    python -m toon.render episodes/s01/e01/01-the-last-dumpling.yaml
-    python -m toon.render --episode s01/e01          # every scene in the episode, joined
-    python -m toon.render --all
-    python -m toon.render episodes/s01/e01/01-the-last-dumpling.yaml --still 2:6   # turn 2, six steps in
+    toon render shows/demo/episodes/s01/e01/01-the-last-dumpling.yaml
+    toon render --show shows/demo --episode s01/e01      # every scene in the episode, joined
+    toon render --show shows/demo --all
+    toon render <scene> --still 2:6                      # turn 2, six steps in, as a PNG
 
 Add `--xray` for the director's view or `--slate` for a turn and step label. A scene with
 errors does not render: a turn with no `why`, a feeling with no tell, a rhythm or melody

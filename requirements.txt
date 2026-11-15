@@ -1,4 +1,0 @@
-skia-python
-pyyaml
-ruamel.yaml
-numpy

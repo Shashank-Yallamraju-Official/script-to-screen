@@ -1,6 +1,6 @@
 """The audience ledger: what a viewer has had the chance to learn, scene by scene.
 
-    python -m toon.ledger
+    toon ledger [show folder]
 
 A viewer only sees outputs. One sighting of a tell is ambiguous, so a tell counts as learned
 after it has shown in `learn_after` separate scenes. Rules checked here:
@@ -72,7 +72,10 @@ def build(root, override=None, lib=None):
 
 
 def main():
-    root = find_root(Path.cwd())
+    import argparse
+    ap = argparse.ArgumentParser(description="What the audience has had the chance to learn, scene by scene.")
+    ap.add_argument("show", nargs="?", default=".", help="the show's folder, or anything inside it (default: here)")
+    root = find_root(Path(ap.parse_args().show).resolve())
     table, problems = build(root)
     for e, row in table.items():
         for emo, c in row.items():

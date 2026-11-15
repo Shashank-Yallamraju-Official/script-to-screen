@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "toon"
+version = "0.1.0"
+description = "A turn-based animation engine: scenes are data, and every detail has a reason."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["skia-python", "pyyaml", "ruamel.yaml", "numpy"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+toon = "toon.cli:main"
+
+[tool.setuptools]
+packages = ["toon"]
+
+[tool.setuptools.package-data]
+toon = ["editor.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

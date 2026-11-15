@@ -1,8 +1,9 @@
 """Render a scene to video.
 
-    python -m toon.render episodes/pilot/scene01.yaml
-    python -m toon.render --all
-    python -m toon.render episodes/pilot/scene01.yaml --still 2:6    # turn 2, six steps in, as a PNG
+    toon render shows/demo/episodes/s01/e01/01-the-last-dumpling.yaml
+    toon render --show shows/demo --episode s01/e01
+    toon render --show shows/demo --all
+    toon render <scene> --still 2:6          # turn 2, six steps in, as a PNG
     --xray shows the director's view (felt against shown, weight in the room); --slate adds turn and step
 
 A scene with errors (a turn with no `why`, a feeling with no tell, a payoff the audience
@@ -60,13 +61,14 @@ def render(scene, xray=False, slate=False):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("scene", nargs="?")
+    ap.add_argument("--show", default=".", help="the show's folder, for --all and --episode (default: here)")
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--episode", help="a folder under episodes/, e.g. s01/e01: render its scenes and join them")
     ap.add_argument("--still")
     ap.add_argument("--xray", action="store_true")
     ap.add_argument("--slate", action="store_true")
     a = ap.parse_args()
-    root = find_root(Path(a.scene).resolve() if a.scene else Path.cwd())
+    root = find_root(Path(a.scene or a.show).resolve())
     if a.episode:
         a.all = False
     _, problems = ledger.build(root)
