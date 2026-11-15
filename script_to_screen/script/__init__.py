@@ -123,6 +123,10 @@ class Show:
             setattr(self, name, (lib or {}).get(name) or load_yaml(root / "library" / f"{name}.yaml"))
         self.emotions = self.cfg["emotions"]
 
+    def known(self):
+        """Every entity this show has a sheet for."""
+        return {p.stem for p in (self.root / "entities").glob("*.yaml")}
+
     def entity(self, eid, key):
         """An entity's sheet as it stands at scene `key`: its arc has changed its tells up to here."""
         p = self.root / "entities" / f"{eid}.yaml"

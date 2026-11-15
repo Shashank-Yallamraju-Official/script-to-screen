@@ -14,6 +14,7 @@ because the script says so, and every turn has to say why.
 
 | | |
 |---|---|
+| `script_to_screen/vocabulary/` | What can be tuned and what can be observed, declared once |
 | `script_to_screen/script/` | Layer 1: reads a show's files |
 | `script_to_screen/world/` | Layer 2: what is true, and a log of every change and its cause |
 | `script_to_screen/performance/` | Layer 3: the scene played out on the tempo grid. Its output is the score: named tracks of plain data |
@@ -245,6 +246,7 @@ command takes `--json`; a command that changes something also takes `--dry-run`,
 | Ask why someone looks the way they do | `s2s explain thermostat:2 otis` |
 | List problems | `s2s check` |
 | Export what a scene decided, as JSON | `s2s score thermostat` |
+| Learn the vocabulary: what can be tuned, what can be observed | `s2s params`, `s2s channels` |
 | Look at a moment, or a whole scene at a glance | `s2s still thermostat:2 --xray`, `s2s sheet thermostat` |
 | Render | `s2s render thermostat`, `s2s render --episode s01e01`, `s2s render --all` |
 | Change a line, a feeling, a timing, a reason | `set-line`, `set-feeling`, `set-timing`, `set-why` |

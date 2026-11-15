@@ -4,13 +4,14 @@ from pathlib import Path
 
 TOON = Path(__file__).resolve().parents[1] / "script_to_screen"
 MAY_USE = {                                   # a layer may import these, and nothing else of ours
-    "script": set(),
-    "world": {"script"},
-    "performance": {"script", "world"},
-    "presentation": {"script", "world", "performance"},
-    "readers": {"script", "world", "performance", "presentation"},
-    "commands": {"script", "world", "performance", "presentation", "readers"},
-    "tools": {"script", "world", "performance", "presentation", "readers", "commands"},
+    "vocabulary": set(),
+    "script": {"vocabulary"},
+    "world": {"script", "vocabulary"},
+    "performance": {"script", "world", "vocabulary"},
+    "presentation": {"script", "world", "performance", "vocabulary"},
+    "readers": {"script", "world", "performance", "presentation", "vocabulary"},
+    "commands": {"script", "world", "performance", "presentation", "readers", "vocabulary"},
+    "tools": {"script", "world", "performance", "presentation", "readers", "commands", "vocabulary"},
 }
 
 

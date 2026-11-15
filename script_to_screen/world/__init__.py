@@ -6,10 +6,10 @@ every change is appended to `log` with the turn that caused it, so "why is he li
 now?" can be answered by reading the log. It imports only the script layer.
 """
 from ..script import ScriptError
+from ..vocabulary import channels
 
 SLOTS = 9                                   # the stage is one line of nine places
 ZONES = {"intimate": 1, "personal": 2, "social": 3, "public": 4}   # distance in slots
-BODY = ("slot", "orient", "attention", "posture")                  # what a deliberate action can set
 
 
 def sgn(v):
@@ -22,6 +22,14 @@ class World:
         self.carry = {e: dict(v) for e, v in carry.items()}      # what each entity brings from earlier scenes
         self.st, self.ents, self.log = {}, {}, []
         self.cause = None                                         # the turn now being played (None: off-screen)
+        self.known = show.known()
+
+    def _allowed(self, e, spec, what):
+        """Flag anything in a deliberate action that the channel declarations do not allow."""
+        for k, v in spec.items():
+            why = channels.problem("do", k, v, entities=self.known)
+            if why:
+                self.flag("error", self.cause, f"{e}'s {what}: {why}")
 
     def _note(self, kind, subject, value=None):
         self.log.append(dict(kind=kind, subject=subject, value=value, cause=self.cause))
@@ -52,6 +60,13 @@ class World:
     # ---- in the room -------------------------------------------------------------------------
     def enter(self, e, spec):
         self.ents[e] = self.show.entity(e, self.key)
+        for emo, tells in self.ents[e]["tells"].items():           # a sheet is checked once, as its entity arrives
+            for n, tell in enumerate(tells or []):
+                for k, v in tell.items():
+                    why = channels.problem("tell", k, v, tones=self.show.tones)
+                    if why:
+                        self.flag("error", self.cause, f"entities/{e}.yaml, {emo} tell {n + 1}: {why}")
+        self._allowed(e, spec, "entrance")
         got = self.carry.get(e, {})
         self.st[e] = dict(present=True, slot=spec["slot"], orient=spec.get("orient", "out"),
                           attention=spec.get("attention", "ahead"), posture=spec.get("posture", "upright"),
@@ -73,7 +88,8 @@ class World:
     def do(self, e, spec):
         """A deliberate action: it sets the baseline that tells are laid over."""
         s = self.need(e)
-        for k in BODY:
+        self._allowed(e, spec, "action")
+        for k in ("slot", "orient", "attention", "posture"):
             if k in spec:
                 s[k] = spec[k]
         if "move" in spec:                   # {toward: other, zone: personal}
@@ -89,6 +105,7 @@ class World:
 
     def take(self, e, spec, keep=False):
         """A momentary deliberate action inside a reaction. It outranks tells until dropped."""
+        self._allowed(e, spec, "reaction")
         if keep:
             self.st[e].update(spec)
         else:

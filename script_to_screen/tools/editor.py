@@ -24,27 +24,16 @@ from ..presentation.render import frame_jpeg, out_path
 from ..presentation.stage import Look, Stage
 from ..readers import ledger
 from ..script import find_root
+from ..vocabulary import params
 
 HERE = Path(__file__).parent
-NUMBERS = {"pause": 200, "hold": 400}            # editable timings and their upper limit, in steps
+NUMBERS = {p.name: p.hi for p in params.group("turn")}     # editable timings and their upper limit, in steps
 LISTS = ("rhythm", "melody", "stress")
 POSITION = {"unopposed": "nobody has taken sides", "even": "evenly matched", "alone": "alone against {others}",
             "minority": "outnumbered, {mine} against {others}", "majority": "in the majority, {mine} against {others}"}
-# sliders: key, min, max, step, what it does
-FEEL = [("ease", 0.05, 0.8, 0.01, "Seconds a change takes to settle"),
-        ("overshoot", 0, 2, 0.05, "How far a move swings past its mark before settling"),
-        ("flip", 0, 1, 0.05, "How thin a token gets mid-turn, like paper flipping"),
-        ("squash", 0, 0.4, 0.01, "Stretch while travelling"),
-        ("cursor_size", 1, 10, 0.5, "Size of the indicator that travels under a spoken line (it grows on stressed syllables)"),
-        ("cursor_lift", 0, 24, 1, "How far the indicator rises and falls with the voice's pitch, in pixels"),
-        ("cursor_tail", 0, 0.4, 0.01, "Seconds of trail the indicator leaves behind it"),
-        ("voice_attack", 0.001, 0.08, 0.001, "Seconds a syllable's note takes to swell. Short is percussive, long is soft"),
-        ("voice_ring", 0, 1, 0.05, "How much of its level a note keeps to its end. 0 is plucked, 1 is held so syllables run together"),
-        ("bubble_pop", 0, 0.5, 0.01, "Seconds a bubble takes to pop open"),
-        ("focus_dim", 0, 0.8, 0.05, "How far everyone else fades while a featured reaction holds the scene"),
-        ("aside_volume", 0, 1, 0.05, "How loud a background reaction's sounds are, next to a featured one")]
-SOUND = [("vol", 0, 1, 0.01, "Volume (0 is off)"), ("freq", 40, 2000, 5, "Starting pitch in Hz"),
-         ("to", 40, 2000, 5, "Pitch it glides to, in Hz"), ("dur", 0.01, 0.6, 0.01, "Length in seconds")]
+# sliders: key, min, max, step, what it does; all from the declarations in vocabulary/params.py
+FEEL = [(p.name, p.lo, p.hi, p.step, p.meaning.rstrip(".")) for p in params.group("feel")]
+SOUND = [(p.name, p.lo, p.hi, p.step, p.meaning.rstrip(".")) for p in params.group("sound")]
 
 
 def tidy(v):

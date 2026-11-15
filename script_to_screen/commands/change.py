@@ -7,6 +7,7 @@ from pathlib import Path
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from ..performance import speech
+from ..vocabulary import PARAMS, params
 from . import A, Refused, address, command, edit
 
 TURN = A("turn", "scene:turn, e.g. thermostat:2")
@@ -86,13 +87,14 @@ def set_feeling(a):
 
 
 @command("set-timing", "Set a turn's pause (before the line) or hold (after it), in steps.",
-         [TURN, A("which", "pause or hold", choices=["pause", "hold"]), A("steps", "steps of the tempo grid; fractions allowed", type=float)],
+         [TURN, A("which", "pause or hold", choices=[p.name for p in params.group("turn")]), A("steps", "steps of the tempo grid; fractions allowed", type=float)],
          "s2s set-timing vase:3 hold 14", changes=True, group="change")
 def set_timing(a):
     def fn(doc, i, t, addr):
+        p = PARAMS["turn." + a.which]
+        if not p.lo <= a.steps <= p.hi:
+            raise Refused(f"{a.which} is {p.lo:g} to {p.hi:g} {p.unit}")
         v = int(a.steps) if a.steps == int(a.steps) else a.steps
-        if v < 0:
-            raise Refused("a duration cannot be negative")
         ch = one(addr, a.which, t.get(a.which), v)
         edit.put(t, a.which, v)
         return dict(changes=ch)

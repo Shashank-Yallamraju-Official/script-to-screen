@@ -141,7 +141,7 @@ cover every parameter; the last two are shortcuts.
 
 ### 4.1 The parameter registry
 
-One declaration per parameter, in `script_to_screen/params.py`. The editor, the commands and the checks
+One declaration per parameter, in `script_to_screen/vocabulary/params.py` (built in phase 5, without scopes and the cascade, which slice N2 adds). The editor, the commands and the checks
 are driven by it (decision 5).
 
 ```python

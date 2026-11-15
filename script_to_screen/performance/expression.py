@@ -8,7 +8,6 @@ A `take` (a deliberate momentary action) outranks the tells.
 from ..world import SLOTS, sgn
 
 POSTURE = {"upright": (1.0, 1.0, 0), "contracted": (1.12, 0.8, 0), "lean_in": (1.0, 1.0, 1), "lean_back": (1.0, 1.0, -1)}
-TELL_KEYS = {"attention", "orient", "distance", "posture", "tone", "latency"}
 
 
 def observe(st, ents, gcfg, flag, tid):
@@ -39,9 +38,7 @@ def observe(st, ents, gcfg, flag, tid):
             else:
                 info["level"] = max(0, min(len(tells), int(inten * info["gain"] + 0.5)))
                 for tell in tells[:info["level"]]:
-                    for k, v in tell.items():
-                        if k not in TELL_KEYS:
-                            flag("error", tid, f"{e}: unknown tell channel '{k}'")
+                    for k, v in tell.items():               # (a sheet's tells were checked when its entity entered)
                         expr[k] = expr.get(k, 0) + v if k == "distance" else v
         out[e] = (info, expr)
 

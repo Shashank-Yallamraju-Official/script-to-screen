@@ -3,7 +3,8 @@ import json
 
 from ..performance import Scene
 from ..readers import ledger, parity
-from ..script import ScriptError, series
+from ..script import ScriptError, Show, series
+from ..vocabulary import CHANNELS, PARAMS, params
 from . import A, COMMANDS, FAILED, Refused, address, command, describe, edit
 
 
@@ -158,6 +159,26 @@ def score(a):
     return dict(score=data, text=json.dumps(data, ensure_ascii=False, indent=1))
 
 
+@command("params", "Every value that can be tuned: what it means, its range, where it is written, and what changing it redoes.",
+         [A("--scope", "only one scope: turn, show, reaction, syllable, tone, entity, feel, sound")], "s2s params --scope feel")
+def params_(a):
+    ps = [p.describe() for p in PARAMS.values() if not a.scope or p.scope == a.scope]
+    if not ps:
+        raise Refused(f"no parameters in scope '{a.scope}'", hint="scopes: " + ", ".join(dict.fromkeys(p.scope for p in PARAMS.values())))
+    text = [f"{p['key']:22} {p['lo']:g}..{p['hi']:g} {p['unit']:9} {p['rebuild']:6}  {p['meaning']}" for p in ps]
+    return dict(params=ps, text="\n".join(text))
+
+
+@command("channels", "Everything an observer can see of an entity, and the values a tell or a deliberate action may set.", [], "s2s channels")
+def channels_(a):
+    cs = [c.describe() for c in CHANNELS.values()]
+    text = []
+    for c in cs:
+        text += [f"{c['key']:10} {c['meaning']}"] + ([f"{'':10}   a tell may set: {', '.join(c['tell'])}"] if c["tell"] else []) + \
+                ([f"{'':10}   an action may set: {', '.join(c['do'])}"] if c["do"] else [])
+    return dict(channels=cs, text="\n".join(text))
+
+
 @command("check", "Every problem in the show, or in one scene. Exit code 3 if there are errors.",
          [A("scene", "limit to one scene", nargs="?")], "s2s check thermostat")
 def check(a):
@@ -168,6 +189,8 @@ def check(a):
         root, only = address.show_root(a.show), None
     _, problems = ledger.build(root)
     problems = [p for p in problems if only is None or p["scene"] == only]
+    if only is None:                                             # the show's own files, against the declarations
+        problems += [dict(level=lv, scene="(show)", turn=None, msg=msg) for lv, msg in params.check_library(Show(root).feel)]
     nerr = sum(p["level"] == "error" for p in problems)
     text = [f"{p['level']:5} {p['scene']}" + (f":{p['turn']}" if p.get("turn") is not None else "") + f"  {p['msg']}" for p in problems]
     return dict(ok=nerr == 0, errors=nerr, warnings=len(problems) - nerr, problems=problems,
