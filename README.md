@@ -16,8 +16,8 @@ because the script says so, and every turn has to say why.
 |---|---|
 | `script_to_screen/script/` | Layer 1: reads a show's files |
 | `script_to_screen/world/` | Layer 2: what is true, and a log of every change and its cause |
-| `script_to_screen/performance/` | Layer 3: the scene played out on the tempo grid (the score) |
-| `script_to_screen/presentation/` | Layer 4: how the score looks and sounds |
+| `script_to_screen/performance/` | Layer 3: the scene played out on the tempo grid. Its output is the score: named tracks of plain data |
+| `script_to_screen/presentation/` | Layer 4: how a score looks and sounds. It is given a score and a look, and nothing else |
 | `script_to_screen/readers/` | The audience ledger and the parity check |
 | `script_to_screen/commands/` | Every command, declared once; the command line is generated from them |
 | `script_to_screen/tools/` | The editor |
@@ -244,6 +244,7 @@ command takes `--json`; a command that changes something also takes `--dry-run`,
 | See what is true as a turn ends | `s2s state thermostat:2` |
 | Ask why someone looks the way they do | `s2s explain thermostat:2 otis` |
 | List problems | `s2s check` |
+| Export what a scene decided, as JSON | `s2s score thermostat` |
 | Look at a moment, or a whole scene at a glance | `s2s still thermostat:2 --xray`, `s2s sheet thermostat` |
 | Render | `s2s render thermostat`, `s2s render --episode s01e01`, `s2s render --all` |
 | Change a line, a feeling, a timing, a reason | `set-line`, `set-feeling`, `set-timing`, `set-why` |

@@ -12,7 +12,7 @@ the phase before. A phase that does mean to change it re-records the reference a
 | 1 | **Four layers.** `script`, `world`, `performance`, `presentation` as packages that only import downward, enforced by a test. The world changes only through its methods and logs every change with its cause | Identical | Done (`phase-1`), byte-identical video |
 | 2 | **Commands and the command line.** 22 commands declared once: read, state, explain, check, still, contact sheet, render, eight changes to a scene, history and undo. JSON out, dry run, addresses, a journal with the writer's words. Changes to entity sheets, the library and show settings are not yet commands | Identical | Done (`phase-2`), byte-identical video |
 | 3 | **Identities and the series manifest.** `series.yaml` lists seasons, episodes and segments in order; a scene's id is its identity, wherever its file is. Arcs, addresses, references and output files use ids. Status per scene, with locking. `move`, `add-scene`, `set-status`, and `migrate` (schema 1 to 2) | Identical | Done (`phase-3`), byte-identical video |
-| 4 | **The score as the contract.** Presentation, sound, ledger and editor read named tracks and nothing else | Identical | |
+| 4 | **The score as the contract.** A scene's performance ends in a `Score` of named tracks (turns, pose, speech, events, focus, cast). Drawing, motion, sound, the ledger, parity and the editor are given a score and a look, and nothing else. A test renders a score that has been through JSON and gets the same picture and sound. `s2s score` exports it | Picture and sound identical. The score's fingerprint was re-recorded on purpose: its tracks were renamed and an event now says it is in passing instead of carrying a volume | Done (`phase-4`), byte-identical video |
 | 5 | **Registries.** Channels and parameters declared once | Identical | |
 | N1 | Nudging: fast and safe (see [lld-nudging.md](lld-nudging.md) section 10) | Identical | |
 | N2 | Nudging: cascade and `tune:` blocks | Identical | |
@@ -26,10 +26,9 @@ scoring, cached event replay across a long series, the MCP server.
 
 ## Known seams left by phase 1
 
-Phase 1 moved code without changing behaviour, so two things are in the right package but
-still reach across a line. Each is removed by the phase named.
+Phase 1 moved code without changing behaviour, so one thing is in the right package
+but still reaches across a line.
 
 | Seam | Removed in |
 |---|---|
-| The performance layer reads `feel.aside_volume` to set an event's loudness | 4 |
 | The editor keeps its own copy of a scene and overwrites the file on save | N1 |

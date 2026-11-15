@@ -5,6 +5,7 @@ import numpy as np
 
 from script_to_screen.performance import Scene, speech
 from script_to_screen.presentation import sound
+from script_to_screen.presentation.stage import Stage
 
 TONE, SCALE = dict(rate=2, contour="rise", range=3), [0, 2, 4, 7, 9]
 
@@ -45,8 +46,9 @@ def test_every_note_starts_where_its_syllable_is_shown(show):
     path = show.scene("s01/e01/01", [dict(id=1, enter={"a": {"slot": 2}}, why="x"),
                                       dict(id=2, who="a", say="Someone ate the last dumpling.", why="x")])
     sc = Scene(path)
-    sc.events = []                                                               # voices only
-    w = wave.open(io.BytesIO(sound.mix(sc)))
+    stage = Stage.of(sc)
+    stage.score.events = []                                                      # voices only
+    w = wave.open(io.BytesIO(sound.mix(stage)))
     audio = np.abs(np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).astype(float))
     for s in sc.lines[0]["sylls"]:
         i = int(s["start"] * sound.RATE)

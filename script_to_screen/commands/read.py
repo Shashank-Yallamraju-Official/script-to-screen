@@ -146,6 +146,18 @@ def explain(a):
                 history=history, because=steps, text="\n".join(steps))
 
 
+@command("score", "A scene's score as JSON: everything its performance decided. This is what drawing and sound are given.",
+         [A("scene", "the scene"), A("--track", "only this track, e.g. events or speech")], "s2s score thermostat --track events")
+def score(a):
+    root, path = address.scene(a.scene, a.show)
+    data = built(root, path)[0].score.to_data()
+    if a.track:
+        if a.track not in data:
+            raise Refused(f"a score has no track '{a.track}'", hint="tracks: " + ", ".join(data))
+        data = {a.track: data[a.track]}
+    return dict(score=data, text=json.dumps(data, ensure_ascii=False, indent=1))
+
+
 @command("check", "Every problem in the show, or in one scene. Exit code 3 if there are errors.",
          [A("scene", "limit to one scene", nargs="?")], "s2s check thermostat")
 def check(a):

@@ -109,10 +109,14 @@ def draw_note(c, x, y, tone, secs, ring):
     c.restore()
 
 
+_LAYOUT = {}
+
+
 def layout(line, tone):
     """Place every syllable once: which row it sits on, how far along, and how wide."""
-    if "_layout" not in line:
-        size = 21 if tone.get("text") == "small" else 28
+    size = 21 if tone.get("text") == "small" else 28
+    key = (tuple(s["text"] for s in line["sylls"]), size)
+    if key not in _LAYOUT:                               # worked out once per wording; the score is never written to
         f, rows, chunks, row, word = font(size), [], [], "", []
 
         def flush():
@@ -132,8 +136,8 @@ def layout(line, tone):
                 flush()
         flush()
         rows.append(row)
-        line["_layout"] = (f, size, max(f.measureText(r.rstrip()) for r in rows), [r.rstrip() for r in rows], chunks)
-    return line["_layout"]
+        _LAYOUT[key] = (f, size, max(f.measureText(r.rstrip()) for r in rows), [r.rstrip() for r in rows], chunks)
+    return _LAYOUT[key]
 
 
 WEIGHT = (0.7, 1.0, 1.4)       # the indicator's size on a weak syllable, a strong one, a main accent
@@ -166,10 +170,10 @@ def indicator(line, chunks, t):
     return row, x, h, w
 
 
-def draw_bubble(c, scene, line, t, o, ent):
-    feel, tone = scene.show.feel, scene.show.tones[line["tone"]]
+def draw_bubble(c, stage, line, t, o, ent):
+    feel, tone = stage.look.feel, stage.look.tones[line["tone"]]
     f, size, tw, rows, chunks = layout(line, tone)
-    W, H, pad = scene.W, scene.H, 22
+    W, H, pad = stage.W, stage.H, 22
     lift, rad = float(feel["cursor_lift"]), float(feel["cursor_size"])
     lane = lift + 2 * rad * WEIGHT[2] + 4                        # room under each row for the indicator
     lh = size + 6 + lane
@@ -221,9 +225,9 @@ def draw_bubble(c, scene, line, t, o, ent):
     c.restore()
 
 
-def draw_xray(c, scene, states):
+def draw_xray(c, stage, states):
     """Director's view, kept below the ground line: weight in the room, and felt against shown."""
-    W, gy = scene.W, ground(scene.H)
+    W, gy = stage.W, ground(stage.H)
     for s in range(SLOTS):
         x = slot_x(s, W)
         c.drawLine(x, gy, x, gy + 7, stroke(RULE, 2))
@@ -235,7 +239,7 @@ def draw_xray(c, scene, states):
             c.drawRoundRect(skia.Rect.MakeXYWH(x - 32, gy + 16, 64, 6), 3, 3, fill(RULE))
             c.drawRoundRect(skia.Rect.MakeXYWH(x - 32, gy + 16, 64 * info["weight"], 6), 3, 3, fill(INK))
         if info["felt"]:                                        # ringed pip = felt, filled pip = shown
-            color, n = scene.show.emotions.get(info["felt"], INK), max(info["intensity"], info["level"])
+            color, n = stage.look.emotions.get(info["felt"], INK), max(info["intensity"], info["level"])
             for i in range(n):                                  # a small solid pip = amplified beyond what is felt
                 px = x + (i - (n - 1) / 2) * 16
                 if i < info["level"]:
@@ -244,24 +248,24 @@ def draw_xray(c, scene, states):
                     c.drawCircle(px, gy + 38, 5.5, stroke(color, 2))
 
 
-def draw_frame(c, scene, F, xray=False, slate=False):
-    W, H, t, feel = scene.W, scene.H, F / scene.fps, scene.show.feel
+def draw_frame(c, stage, F, xray=False, slate=False):
+    W, H, t, feel = stage.W, stage.H, F / stage.fps, stage.look.feel
     c.clear(col(PAPER))
     c.drawLine(0, ground(H), W, ground(H), stroke(RULE, 2))
-    states = {e: s for e in scene.keys if (s := pose(scene, e, t)) is not None}
+    states = {e: s for e in stage.score.pose if (s := pose(stage, e, t)) is not None}
     if xray:
-        draw_xray(c, scene, states)
-    line = scene.line_at(t)
+        draw_xray(c, stage, states)
+    line = stage.score.line_at(t)
     focal, dim = None, 0.0
-    for a0, a1, who in scene.focus:                             # a featured reaction: everyone else recedes
+    for a0, a1, who in stage.score.focus:                             # a featured reaction: everyone else recedes
         if a0 - 0.15 <= t <= a1 + 0.15:
             focal = who
             dim = float(feel["focus_dim"]) * smooth((t - a0 + 0.15) / 0.15) * (1 - smooth((t - a1) / 0.15))
     for e in sorted(states, key=lambda e: bool(line and line["who"] == e)):
         o = states[e] if e == focal or not dim else dict(states[e], alpha=states[e]["alpha"] * (1 - dim))
-        draw_token(c, scene.ents[e], o, W, H, feel)
+        draw_token(c, stage.look.cast[e], o, W, H, feel)
     if line and line["who"] in states:
-        draw_bubble(c, scene, line, t, states[line["who"]], scene.ents[line["who"]])
+        draw_bubble(c, stage, line, t, states[line["who"]], stage.look.cast[line["who"]])
     if slate:
-        turn = scene.turn_at(t)
-        c.drawString(f"T{turn['id']} · {t / scene.step - turn['start']:.2f}", 20, 32, font(16, mono=True), fill(INK, 150))
+        turn = stage.score.turn_at(t)
+        c.drawString(f"T{turn['id']} · {t / stage.score.step - turn['start']:.2f}", 20, 32, font(16, mono=True), fill(INK, 150))

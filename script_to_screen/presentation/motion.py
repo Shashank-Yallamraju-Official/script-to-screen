@@ -17,9 +17,9 @@ def back(k, amount):
     return 1 + (c + 1) * (k - 1) ** 3 + c * (k - 1) ** 2
 
 
-def pose(scene, e, t):
+def pose(stage, e, t):
     """What entity e looks like at time t, easing from its previous snapshot."""
-    ks, feel = scene.keys[e], scene.show.feel
+    ks, feel = stage.score.pose[e], stage.look.feel
     idx = max((i for i, (kt, _) in enumerate(ks) if kt <= t + 1e-9), default=None)
     if idx is None:
         return None

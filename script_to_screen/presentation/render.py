@@ -13,34 +13,34 @@ from . import sound
 from .draw import draw_frame
 
 
-def frame_jpeg(scene, F, scale=1.0, quality=85, xray=False, slate=False):
-    surface = skia.Surface(int(scene.W * scale), int(scene.H * scale))
+def frame_jpeg(stage, F, scale=1.0, quality=85, xray=False, slate=False):
+    surface = skia.Surface(int(stage.W * scale), int(stage.H * scale))
     c = surface.getCanvas()
     c.scale(scale, scale)
-    draw_frame(c, scene, F, xray, slate)
+    draw_frame(c, stage, F, xray, slate)
     return bytes(surface.makeImageSnapshot().encodeToData(skia.kJPEG, quality))
 
 
-def out_path(scene):
-    return scene.root / "out" / (scene.key + ".mp4")
+def out_path(stage):
+    return stage.root / "out" / (stage.score.id + ".mp4")
 
 
-def render(scene, xray=False, slate=False):
-    out = out_path(scene)
+def render(stage, xray=False, slate=False):
+    out = out_path(stage)
     out.parent.mkdir(parents=True, exist_ok=True)
     silent, wav, tmp = out.with_suffix(".silent.mp4"), out.with_suffix(".wav"), out.with_suffix(".part.mp4")
     ff = subprocess.Popen(
-        ["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgba", "-s", f"{scene.W}x{scene.H}",
-         "-r", str(scene.fps), "-i", "-", "-c:v", "libx264", "-crf", "18", "-preset", "veryfast",
+        ["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgba", "-s", f"{stage.W}x{stage.H}",
+         "-r", str(stage.fps), "-i", "-", "-c:v", "libx264", "-crf", "18", "-preset", "veryfast",
          "-pix_fmt", "yuv420p", str(silent)], stdin=subprocess.PIPE)
-    surface = skia.Surface(scene.W, scene.H)
-    for F in range(scene.total):
-        draw_frame(surface.getCanvas(), scene, F, xray, slate)
+    surface = skia.Surface(stage.W, stage.H)
+    for F in range(stage.total):
+        draw_frame(surface.getCanvas(), stage, F, xray, slate)
         ff.stdin.write(surface.toarray(colorType=skia.kRGBA_8888_ColorType).tobytes())
     ff.stdin.close()
     if ff.wait() != 0:
         sys.exit("ffmpeg failed")
-    wav.write_bytes(sound.mix(scene))
+    wav.write_bytes(sound.mix(stage))
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(silent), "-i", str(wav), "-map", "0:v", "-map", "1:a",
                     "-c:v", "copy", "-c:a", "aac", "-b:a", "160k", "-shortest", str(tmp)], check=True)
     os.replace(tmp, out)
@@ -49,18 +49,18 @@ def render(scene, xray=False, slate=False):
     return out
 
 
-def still(scene, F, png, xray=False, slate=False):
+def still(stage, F, png, xray=False, slate=False):
     """One frame as a PNG."""
-    surface = skia.Surface(scene.W, scene.H)
-    draw_frame(surface.getCanvas(), scene, F, xray, slate)
+    surface = skia.Surface(stage.W, stage.H)
+    draw_frame(surface.getCanvas(), stage, F, xray, slate)
     Path(png).parent.mkdir(parents=True, exist_ok=True)
     surface.makeImageSnapshot().save(str(png), skia.kPNG)
     return Path(png)
 
 
-def sheet(scene, frames, png, cols=4, scale=0.25, xray=False):
+def sheet(stage, frames, png, cols=4, scale=0.25, xray=False):
     """A contact sheet: the given frames side by side, each with its turn label."""
-    w, h = int(scene.W * scale), int(scene.H * scale)
+    w, h = int(stage.W * scale), int(stage.H * scale)
     rows = (len(frames) + cols - 1) // cols
     surface = skia.Surface(w * min(cols, len(frames)), h * rows)
     c = surface.getCanvas()
@@ -70,7 +70,7 @@ def sheet(scene, frames, png, cols=4, scale=0.25, xray=False):
         c.translate((k % cols) * w, (k // cols) * h)
         c.clipRect(skia.Rect.MakeWH(w, h))
         c.scale(scale, scale)
-        draw_frame(c, scene, F, xray, True)
+        draw_frame(c, stage, F, xray, True)
         c.restore()
     Path(png).parent.mkdir(parents=True, exist_ok=True)
     surface.makeImageSnapshot().save(str(png), skia.kPNG)

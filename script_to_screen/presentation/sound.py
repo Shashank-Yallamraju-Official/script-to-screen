@@ -57,24 +57,25 @@ def sound_for(sounds, name):
     return sounds.get(name) or sounds.get(name.split(".")[0])
 
 
-def mix(scene):
+def mix(stage):
     """The whole scene's sound: one note per syllable, plus an effect per event."""
-    audio = np.zeros(int((scene.dur + 0.6) * RATE), dtype=np.float64)
-    feel = scene.show.feel
+    audio = np.zeros(int((stage.score.dur + 0.6) * RATE), dtype=np.float64)
+    feel = stage.look.feel
 
     def add(at, x):
         i = int(at * RATE)
         if 0 <= i < len(audio):
             audio[i:i + len(x)] += x[: len(audio) - i]
 
-    for line in scene.lines:
-        ent, tone = scene.ents[line["who"]], scene.show.tones[line["tone"]]
+    for line in stage.score.speech:
+        ent, tone = stage.look.cast[line["who"]], stage.look.tones[line["tone"]]
         for s in line["sylls"]:
             hz = ent["voice"] * tone.get("pitch", 1) * 2 ** (s["semi"] / 12)
             add(s["start"], note(hz, min(s["voiced"], 0.6), tone.get("vol", 0.5) * LOUD[s["stress"]], ent.get("timbre", "sine"),
                                  float(feel["voice_attack"]), float(feel["voice_ring"])))
-    for at, name, _, gain in scene.events:
-        p = sound_for(scene.show.sounds, name)
+    aside = float(feel["aside_volume"])                          # a reaction in passing is quieter
+    for at, name, _, quiet in stage.score.events:
+        p = sound_for(stage.look.sounds, name)
         if p and float(p.get("vol", 0)) > 0:
-            add(at, effect(p) * gain)
+            add(at, effect(p) * (aside if quiet else 1.0))
     return wav_bytes(audio)

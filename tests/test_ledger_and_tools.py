@@ -5,6 +5,7 @@ import skia
 from script_to_screen.performance import Scene
 from script_to_screen.presentation.draw import draw_frame
 from script_to_screen.presentation.render import frame_jpeg
+from script_to_screen.presentation.stage import Stage
 from script_to_screen.readers import ledger
 from script_to_screen.script import scene_paths, series
 from script_to_screen.tools.editor import Session
@@ -45,7 +46,7 @@ def test_the_demo_show_has_no_errors():
 def test_every_demo_scene_draws_and_sounds():
     from script_to_screen.presentation import sound
     for path in scene_paths(DEMO):
-        sc = Scene(path)
+        sc = Stage.of(Scene(path))
         surface = skia.Surface(sc.W, sc.H)
         for F in range(0, sc.total, max(1, sc.total // 12)):
             draw_frame(surface.getCanvas(), sc, F, xray=F % 2 == 0, slate=True)
@@ -80,6 +81,6 @@ def test_the_reference_scenes_have_not_changed():
     for ref in sorted((DEMO / "reference").glob("*.json")):
         was = json.loads(ref.read_text())
         path = series(DEMO).by_id[was["scene"]]["path"]
-        sc = Scene(path)
+        sc = Scene(path).score
         now = __import__("hashlib").sha256(json.dumps(parity.score_of(sc), sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16]
         assert now == was["score"], f"{was['scene']} no longer produces the recorded score"

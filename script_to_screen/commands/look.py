@@ -1,6 +1,7 @@
 """Commands that look: a still, a contact sheet, a rendered clip. Each prints where its file went."""
 from ..performance import Scene
 from ..presentation import render as R
+from ..presentation.stage import Stage
 from ..readers import ledger
 from ..script import scene_key, scene_paths, series
 from . import A, FAILED, Refused, address, command
@@ -9,8 +10,8 @@ from .read import built
 XRAY = A("--xray", "the director's view: weight in the room, and felt against shown", action="store_true")
 
 
-def frame_of(sc, t, steps):
-    return min(sc.total - 1, round((t["start"] + steps) * sc.step * sc.fps))
+def frame_of(st, t, steps):
+    return min(st.total - 1, round((t["start"] + steps) * st.score.step * st.fps))
 
 
 def landed(t):
@@ -25,8 +26,9 @@ def still(a):
     root, path, tid, steps = address.turn(a.turn, a.show)
     sc, t = built(root, path, tid)
     steps = steps if "+" in a.turn else landed(t)
-    png = R.out_path(sc).with_name(f"{R.out_path(sc).stem}_t{t['id']}_{steps:g}.png")
-    R.still(sc, frame_of(sc, t, steps), png, a.xray, a.slate)
+    st = Stage.of(sc)
+    png = R.out_path(st).with_name(f"{R.out_path(st).stem}_t{t['id']}_{steps:g}.png")
+    R.still(st, frame_of(st, t, steps), png, a.xray, a.slate)
     return dict(file=str(png), address=address.of(root, path, t["id"]), steps=steps, text=str(png))
 
 
@@ -35,8 +37,9 @@ def still(a):
 def sheet(a):
     root, path = address.scene(a.scene, a.show)
     sc, _ = built(root, path)
-    png = R.out_path(sc).with_name(R.out_path(sc).stem + "_sheet.png")
-    R.sheet(sc, [frame_of(sc, t, landed(t)) for t in sc.turns], png, a.cols, xray=a.xray)
+    st = Stage.of(sc)
+    png = R.out_path(st).with_name(R.out_path(st).stem + "_sheet.png")
+    R.sheet(st, [frame_of(st, t, landed(t)) for t in sc.turns], png, a.cols, xray=a.xray)
     return dict(file=str(png), frames=[address.of(root, path, t["id"]) for t in sc.turns], text=str(png))
 
 
@@ -59,8 +62,8 @@ def render(a):
     if any(p["level"] == "error" for p in problems):
         return dict(ok=False, problems=problems, exit=FAILED,
                     text="not rendered: fix these first\n" + "\n".join(f"  {p['scene']}" + (f":{p['turn']}" if p.get("turn") is not None else "") + f"  {p['msg']}" for p in problems if p["level"] == "error"))
-    scenes = [Scene(p) for p in paths]
-    files = [dict(scene=sc.key, file=str(R.render(sc, a.xray, a.slate)), seconds=round(sc.dur, 1)) for sc in scenes]
+    scenes = [Stage.of(Scene(p)) for p in paths]
+    files = [dict(scene=st.score.id, file=str(R.render(st, a.xray, a.slate)), seconds=round(st.score.dur, 1)) for st in scenes]
     out = dict(files=files, problems=problems)
     if a.episode:
         out["joined"] = str(R.join(root, a.episode, scenes))

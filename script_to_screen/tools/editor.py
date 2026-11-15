@@ -21,6 +21,7 @@ from ruamel.yaml.comments import CommentedSeq
 from ..performance import Scene
 from ..presentation import sound
 from ..presentation.render import frame_jpeg, out_path
+from ..presentation.stage import Look, Stage
 from ..readers import ledger
 from ..script import find_root
 
@@ -84,7 +85,8 @@ class Session:
         self.rebuild()
 
     def rebuild(self):
-        self.scene = Scene(self.path, script=self.doc, lib=self.lib)
+        self.scene = Scene(self.path, script=self.doc, lib=self.lib).score     # the editor reads the score and the look
+        self.stage = Stage(self.scene, Look.load(self.root, self.scene.cast, self.lib), self.root)
         self.table, self.problems = ledger.build(self.root, override={self.path: self.doc}, lib=self.lib)
         self.rev += 1
         self.cache = {}
@@ -99,10 +101,10 @@ class Session:
         self.scene_dirty, self.lib_dirty = False, set()
 
     def state(self):
-        sc = self.scene
+        sc, look, stage = self.scene, self.stage.look, self.stage
         turns = []
         for t in sc.turns:
-            lanes = {e: [] for e in sc.ents}
+            lanes = {e: [] for e in sc.cast}
             for at, infos in t["info"]:
                 for e, info in infos.items():
                     if not info["felt"]:
@@ -115,22 +117,22 @@ class Session:
             say = None
             if t["line"]:
                 tone = t["line"]["tone"]
-                say = dict(who=t["who"], text=t["line"]["text"], tone=tone, sung=t["line"]["sung"], tone_color=sc.show.tones[tone]["color"],
+                say = dict(who=t["who"], text=t["line"]["text"], tone=tone, sung=t["line"]["sung"], tone_color=look.tones[tone]["color"],
                            at=t["say_at"], reveal=t["reveal"], latency=t["latency"], sylls=t["sylls"],
                            rhythm=list(t["rhythm"]) if t["rhythm"] is not None else None,
                            melody=list(t["melody"]) if t["melody"] is not None else None,
                            stress=list(t["stress"]) if t["stress"] is not None else None)
             turns.append(dict(id=t["id"], index=t["index"], start=t["start"], length=t["length"], why=t["why"], who=t["who"],
                               pause=t["pause"], hold=t["hold"], say=say, lanes=lanes, reacts=t["reacts"]))
-        mine = [p for p in self.problems if p["scene"] == sc.key]
+        mine = [p for p in self.problems if p["scene"] == sc.id]
         feel, sounds = self.lib["feel"], self.lib["sounds"]
-        return dict(rev=self.rev, dirty=self.dirty, fps=sc.fps, step=sc.step, tempo=sc.tempo,
-                    spb=sc.show.cfg["steps_per_beat"], scale=list(sc.show.cfg["scale"]),
-                    width=sc.W, height=sc.H, total=sc.total, steps=sc.steps,
+        return dict(rev=self.rev, dirty=self.dirty, fps=stage.fps, step=sc.step, tempo=sc.tempo,
+                    spb=sc.grid["steps_per_beat"], scale=list(sc.grid["scale"]),
+                    width=stage.W, height=stage.H, total=stage.total, steps=sc.steps,
                     title=sc.title, file=str(self.path.relative_to(self.root)), index=self.i, count=len(self.paths),
-                    entities=[dict(id=e, color=ent["color"], kind=str(ent.get("kind", ""))) for e, ent in sc.ents.items()],
-                    emotions=sc.show.emotions, turns=turns, problems=mine,
-                    carried=[f"{e} still feels {f[0]} {f[1]}" + (f" about {f[2]}" if f[2] else "") for e, f in sc.carried.items() if e in sc.ents],
+                    entities=[dict(id=e, color=ent["color"], kind=str(ent.get("kind", ""))) for e, ent in look.cast.items()],
+                    emotions=look.emotions, turns=turns, problems=mine,
+                    carried=[f"{e} still feels {f[0]} {f[1]}" + (f" about {f[2]}" if f[2] else "") for e, f in sc.carried.items() if e in sc.cast],
                     offscreen=list(sc.offscreen),
                     ledger={e: {emo: {k: c[k] for k in ("seen", "need", "learned", "positions", "hidden")}
                                 for emo, c in row.items()} for e, row in self.table.items()},
@@ -140,13 +142,13 @@ class Session:
 
     def patch(self, ops):
         """Apply [{path: [turns, i, key], value}] to the scene's working copy."""
-        dirty_from = self.scene.total
+        dirty_from = self.stage.total
         for op in ops:
             path, value = op["path"], op["value"]
             if len(path) == 5 and path[0] == "turns" and path[2] == "react" and path[4] == "beat":
                 i = int(path[1])                         # how long a featured reaction holds the scene
                 self.doc["turns"][i]["react"][int(path[3])]["beat"] = tidy(min(max(float(value), 0.25), 200))
-                dirty_from = min(dirty_from, round(self.scene.turns[i]["start"] * self.scene.step * self.scene.fps))
+                dirty_from = min(dirty_from, round(self.scene.turns[i]["start"] * self.scene.step * self.stage.fps))
                 self.scene_dirty = True
                 self.rebuild()
                 continue
@@ -156,7 +158,7 @@ class Session:
             turn = self.doc["turns"][i]
             if key in NUMBERS:
                 value = tidy(min(max(float(value), 0), NUMBERS[key]))
-                if value == self.scene.show.cfg["timing"][key]:
+                if value == self.scene.grid["timing"][key]:
                     value = None                         # the show default needs no line in the file
             elif value is not None:
                 seq = CommentedSeq(tidy(max(v, 0.25)) if key == "rhythm" else max(0, min(2, int(v))) if key == "stress" else int(round(v)) for v in value)
@@ -169,7 +171,7 @@ class Session:
             else:                                        # new lines go above `why`, which stays last
                 keys = list(turn)
                 turn.insert(keys.index("why") if "why" in keys else len(keys), key, value)
-            dirty_from = min(dirty_from, round(self.scene.turns[i]["start"] * self.scene.step * self.scene.fps))
+            dirty_from = min(dirty_from, round(self.scene.turns[i]["start"] * self.scene.step * self.stage.fps))
             self.scene_dirty = True
             self.rebuild()
         return dirty_from
@@ -191,7 +193,7 @@ class Session:
         if key not in self.cache:
             if len(self.cache) > 12000:
                 self.cache = {}
-            self.cache[key] = frame_jpeg(self.scene, F, 1.0 if full else 0.5, 90 if full else 82, xray)
+            self.cache[key] = frame_jpeg(self.stage, F, 1.0 if full else 0.5, 90 if full else 82, xray)
         return self.cache[key]
 
 
@@ -221,15 +223,15 @@ def make_handler(sess):
                     if url.path == "/state":
                         return self.send(sess.state())
                     if url.path == "/frame":
-                        F = min(max(int(q["f"][0]), 0), sess.scene.total - 1)
+                        F = min(max(int(q["f"][0]), 0), sess.stage.total - 1)
                         return self.send(sess.frame(F, flag("full"), flag("xray")), "image/jpeg")
                     if url.path == "/audio":
-                        return self.send(sound.mix(sess.scene), "audio/wav")
+                        return self.send(sound.mix(sess.stage), "audio/wav")
                     if url.path == "/sfx":                   # one sound on its own, to audition it
-                        p = sound.sound_for(sess.scene.show.sounds, q["name"][0])
+                        p = sound.sound_for(sess.stage.look.sounds, q["name"][0])
                         return self.send(sound.wav_bytes(sound.effect(p)), "audio/wav")
                     if url.path == "/video":
-                        return self.send(out_path(sess.scene).read_bytes(), "video/mp4")
+                        return self.send(out_path(sess.stage).read_bytes(), "video/mp4")
                 self.send(dict(error="not found"), status=404)
             except BrokenPipeError:
                 pass
@@ -253,7 +255,7 @@ def make_handler(sess):
                     if run.returncode:
                         lines = [ln for ln in run.stderr.splitlines() if "Fontconfig" not in ln]
                         return self.send(dict(error="\n".join(lines[-6:])), status=500)
-                    return self.send(dict(file=str(out_path(sess.scene))))
+                    return self.send(dict(file=str(out_path(sess.stage))))
                 with sess.lock:
                     out = {}
                     if self.path == "/patch":

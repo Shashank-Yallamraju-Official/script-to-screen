@@ -2,6 +2,7 @@ import pytest
 
 from script_to_screen.performance import Scene
 from script_to_screen.presentation.motion import pose
+from script_to_screen.presentation.stage import Stage
 from script_to_screen.script import ScriptError
 
 ENTER = dict(id=1, enter={"a": {"slot": 2}, "b": {"slot": 5}}, why="They are here.")
@@ -73,7 +74,7 @@ def test_a_featured_reaction_makes_the_scene_wait(show):
     (start, end, who), = sc1.focus
     assert who == "b" and end - start == pytest.approx(8 * sc1.step)
     assert sc1.lines[-1]["end"] == pytest.approx(start)                            # the speaker's bubble closes for it
-    mid, after = pose(sc1, "b", (start + end) / 2), pose(sc1, "b", end + 1)
+    mid, after = pose(Stage.of(sc1), "b", (start + end) / 2), pose(Stage.of(sc1), "b", end + 1)
     assert (mid["lx"], mid["ly"]) == (0, 0) and after["lx"] == pytest.approx(0)    # looks out; b faces out anyway
 
 
@@ -82,8 +83,8 @@ def test_a_take_is_dropped_when_its_moment_ends(show):
              dict(id=2, who="a", say="You.", react=[dict(who="b", do={"attention": "viewer"}, beat=4)], why="x")]
     sc = Scene(show.scene("s01/e01/01", turns))
     (start, end, _), = sc.focus
-    assert pose(sc, "b", (start + end) / 2 + 0.1)["lx"] == pytest.approx(0)        # at the viewer during the beat
-    assert pose(sc, "b", end + 1)["lx"] == -1                                      # back to a afterwards
+    assert pose(Stage.of(sc), "b", (start + end) / 2 + 0.1)["lx"] == pytest.approx(0)        # at the viewer during the beat
+    assert pose(Stage.of(sc), "b", end + 1)["lx"] == -1                                      # back to a afterwards
 
 
 def test_a_reaction_on_a_word_that_is_not_there_is_an_error(show):

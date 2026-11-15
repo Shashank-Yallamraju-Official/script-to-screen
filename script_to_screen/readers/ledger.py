@@ -24,19 +24,19 @@ def build(root, override=None, lib=None):
     seen, table, problems, carry = {}, {}, [], {}
     for path in scene_paths(root):
         try:
-            sc = Scene(path, script=override.get(path), lib=lib, carry=carry)
+            sc = Scene(path, script=override.get(path), lib=lib, carry=carry).score    # the ledger reads the score, like any consumer
         except (ScriptError, KeyError, TypeError) as e:
             problems.append(dict(level="error", scene=scene_key(path, root), turn=None, msg=str(e)))
             continue
         carry = sc.carry_out                                 # feelings and standing carry into the next scene
         for p in sc.problems:
-            problems.append(dict(p, scene=sc.key))
+            problems.append(dict(p, scene=sc.id))
         for t in sc.turns:                                   # payoffs must rest on learned tells
             for e, emo in t["relies_on"].items():
-                sig = json.dumps(sc.ents[e]["tells"].get(emo), sort_keys=True) if e in sc.ents else None
+                sig = json.dumps(sc.cast[e]["tells"].get(emo), sort_keys=True) if e in sc.cast else None
                 n = len(seen.get((e, emo, sig), []))
                 if n < need:
-                    problems.append(dict(level="error", scene=sc.key, turn=t["id"],
+                    problems.append(dict(level="error", scene=sc.id, turn=t["id"],
                                          msg=f"relies on {e}'s {emo} tell, which the audience has seen in {n} of {need} scenes"))
         cells = {}
         for t in sc.turns:
@@ -50,7 +50,7 @@ def build(root, override=None, lib=None):
         fresh = {}
         for (e, emo), c in cells.items():
             # a changed tell (an arc step) has a new signature, so the audience starts over on it
-            sig = json.dumps(sc.ents[e]["tells"].get(emo), sort_keys=True)
+            sig = json.dumps(sc.cast[e]["tells"].get(emo), sort_keys=True)
             row = table.setdefault(e, {}).setdefault(emo, dict(seen=0, need=need, learned=False, positions=[], hidden=0, sig=sig))
             if row["sig"] != sig:
                 row.update(seen=0, learned=False, positions=[], sig=sig)
@@ -60,12 +60,12 @@ def build(root, override=None, lib=None):
             prior = seen.setdefault((e, emo, sig), [])
             if not prior:
                 fresh.setdefault(e, []).append(emo)
-            prior.append(sc.key)
+            prior.append(sc.id)
             row["seen"] = len(prior)
             row["learned"] = row["seen"] >= need
             row["positions"] = sorted(set(row["positions"]) | c["positions"])
         for e, emos in fresh.items():
             if len(emos) > 1:
-                problems.append(dict(level="warn", scene=sc.key, turn=None,
+                problems.append(dict(level="warn", scene=sc.id, turn=None,
                                      msg=f"{e} shows {len(emos)} tells the audience has never seen ({', '.join(emos)}); one new thing per scene reads more clearly"))
     return table, problems

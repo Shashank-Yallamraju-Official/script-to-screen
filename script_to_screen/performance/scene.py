@@ -2,9 +2,8 @@
 
 The Scene is the conductor. For each turn of the script it changes the world, asks the
 expression step what now shows, plans the line as syllables on the grid, and places
-reactions. What it leaves behind is the score: `turns`, `keys` (what each entity shows, and
-when), `lines` (bubbles and their syllables), `events` (everything that can make a sound)
-and `focus` (who holds the scene). Nothing here draws or makes a sound.
+reactions. What it leaves behind is the score (see score.py), which is all that drawing,
+sound, the ledger and the editor are given. Nothing here draws or makes a sound.
 
 All times inside `_build` are in steps; the score is in seconds.
 """
@@ -15,6 +14,7 @@ from ..script import ScriptError, Show, find_root, load_yaml, scene_key, scene_p
 from ..world import World
 from . import speech
 from .expression import observe
+from .score import Score
 
 
 def carry_into(path, root, lib=None):
@@ -34,7 +34,6 @@ class Scene:
         carry = carry_into(self.path, self.root, lib) if carry is None else carry
         self.show = Show(self.root, lib)
         cfg = self.show.cfg
-        self.W, self.H, self.fps = cfg["width"], cfg["height"], cfg["fps"]
         self.key = scene_key(self.path, self.root)
         self.script = script if script is not None else load_yaml(self.path)
         self.title = str(self.script.get("scene", self.path.stem))
@@ -44,6 +43,7 @@ class Scene:
         self.focus, self.quiet = [], set()       # featured reactions (start, end, who); background ones (time, who)
         self.world = World(self.show, self.key, carry, self.flag)
         self.carry, self.ents = self.world.carry, self.world.ents
+        self._score = None
         self._build()
 
     def flag(self, level, turn, msg):
@@ -207,7 +207,6 @@ class Scene:
         self.carry_out = world.carry_out()
         self.steps = t0
         self.dur = t0 * sec
-        self.total = max(1, round(self.dur * self.fps))
         # every visible change is also an event that can make a sound
         for e, ks in self.keys.items():
             prev = None
@@ -229,9 +228,8 @@ class Scene:
                     if f1["felt"] and (f1["felt"], f1["intensity"]) != (f0["felt"], f0["intensity"]):
                         self.events.append((t, "feel." + f1["felt"], e))
                 prev = o
-        aside = float(self.show.feel["aside_volume"])            # background reactions are quieter
-        self.events = sorted(((t, n, e, aside if (round(t, 4), e) in self.quiet else 1.0) for t, n, e in self.events),
-                             key=lambda ev: ev[0])
+        # the fourth value says the event belongs to a reaction in passing; how much quieter that is, is presentation's call
+        self.events = sorted(((t, n, e, (round(t, 4), e) in self.quiet) for t, n, e in self.events), key=lambda ev: ev[0])
 
     def _trigger(self, on, sylls, say_at, tid):
         """When a background reaction fires, in steps from the turn's start: on a word of the line
@@ -253,16 +251,15 @@ class Scene:
         self.flag("error", tid, f"a reaction is set to fire on '{on}', which is not in the line")
         return end
 
-    # ---- reading it back (times in seconds) ----------------------------------------------------
-    def turn_at(self, t):
-        s = t / self.step
-        for turn in self.turns:
-            if turn["start"] <= s < turn["start"] + turn["length"]:
-                return turn
-        return self.turns[-1]
-
-    def line_at(self, t):
-        for ln in self.lines:
-            if ln["start"] <= t < ln["end"]:
-                return ln
-        return None
+    @property
+    def score(self):
+        """What this scene decided, as the contract every consumer reads. See score.py."""
+        if self._score is None:
+            cfg = self.show.cfg
+            self._score = Score(
+                id=self.key, title=self.title, tempo=self.tempo, step=self.step, steps=self.steps, dur=self.dur,
+                grid=dict(steps_per_beat=cfg["steps_per_beat"], scale=list(cfg["scale"]), timing=dict(cfg["timing"])),
+                turns=self.turns, pose=self.keys, speech=self.lines, events=self.events, focus=self.focus,
+                cast={e: dict(tells=ent["tells"]) for e, ent in self.ents.items()},
+                carried=self.carried, offscreen=self.offscreen, carry_out=self.carry_out, problems=self.problems)
+        return self._score
