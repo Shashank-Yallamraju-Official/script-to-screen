@@ -69,20 +69,31 @@ Time is counted in **steps** of a tempo grid (`tempo` and `steps_per_beat` in `s
 at the defaults one step is an eighth of a second). Pauses, holds and syllables all land on
 the grid, and fractions of a step are allowed for nudges. A scene can set its own `tempo`.
 
-A line is split into syllables. Each syllable is one sung note, and its text appears on the
-frame that note starts. The tone supplies a default rhythm and melody; a line can set its own:
+A line is split into syllables. Each syllable is one note, and its text appears on the frame
+that note starts. Each syllable also has a **stress**, which is what stops speech sounding
+like a drum pattern:
+
+| Stress | Length | Loudness | Pitch | Speaker | Text |
+|---|---|---|---|---|---|
+| 0 weak | Half the tone's rate | Quiet | On the contour | Still | Just appears |
+| 1 strong | The tone's rate | Louder | A note higher | Small rise | Small pop |
+| 2 main accent of the phrase | Half as long again | Loudest | A note higher (lower on a falling line) | Full rise | Full pop |
+
+Stress, rhythm and melody are worked out from the words and the tone; a line can set its own:
 
     say: Some·one ate the last dumpling.
-    rhythm: [2, 2, 2, 2, 2, 2, 6]       # steps per syllable
-    melody: [0, 0, 7, 4, 7, 4, 7]       # semitones above the speaker's voice
+    stress: [1, 0, 1, 0, 1, 2, 0]       # 0 weak, 1 strong, 2 main accent
+    rhythm: [2, 1, 2, 1, 2, 3, 2]       # steps per syllable
+    melody: [2, 0, 4, 4, 7, 9, 7]       # semitones above the speaker's voice
 
-Syllables are guessed from spelling. Where the guess is wrong, write a middle dot in the word.
+Syllables and stress are guessed from spelling. Where a guess is wrong, write a middle dot
+to break a word (some·one) or a caret before the syllable that should be strong (to^day).
 
 | File | Tunes |
 |---|---|
 | `library/tones.yaml` | Per tone: rhythm, melody contour, voice, letter size, and the note shown on sung lines |
 | `library/sounds.yaml` | One synthesised sound per kind of event: enter, exit, move, turn, look, posture, bubble, feel |
-| `library/feel.yaml` | The small motions: settle time, overshoot, paper flip, stretch, hops, pops |
+| `library/feel.yaml` | The small motions (settle time, overshoot, paper flip, stretch, the speaker's rise, pops) and how voiced or plucked a syllable sounds |
 
 A turn can also place a sound by hand: `sfx: [{at: 4, sound: thud}]`.
 
@@ -112,6 +123,7 @@ A changed tell (an arc step) starts its count again.
 | Drag a line | Change the pause before it starts |
 | Drag a note up or down | Change a syllable's pitch (Alt for notes outside the scale) |
 | Drag a note's right edge | Change a syllable's length |
+| Double-click a note | Cycle its stress: weak, strong, main accent |
 | Hold Shift while dragging | Move in quarter steps |
 | T | Open the sliders for motion and sounds. Click a sound's name to hear it |
 | Space, L | Play or pause, loop the current turn |

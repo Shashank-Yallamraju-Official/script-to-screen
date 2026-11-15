@@ -65,7 +65,7 @@
   .say span { position: absolute; left: 18px; right: 6px; top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #111; font-weight: 500; font-size: 11px; pointer-events: none; }
   .say u { position: absolute; left: 6px; top: 6px; width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 0 1.5px #fff9; pointer-events: none; }
   .note { position: absolute; height: 11px; margin-top: -5.5px; border-radius: 3px; cursor: ns-resize; z-index: 2; font-size: 9px; line-height: 11px; color: #111; padding-left: 3px; overflow: hidden; white-space: nowrap; font-weight: 600; }
-  .note.set { box-shadow: inset 0 0 0 1.5px #fff8; }
+  .note.set { outline: 1.5px solid #fff8; outline-offset: -1.5px; }
   .note .ng { position: absolute; top: 0; right: 0; width: 5px; height: 100%; cursor: col-resize; background: #0003; }
   .note.live { outline: 2px solid #fff; }
   .sel { outline: 2px solid #fff; outline-offset: 1px; }
@@ -192,7 +192,7 @@ function build() {
   const lanes = [['turns', ICON.turns, 'Turns: hover one to read why it happens. Drag its right edge to change how long it holds.', ROW],
     ...S.entities.map(e => [e.id, `<i style="background:${e.color}"></i>`, `${e.id}${e.kind ? ' (' + e.kind + ')' : ''}: what it feels. Filled pips show; hollow pips are held in.`, ROW]),
     ['say', ICON.say, 'Lines: drag one to change the pause before it starts.', ROW],
-    ['roll', ICON.roll, 'Every syllable is one note. Drag a note up or down to change its pitch (Alt for notes outside the scale). Drag its right edge to change its length. Hold Shift for quarter steps. Notes you have set by hand have a white outline.', ROLL]];
+    ['roll', ICON.roll, 'Every syllable is one note. Brightness is stress: faint is weak, solid is strong, ringed is the phrase\'s main accent. Double-click a note to change its stress. Drag it up or down for pitch (Alt for notes outside the scale), or drag its right edge for length. Hold Shift for quarter steps. A white outline marks a line you have set by hand.', ROLL]];
   const y = {}; let top = RULER + 8;
   for (const l of lanes) { y[l[0]] = top + l[3] / 2; if (l[0] === 'roll') rollTop = top; top += l[3]; }
   const H = top + 8;
@@ -224,8 +224,8 @@ function build() {
       d.querySelector('span').textContent = q.text;
       mark(d, ['turns', t.index, 'pause'], 200, t.pause, c);
       q.sylls.forEach((s, i) => {
-        const n = el('note' + (q.melody || q.rhythm ? ' set' : ''), { left: x(at + s.at) + 'px', top: ySemi(s.semi) + 'px', width: Math.max(s.len * pps - 1, 4) + 'px', background: c },
-          `"${s.text.trim()}" · ${s.semi > 0 ? '+' : ''}${s.semi} semitones · ${num(s.len)} steps`);
+        const n = el('note' + (q.melody || q.rhythm || q.stress ? ' set' : ''), { left: x(at + s.at) + 'px', top: ySemi(s.semi) + 'px', width: Math.max(s.len * pps - 1, 4) + 'px', background: c + ['66', 'cc', 'ff'][s.stress], boxShadow: s.stress === 2 ? '0 0 0 2px ' + c : '' },
+          `"${s.text.trim()}" · ${['weak', 'strong', 'main accent'][s.stress]} · ${s.semi > 0 ? '+' : ''}${s.semi} semitones · ${num(s.len)} steps`);
         n.textContent = s.len * pps > 26 ? s.text.trim() : '';
         const ng = document.createElement('div'); ng.className = 'ng'; n.appendChild(ng);
         n._n = { ti: t.index, i }; n.dataset.note = t.index + ':' + i;
@@ -314,6 +314,12 @@ track.addEventListener('pointerdown', e => {
   }
   e.preventDefault();
 });
+track.addEventListener('dblclick', e => {                 // cycle a syllable's stress: weak, strong, main accent
+  const n = e.target.closest('.note'); if (!n) return;
+  const t = S.turns[n._n.ti], q = t.say, arr = q.sylls.map(s => s.stress), path = ['turns', t.index, 'stress'];
+  arr[n._n.i] = (arr[n._n.i] + 1) % 3;
+  commit(path, q.stress, arr); patch(path, arr).then(() => hear(t.index));
+});
 const scrubTo = e => setF(frameOf((e.clientX - scroll.getBoundingClientRect().left + scroll.scrollLeft - PAD) / pps), true);
 addEventListener('pointermove', e => {
   if (!drag) return;
@@ -336,7 +342,7 @@ addEventListener('pointerup', async () => {
   const d = drag; drag = null;
   if (d.scrub) return;
   while (sending) await new Promise(r => setTimeout(r, 20));
-  if (d.note) { commit(d.path, d.before, d.last); build(); if (!same(d.before, d.last)) hear(d.note.ti); return; }
+  if (d.note) { if (!same(d.before, d.last)) { commit(d.path, d.before, d.last); build(); hear(d.note.ti); } return; }   // an untouched note keeps its element, so a double-click still lands on it
   commit(d.m.path, d.start, d.last);
   build();
   if (d.was && d.start !== d.last) play(true);

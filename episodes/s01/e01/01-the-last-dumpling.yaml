@@ -7,8 +7,10 @@
 #   feel           what the turn makes entities feel: {entity: {emotion: 1-3}} or {entity: calm}
 #   pause, hold    steps before the line and after the turn (tune these in the editor)
 #   rhythm, melody one entry per syllable: its length in steps, its pitch in semitones
+#   stress         one entry per syllable: 0 weak, 1 strong, 2 the phrase's main accent
 #   sfx            sounds placed by hand: [{at: 4, sound: thud}]
-# Write a middle dot inside a word (some·one) to say where its syllables break.
+# Write a middle dot inside a word (some·one) to say where its syllables break, and a caret
+# before the syllable that should be strong (to^day).
 # Scenes run in path order: episodes/<season>/<episode>/<scene>.yaml. What entities feel, and
 # their status, carry into the next scene. To change that, the next scene opens with
 #   offscreen: [{feel: {otis: calm}, why: A night's sleep.}]

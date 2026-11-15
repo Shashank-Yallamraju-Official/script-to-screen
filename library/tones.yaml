@@ -1,5 +1,6 @@
 # A tone is how a line is delivered. It sets, all from one place:
-#   the rhythm                  rate = steps per syllable, stretch = how much longer the last one is
+#   the rhythm                  rate = steps for a strong syllable (weak ones take half, a phrase's
+#                               main accent half as much again), stretch = how much longer the last one is
 #   the melody                  contour (flat, rise, fall, wobble) spanning `range` notes of the scale
 #   the voice                   pitch (multiplier), vol
 #   the letters                 text: small shrinks them (a whisper); otherwise they are plain

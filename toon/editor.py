@@ -24,7 +24,7 @@ from .render import frame_jpeg, out_path
 
 HERE = Path(__file__).parent
 NUMBERS = {"pause": 200, "hold": 400}            # editable timings and their upper limit, in steps
-LISTS = ("rhythm", "melody")
+LISTS = ("rhythm", "melody", "stress")
 POSITION = {"unopposed": "nobody has taken sides", "even": "evenly matched", "alone": "alone against {others}",
             "minority": "outnumbered, {mine} against {others}", "majority": "in the majority, {mine} against {others}"}
 # sliders: key, min, max, step, what it does
@@ -32,7 +32,9 @@ FEEL = [("ease", 0.05, 0.8, 0.01, "Seconds a change takes to settle"),
         ("overshoot", 0, 2, 0.05, "How far a move swings past its mark before settling"),
         ("flip", 0, 1, 0.05, "How thin a token gets mid-turn, like paper flipping"),
         ("squash", 0, 0.4, 0.01, "Stretch while travelling"),
-        ("talk_hop", 0, 16, 0.5, "Pixels the speaker hops on each syllable"),
+        ("talk_hop", 0, 16, 0.5, "Pixels the speaker rises on a phrase's main accent (strong syllables get about half, weak ones none)"),
+        ("voice_attack", 0.001, 0.08, 0.001, "Seconds a syllable's note takes to swell. Short is percussive, long is soft"),
+        ("voice_ring", 0, 1, 0.05, "How much of its level a note keeps to its end. 0 is plucked, 1 is held so syllables run together"),
         ("bubble_pop", 0, 0.5, 0.01, "Seconds a bubble takes to pop open"),
         ("text_pop", 0, 0.3, 0.01, "Seconds a syllable takes to pop in"),
         ("text_pop_scale", 1, 2, 0.05, "How big a syllable starts before settling")]
@@ -112,7 +114,8 @@ class Session:
                 say = dict(who=t["who"], text=t["line"]["text"], tone=tone, sung=t["line"]["sung"], tone_color=sc.show.tones[tone]["color"],
                            at=t["say_at"], reveal=t["reveal"], latency=t["latency"], sylls=t["sylls"],
                            rhythm=list(t["rhythm"]) if t["rhythm"] is not None else None,
-                           melody=list(t["melody"]) if t["melody"] is not None else None)
+                           melody=list(t["melody"]) if t["melody"] is not None else None,
+                           stress=list(t["stress"]) if t["stress"] is not None else None)
             turns.append(dict(id=t["id"], index=t["index"], start=t["start"], length=t["length"], why=t["why"], who=t["who"],
                               pause=t["pause"], hold=t["hold"], say=say, lanes=lanes))
         mine = [p for p in self.problems if p["scene"] in (sc.key, sc.path.stem)]
@@ -145,7 +148,7 @@ class Session:
                 if value == self.scene.show.cfg["timing"][key]:
                     value = None                         # the show default needs no line in the file
             elif value is not None:
-                seq = CommentedSeq(tidy(max(v, 0.25)) if key == "rhythm" else int(round(v)) for v in value)
+                seq = CommentedSeq(tidy(max(v, 0.25)) if key == "rhythm" else max(0, min(2, int(v))) if key == "stress" else int(round(v)) for v in value)
                 seq.fa.set_flow_style()
                 value = seq
             if value is None:

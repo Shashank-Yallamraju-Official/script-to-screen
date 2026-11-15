@@ -1,6 +1,8 @@
-"""Speech as music. A line is split into syllables; each syllable gets a place on the tempo
-grid and one sung note. The text and the sound are built from the same plan, so they cannot
-drift apart. Sound effects are synthesised here too."""
+"""Speech as music. A line is split into syllables; each syllable gets a stress, a place on
+the tempo grid and one note. The text and the sound are built from the same plan, so they
+cannot drift apart. Stress is what keeps it from sounding like a drum: weak syllables are
+short, quiet and still; strong ones are longer, louder and higher; the last strong syllable
+of a phrase carries the most. Sound effects are synthesised here too."""
 import io
 import math
 import re
@@ -11,6 +13,16 @@ import numpy as np
 
 RATE = 44100
 REST = {",": 1, ";": 1, ":": 1, ".": 2, "!": 2, "?": 2, "…": 3}     # breath after punctuation, in steps
+WEAK = set("""a an the of to in on at by for from with and or but so if as than is am are was were be been
+it its i you he she we they me him her us them my your his our their this that these those there
+do does did have has had will would can could should shall may might must i'm i'd i'll i've you're you'd
+you'll you've he's she's it's we're we'd we'll we've they're they'd they'll they've that's there's""".split())
+SECOND = set("""about again away alone around along among ago ahead apart enough because before behind believe
+between below beyond become began begin today tonight tomorrow already degrees decide forget forgive hello
+myself yourself himself herself itself ourselves themselves without within until unless upon perhaps
+okay except explain instead indeed arrive agree allow appear""".split())   # words stressed on their second syllable
+STRETCH = {0: 0.5, 1: 1.0, 2: 1.5}                                   # how long a syllable lasts, by stress
+LOUD = {0: 0.55, 1: 0.85, 2: 1.0}
 
 
 def split_word(w):
@@ -38,16 +50,44 @@ def split_word(w):
 
 
 def syllables(text):
+    """-> [{text, rest, stress}]. stress: 0 weak, 1 strong, 2 the main accent of its phrase.
+
+    Stress is guessed: small grammatical words are weak, other words are strong on their first
+    syllable (or second, for a list of common exceptions). Write ^ before a syllable to force
+    the strong one (to^day), and a middle dot to say where syllables break (some·one).
+    """
     words = [w for w in str(text).split(" ") if w]
     out = []
     for wi, w in enumerate(words):
-        parts = w.split("·") if "·" in w else split_word(w)
+        forced = []
+        if "·" in w:
+            parts = [p for p in w.split("·") if p]
+            forced = [i for i, p in enumerate(parts) if "^" in p]
+        else:
+            mark, pos = w.find("^"), 0
+            parts = split_word(w.replace("^", ""))
+            for i, p in enumerate(parts if mark >= 0 else []):
+                if mark < pos + len(p) or i == len(parts) - 1:
+                    forced = [i]
+                    break
+                pos += len(p)
+        bare = re.sub(r"[^a-z']", "", w.lower())
+        strong = forced[0] if forced else None if bare in WEAK else (1 if bare in SECOND and len(parts) > 1 else 0)
         for pi, part in enumerate(parts):
             last = pi == len(parts) - 1
+            part = part.replace("^", "")
             out.append(dict(text=part + (" " if last and wi < len(words) - 1 else ""),
-                            rest=REST.get(part.rstrip("\"')")[-1:], 0) if last else 0))
-    if out:
-        out[-1]["rest"] = 0
+                            rest=REST.get(part.rstrip("\"')")[-1:], 0) if last else 0,
+                            stress=1 if pi == strong else 0))
+    if not out:
+        return out
+    out[-1]["rest"] = 0
+    start = 0
+    for i, s in enumerate(out):                           # the last strong syllable of each phrase carries it
+        if s["rest"] or i == len(out) - 1:
+            strong = [j for j in range(start, i + 1) if out[j]["stress"]]
+            out[strong[-1] if strong else i]["stress"] = 2
+            start = i + 1
     return out
 
 
@@ -55,29 +95,39 @@ def semi_of(degree, scale):
     return 12 * (degree // len(scale)) + scale[degree % len(scale)]
 
 
-def plan(text, tone, scale, rhythm=None, melody=None):
-    """-> [{text, at, len, semi}]: each syllable's start and length in steps, and its pitch in semitones.
+def plan(text, tone, scale, rhythm=None, melody=None, stress=None):
+    """-> [{text, at, len, semi, stress}]: each syllable's start and length in steps, its pitch in
+    semitones and its stress.
 
-    Without `rhythm` or `melody` the tone supplies them: `rate` steps per syllable, the last one
-    stretched by `stretch`, and a `contour` spanning `range` notes of the show's scale.
+    Anything not given is worked out. Stress comes from the words. Rhythm is the tone's `rate`
+    (steps for a strong syllable), halved for weak ones and half as long again for a phrase's
+    main accent. Melody is the tone's `contour` over `range` notes of the scale, with strong
+    syllables a note higher.
     """
     syl = syllables(text)
     n = len(syl)
+    if stress is not None:
+        for s, v in zip(syl, stress):
+            s["stress"] = max(0, min(2, int(v)))
     if rhythm is None:
-        rhythm = [tone.get("rate", 2) + s["rest"] for s in syl]
+        rhythm = [max(0.5, tone.get("rate", 2) * STRETCH[s["stress"]]) + s["rest"] for s in syl]
         rhythm[-1] *= tone.get("stretch", 1)
     if melody is None:
         span, contour, seed = tone.get("range", 2), tone.get("contour", "flat"), zlib.crc32(str(text).encode())
         melody = []
-        for k in range(n):
+        for k, s in enumerate(syl):
             u = k / max(1, n - 1)
             d = {"rise": span * u, "fall": -span * u, "wobble": span * 0.5 * math.sin(k * 2.2)}.get(contour, 0)
-            if span >= 2:                                 # a little wander so a line is not one note
-                d += (0, 1, 0, -1)[(seed >> ((k % 16) * 2)) & 3]
+            if s["stress"] == 2 and contour == "fall":
+                d -= 1                                    # a falling line lands low on its accent
+            elif s["stress"]:
+                d += 1                                    # strong syllables sit a note higher
+            elif span >= 2:                               # a little wander among the weak ones
+                d += (0, 0, 0, -1)[(seed >> ((k % 16) * 2)) & 3]
             melody.append(semi_of(round(d), scale))
     out, at = [], 0
     for s, ln, m in zip(syl, rhythm, melody):
-        out.append(dict(text=s["text"], at=at, len=ln, semi=m))
+        out.append(dict(text=s["text"], at=at, len=ln, semi=m, stress=s["stress"]))
         at += ln
     return out
 
@@ -91,10 +141,12 @@ def _osc(kind, phase):
     return np.sin(phase) + 0.3 * np.sin(2 * phase) + 0.12 * np.sin(3 * phase)
 
 
-def note(hz, dur, vol, timbre="sine"):
+def note(hz, dur, vol, timbre="sine", attack=0.015, ring=0.7):
+    """One voiced syllable. `attack` is how long it takes to swell; `ring` is how much of its
+    level it keeps to the end (0 = plucked, 1 = held), so neighbours can run together."""
     n = max(1, int(dur * RATE))
     t = np.arange(n) / RATE
-    env = np.minimum(1, t / 0.004) * np.exp(-t / (0.3 * dur + 0.02)) * np.clip((dur - t) / 0.01, 0, 1)
+    env = np.minimum(1, t / max(attack, 0.001)) * (ring + (1 - ring) * np.exp(-t / 0.05)) * np.clip((dur - t) / 0.02, 0, 1)
     return _osc(timbre, 2 * np.pi * hz * t) * env * vol * 0.3
 
 
@@ -132,6 +184,7 @@ def sound_for(sounds, name):
 def mix(scene):
     """The whole scene's sound: one note per syllable, plus an effect per event."""
     audio = np.zeros(int((scene.dur + 0.6) * RATE), dtype=np.float64)
+    feel = scene.show.feel
 
     def add(at, x):
         i = int(at * RATE)
@@ -142,7 +195,8 @@ def mix(scene):
         ent, tone = scene.ents[line["who"]], scene.show.tones[line["tone"]]
         for s in line["sylls"]:
             hz = ent["voice"] * tone.get("pitch", 1) * 2 ** (s["semi"] / 12)
-            add(s["start"], note(hz, min(s["dur"] * 0.95, 0.32), tone.get("vol", 0.5), ent.get("timbre", "sine")))
+            add(s["start"], note(hz, min(s["dur"], 0.6), tone.get("vol", 0.5) * LOUD[s["stress"]], ent.get("timbre", "sine"),
+                                 float(feel["voice_attack"]), float(feel["voice_ring"])))
     for at, name, _ in scene.events:
         p = sound_for(scene.show.sounds, name)
         if p and float(p.get("vol", 0)) > 0:

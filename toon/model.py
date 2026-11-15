@@ -279,18 +279,19 @@ class Scene:
                     self.flag("error", tid, f"unknown tone '{tone}'")
                     tone = "neutral"
                 n = len(speech.syllables(say))
-                rhythm, melody = raw.get("rhythm"), raw.get("melody")
-                for name, v in (("rhythm", rhythm), ("melody", melody)):
+                rhythm, melody, stress = raw.get("rhythm"), raw.get("melody"), raw.get("stress")
+                for name, v in (("rhythm", rhythm), ("melody", melody), ("stress", stress)):
                     if v is not None and len(v) != n:
                         self.flag("error", tid, f"`{name}` has {len(v)} entries but the line has {n} syllables")
                 rhythm = list(rhythm) if rhythm is not None and len(rhythm) == n else None
                 melody = list(melody) if melody is not None and len(melody) == n else None
-                sylls = speech.plan(say, self.show.tones[tone], self.show.cfg["scale"], rhythm, melody)
+                stress = list(stress) if stress is not None and len(stress) == n else None
+                sylls = speech.plan(say, self.show.tones[tone], self.show.cfg["scale"], rhythm, melody, stress)
                 say_at = pause + a[who]["latency"]
                 reveal = sum(s["len"] for s in sylls)
                 react = say_at + reveal
                 line = dict(who=who, text="".join(s["text"] for s in sylls), tone=tone, sung="sing" in raw, start=(t0 + say_at) * sec,
-                            sylls=[dict(text=s["text"], start=(t0 + say_at + s["at"]) * sec, dur=s["len"] * sec, semi=s["semi"])
+                            sylls=[dict(text=s["text"], start=(t0 + say_at + s["at"]) * sec, dur=s["len"] * sec, semi=s["semi"], stress=s["stress"])
                                    for s in sylls])
             length = (react if say else float(T["settle"])) + hold
             for e, o in a.items():
@@ -311,7 +312,7 @@ class Scene:
             self.turns.append(dict(id=tid, index=i, start=t0, length=length, who=who, why=str(raw.get("why") or ""),
                                    pause=pause, hold=hold, latency=a[who]["latency"] if say else 0, say_at=say_at,
                                    reveal=reveal, react=react if late else 0, line=line, sylls=sylls,
-                                   rhythm=raw.get("rhythm"), melody=raw.get("melody"),
+                                   rhythm=raw.get("rhythm"), melody=raw.get("melody"), stress=raw.get("stress"),
                                    relies_on=raw.get("relies_on") or {},
                                    info=[(0, {e: o["info"] for e, o in a.items()})] +
                                         ([(react, {e: o["info"] for e, o in b.items()})] if late else [])))

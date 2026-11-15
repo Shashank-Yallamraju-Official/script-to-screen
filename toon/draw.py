@@ -167,7 +167,8 @@ def draw_bubble(c, scene, line, t, o, ent, hop):
         a = t - line["sylls"][i]["start"]
         if a < -1e-6:
             continue
-        s = 1 + (ts - 1) * (1 - a / tp) if tp > 0 and a < tp else 1.0      # each syllable lands on its note
+        accent = (0.0, 0.6, 1.0)[line["sylls"][i]["stress"]]                # weak syllables just appear
+        s = 1 + (ts - 1) * accent * (1 - a / tp) if tp > 0 and a < tp else 1.0
         c.save()
         c.translate(bx + pad + cx + cw / 2, by + pad + size - 4 + row * lh)
         c.scale(s, s)
@@ -210,10 +211,11 @@ def draw_frame(c, scene, F, xray=False, slate=False):
         draw_xray(c, scene, states)
     line = scene.line_at(t)
     hop = 0.0
-    if line:                                                    # the speaker hops on each syllable
-        since = [t - s["start"] for s in line["sylls"] if s["start"] <= t + 1e-6]
-        if since and min(since) < 0.14:
-            hop = float(feel["talk_hop"]) * math.sin(math.pi * min(since) / 0.14)
+    if line:                                                    # the speaker nods on stressed syllables only
+        hit = [(t - s["start"], s["stress"]) for s in line["sylls"] if s["stress"] and s["start"] <= t + 1e-6]
+        if hit and min(hit)[0] < 0.24:
+            age, stress = min(hit)
+            hop = float(feel["talk_hop"]) * (0.55 if stress == 1 else 1.0) * math.sin(math.pi * age / 0.24)
     for e in sorted(states, key=lambda e: bool(line and line["who"] == e)):
         draw_token(c, scene.ents[e], states[e], W, H, feel, hop if line and line["who"] == e else 0.0)
     if line and line["who"] in states:
