@@ -198,6 +198,8 @@ def explain(a):
     for h in history:
         if h["what"] == "placed":
             steps.append(f"Nobody wrote where they stand: {h['value']}.")
+        if h["what"] == "fired" and str(h["turn"]) == str(t["id"]):
+            steps.append(f"Brought up by a thing: {h['value']}.")
     tells, shown, held = [], [], []
     if s["feels"]:
         tells = edit.plain(ent["tells"].get(s["feels"]) or [])

@@ -15,6 +15,7 @@ a line lands, so the shot is chosen by whose moment it is:
      shot is shorter than `min_shot` seconds (the shot before widens to hold the newcomer instead).
   5. A hard bad surprise tips the frame.
   6. A build-up goes to whoever it is about and pushes in until it lands.
+  7. A feeling about a thing is framed with the thing: the plate is in the shot when it matters.
 
 A scene opens wide, to show the place. A turn can overrule all of this with `camera:`: `wide`,
 `stay`, an entity, a list of entities, or {on, at, zoom, tilt}, where `at` is left | centre | right.
@@ -62,7 +63,7 @@ def at(pose, t):
     return out
 
 
-def changes(turn, pose, step, together):
+def changes(turn, pose, step, together, things=None):
     """What visibly changes during a turn, in the order it happens: [(t, {entity: [slots]})]. Changes within
     `together` seconds of each other are one moment. The first moment is the turn's opening, and has its speaker in it."""
     t0, t1 = turn["start"] * step, (turn["start"] + turn["length"]) * step
@@ -72,7 +73,9 @@ def changes(turn, pose, step, together):
         for t, o in keys:
             if t0 - 1e-9 <= t < t1 - 1e-9:
                 if prev is None or any(o.get(k) != prev.get(k) for k in SEEN):
-                    found.append((t, e, [x["slot"] for x in (prev, o) if x and x["alpha"]]))     # where it was and where it gets to
+                    about = (o.get("info") or {}).get("at")
+                    found.append((t, e, [x["slot"] for x in (prev, o) if x and x["alpha"]] +
+                                  ([things[about]] if things and about in things and o["alpha"] else [])))     # where it was, where it gets to, and the thing it is about
                 prev = o
     out = [(t0, {})]
     for t, e, slots in sorted(found, key=lambda f: f[0]):
@@ -100,7 +103,7 @@ def inside(shot, slots):
     return all(shot["centre"] - half <= s <= shot["centre"] + half for s in slots)
 
 
-def shots(turns, pose, focus, music, drama, step, written=None, cfg=None):
+def shots(turns, pose, focus, music, drama, step, written=None, cfg=None, things=None):
     """-> the scene's shots in time order. `written` is {turn index: what the script asked for}."""
     cfg, written = {**DEFAULTS, **(cfg or {})}, written or {}
     names = lambda who: ", ".join(sorted(who)) or "no one"
@@ -108,7 +111,7 @@ def shots(turns, pose, focus, music, drama, step, written=None, cfg=None):
     out = [dict(wide, t=0.0, kind="open", why="a scene opens wide, to show the place")]
     moments = [(c["t"], 1, c, None) for c in music if c["kind"] == "rise"]
     for turn in turns[1:]:
-        for k, (t, who) in enumerate(changes(turn, pose, step, cfg["together"])):
+        for k, (t, who) in enumerate(changes(turn, pose, step, cfg["together"], things)):
             moments.append((t, 0, turn, (k, who)))
     for t, is_rise, x, extra in sorted(moments, key=lambda m: (m[0], m[1])):
         cur = out[-1]

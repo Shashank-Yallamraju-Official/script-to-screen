@@ -12,8 +12,12 @@ strong in them is a joy to them, as strong as the need.
 from ..world import SLOTS
 
 
-def regard(sheet, name, thing, valence):
-    """-> (emotion, strength, pull, why): what this thing is to them. pull is above 0 if it draws them and below if it repels."""
+def regard(sheet, name, thing, valence, came=None):
+    """-> (emotion, strength, pull, why): what this thing is to them. pull is above 0 if it draws them and below if it repels.
+    `came` is what the story has made of it for them ({thing: (emotion, strength)}), which outranks everything."""
+    if came and name in came:
+        emo, n = came[name]
+        return emo, n, (valence or {}).get(emo, 0) * n, f"the {name} has come to mean {emo} {n} to them"
     written = (sheet.get("regards") or {}).get(name)
     if written:
         emo = next(iter(written))
@@ -32,14 +36,14 @@ def _near(d, best):
     return max(0.0, 1 - abs(d - best) / 4)
 
 
-def found(e, sheet, taken, things, bonds_to, valence):
+def found(e, sheet, taken, things, bonds_to, valence, came=None):
     """Where e stands in a room they are already in: (slot, what drew them or None, why)."""
     best, why_best, drew = None, "", None
     free = [s for s in range(SLOTS) if s not in taken.values()]
     for s in free:
         score, reasons = 0.1 * _near(abs(s - (SLOTS - 1) / 2), 0), []
         for name, thing in things.items():
-            r = regard(sheet, name, thing, valence)
+            r = regard(sheet, name, thing, valence, came)
             if not r:
                 continue
             d = abs(s - thing["at"])
@@ -84,3 +88,24 @@ def arrives(e, spec, taken, things):
     if not free:
         raise ValueError("the room is full")
     return min(free, key=lambda s: (abs(s - at), s)), why
+
+
+def named(text, things):
+    """The first thing a line names, and the word that names it: (thing, word) or None. A thing answers to its name and its `aka`."""
+    plain = lambda w: "".join(ch for ch in w.lower() if ch.isalpha() or ch == "'")
+    words = [plain(w.replace("\u00b7", "").replace("^", "")) for w in str(text).split()]
+    for w in words:
+        for name, thing in things.items():
+            if w and w in [plain(x) for x in [name] + list(thing.get("aka") or [])]:
+                return name, w
+    return None
+
+
+def touched(do, things):
+    """The things a turn's deliberate actions turn to, look at or walk toward: {thing: who did}."""
+    out = {}
+    for e, spec in (do or {}).items():
+        for v in [spec.get("orient"), spec.get("attention"), (spec.get("move") or {}).get("toward")]:
+            if isinstance(v, str) and v in things:
+                out.setdefault(v, e)
+    return out

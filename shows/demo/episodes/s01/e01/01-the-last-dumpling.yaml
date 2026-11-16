@@ -28,6 +28,7 @@ facts:
 turns:
   - id: 1
     enter: {juno: {slot: 2}, otis: {slot: 5}}
+    regard: {otis: {plate: {shame: 2}}}      # from now on: named or approached, the plate brings this up in him. It carries into later scenes.
     why: Two entities share a room at social distance, both facing out. Nothing has happened yet.
 
   - id: 2

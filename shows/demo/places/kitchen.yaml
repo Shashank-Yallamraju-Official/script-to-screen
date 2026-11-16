@@ -7,7 +7,7 @@ pieces:
   - {kind: shelf, at: 1.6}
   - {kind: counter, at: 0.7, wide: 2.8}
   - {kind: table, at: 3.5, wide: 1.2}
-  - {kind: plate, at: 3.5, up: 72}
+  - {kind: plate, at: 3.5, up: 72, aka: [dumpling, dumplings]}     # a line that says `dumpling` is naming this
   - {kind: fridge, at: 6.6, serves: comfort}     # a piece that `serves` a need draws whoever has that need strongly
   - {kind: door, at: 8.3}
   - {kind: rug, at: 4.2, wide: 3.6}

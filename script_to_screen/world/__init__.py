@@ -24,6 +24,7 @@ class World:
         self.cause = None                                         # the turn now being played (None: off-screen)
         self.known = show.known()
         self.things = {}                                          # what in the place can be named and faced: {id: {at, kind, serves}}
+        self.regards = {e: dict(v.get("regards") or {}) for e, v in carry.items() if v.get("regards")}   # what a thing has come to mean to someone: {entity: {thing: (emotion, strength)}}
 
     def _allowed(self, e, spec, what):
         """Flag anything in a deliberate action that the channel declarations do not allow."""
@@ -112,6 +113,17 @@ class World:
             s["slot"] = max(0, min(SLOTS - 1, round(there + side * ZONES[spec["move"]["zone"]])))
         self._note("do", e, spec)
 
+    def regard(self, e, thing, f):
+        """Set what a thing means to e from now on: a feeling it brings up when it is named or approached. `calm` clears it."""
+        if e not in self.known:
+            raise ScriptError(f"turn {self.cause}: a regard is set for '{e}', who is not an entity of this show")
+        got = self._felt(f, where="regard: ")
+        if got is None:
+            self.regards.get(e, {}).pop(thing, None)
+        else:
+            self.regards.setdefault(e, {})[thing] = (got[0], got[1])
+        self._note("regard", e, [thing, got[:2] if got else None])
+
     def feel(self, e, f, speaker=None):
         """Set what e feels. Unless it says otherwise, a feeling is about whoever is speaking."""
         self.need(e)["felt"] = self._felt(f, speaker if speaker != e else None)
@@ -137,7 +149,9 @@ class World:
     # ---- handing on ----------------------------------------------------------------------------
     def carry_out(self):
         """What every entity takes into the next scene. Those not in this scene pass through untouched."""
-        out = dict(self.carry)
+        out = {e: dict(v) for e, v in self.carry.items()}
         for e, s in self.st.items():
             out[e] = dict(felt=s["felt"], status=s["status"], sympathy=s["sympathy"])
+        for e, r in self.regards.items():                         # what things have come to mean goes with them, wherever they go
+            out.setdefault(e, {})["regards"] = dict(r)
         return out

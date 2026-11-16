@@ -147,6 +147,17 @@ wins: `regards: {plate: {shame: 2}}`.
 `s2s explain <scene:turn> <entity>` says where they were put and why. A thing can also be the
 target of `orient`, `attention` and `move`: `do: {otis: {orient: fridge}}`.
 
+**A turn can change what a thing means to someone**, from then on and into later scenes:
+
+    regard: {otis: {plate: {shame: 2}}}      # the empty plate is evidence now
+
+**A thing that means something brings the feeling up** when a line names it, or when anyone
+turns to it, looks at it or walks to it. A piece answers to its name and to its `aka`
+(`{kind: plate, aka: [dumpling]}`), and the feeling lands on the word. Whatever the turn already
+makes someone feel wins. In the last scene of s01e01, three scenes after the plate became
+evidence, Bix says "You ate the dumpling" and Otis's eyes drop, with nothing written on that
+turn. The camera frames a feeling about a thing with the thing in shot.
+
 ## What if
 
 `s2s what-if` maps a situation out without writing it: one setup, one event, and how everyone

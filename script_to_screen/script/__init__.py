@@ -44,7 +44,7 @@ def place(root, name):
 
 
 def things(place_data):
-    """What in a place can be named, faced and cared about: {id: {at, kind, serves}}. A piece's id is its `id:`,
+    """What in a place can be named, faced and cared about: {id: {at, kind, serves, aka}}. A piece's id is its `id:`,
     or its kind when it is the only piece of that kind."""
     pieces = (place_data or {}).get("pieces") or []
     kinds = [p["kind"] for p in pieces]
@@ -52,7 +52,8 @@ def things(place_data):
     for p in pieces:
         name = p.get("id") or (p["kind"] if kinds.count(p["kind"]) == 1 else None)
         if name:
-            out[str(name)] = dict(at=float(p.get("at", 0)), kind=p["kind"], serves=p.get("serves"))
+            out[str(name)] = dict(at=float(p.get("at", 0)), kind=p["kind"], serves=p.get("serves"),
+                                  aka=[str(x) for x in ([p["aka"]] if isinstance(p.get("aka"), str) else p.get("aka") or [])])   # other words a line may call it by
     return out
 
 

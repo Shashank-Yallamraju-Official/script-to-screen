@@ -1,7 +1,7 @@
 # Low-level design: profiles, regards and appraisal
 
-Status: slices P1 to P4 are built (profiles, bonds, facts, events, and appraisal with the three
-changes of section 7; see section 10). P5 is designed only. The prototype the rule was
+Status: all five slices are built (profiles, bonds, facts, events, and appraisal with the three
+changes of section 7; see section 10). The prototype the rule was
 first tested with is kept in `studies/appraisal/` as it was.
 
 ## 1. What this is for
@@ -299,3 +299,23 @@ the event, on its line if the setup gives one), lets the engine work it out with
 sheets in place of the real ones (`script.imagining`), and draws the frame where the event has
 landed, in the wide shot so the columns can be compared. A test checks that what the engine
 stages agrees with the table for every column.
+
+## 14. What was built (P5)
+
+- **Regards that change.** `regard:` on a turn (and `regards:` at the top of a scene) sets what a
+  thing means to someone. It is world state: logged with its cause, carried with the entity into
+  later scenes, and it outranks the sheet and the needs.
+- **Charges that fire.** When a line names a thing (by its name or its `aka`), or a deliberate
+  action turns to it, looks at it or walks to it, everyone present for whom it means something
+  feels that, about the thing. A named thing lands on the word, as a reaction in passing.
+  Whatever the turn's events or script already make someone feel wins.
+- **The camera** frames a feeling about a thing with the thing in shot.
+
+In s01e01 the dumpling scene now says the plate has come to mean shame 2 to Otis. Nothing uses
+it there (the accusation already shames him, and wins). Three scenes later, in "Lights out",
+Bix says "You ate the dumpling" on a turn with no event: Otis's eyes drop on the word, and his
+"That was a different day" comes out slower and in his nervous voice. It also moved him: found
+in the kitchen, he now stands on the far side of the fridge from the plate.
+
+Not built: a thing that `threatens` a need; item state (a vase that is broken); regards in
+what-if variations; ground written per place.

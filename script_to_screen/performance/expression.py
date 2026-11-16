@@ -47,10 +47,11 @@ def observe(st, ents, gcfg, flag, tid, things=None):
     for e, s in st.items():
         info, expr = out[e]
         slot, src = (s.get("take") or {}).get("slot", s["slot"]), info["at"]
-        if expr.get("distance") and src in st and src != e:
-            away = sgn(slot - st[src]["slot"]) or 1
+        there = st[src]["slot"] if src in st else (things or {}).get(src, {}).get("at") if isinstance(src, str) else None   # the feeling can be about a thing
+        if expr.get("distance") and there is not None and src != e:
+            away = sgn(slot - there) or 1
             slot = max(0, min(SLOTS - 1, slot + expr["distance"] * away))
-            slot = max(slot, st[src]["slot"] + 1) if away > 0 else min(slot, st[src]["slot"] - 1)
+            slot = max(slot, int(there) + 1) if away > 0 else min(slot, -int(-there) - 1)
             taken = {o["slot"] for x, o in st.items() if x != e and o.get("present", True)}
             base = (s.get("take") or {}).get("slot", s["slot"])
             while slot in taken and slot != base:            # nobody backs into a place where someone is standing: they go as far as there is room

@@ -65,6 +65,9 @@ class Scene:
         self.carried = {e: v["felt"] for e, v in self.carry.items() if v.get("felt")}   # as the last scene left it
         self.offscreen = []
         self.facts = {k: dict(doer=v.get("doer"), knows=list(v.get("knows") or [])) for k, v in (self.script.get("facts") or {}).items()}
+        for e, r in (self.script.get("regards") or {}).items():       # what things mean to people as the scene opens
+            for thing, f in r.items():
+                world.regard(e, thing, f)
         for ev in self.script.get("offscreen") or []:       # what happened between scenes, unseen
             if not str(ev.get("why") or "").strip():
                 self.flag("error", None, "an `offscreen` event has no `why`")
@@ -93,7 +96,8 @@ class Scene:
                     taken = {x: y["slot"] for x, y in st.items() if y["present"]}
                     try:
                         if i == 0 and src is None:
-                            spec["slot"], drew, why = placing.found(e, sheet, taken, world.things, sheet.get("bonds") or {}, self.show.cfg.get("valence"))
+                            spec["slot"], drew, why = placing.found(e, sheet, taken, world.things, sheet.get("bonds") or {}, self.show.cfg.get("valence"),
+                                                                    world.regards.get(e))
                             if drew and "orient" not in spec:
                                 spec["orient"] = drew        # and they face what drew them
                         else:
@@ -118,6 +122,9 @@ class Scene:
             def feel(e, f, who=who):
                 world.feel(e, f, who)
 
+            for e, r in (raw.get("regard") or {}).items():       # a thing comes to mean something to someone, from now on
+                for thing, f in r.items():
+                    world.regard(e, thing, f)
             # what the turn's events make everyone feel; a feeling written on the turn wins over the one worked out
             appraised = {}
             if raw.get("event"):
@@ -133,6 +140,22 @@ class Scene:
                         r["feel"] = appraised[r["who"]]["feel"]
                 raw = dict(raw, feel={**{e: v["feel"] for e, v in appraised.items() if e not in written and e not in {r["who"] for r in reacts_to}},
                                       **(raw.get("feel") or {})})
+
+            # A thing that means something to someone brings that feeling up when a line names it, or when anyone turns to it,
+            # looks at it or walks to it. Whatever the turn already makes them feel wins.
+            fired = {}
+            busy = set(raw.get("feel") or {}) | {r["who"] for r in raw.get("react") or []}
+            said = placing.named(" ".join(map(str, say)) if isinstance(say, (list, tuple)) else say, world.things) if say else None
+            for thing, how in ([(said[0], ("named", said[1]))] if said else []) + [(t, ("turned to", by)) for t, by in placing.touched(raw.get("do"), world.things).items()]:
+                for e, x in st.items():
+                    r = x["present"] and e not in busy and e not in fired and placing.regard(self.ents[e], thing, world.things[thing], self.show.cfg.get("valence"), world.regards.get(e))
+                    if r:
+                        fired[e] = dict(thing=thing, feel={r[0]: r[1], "at": thing}, why=(f"the {thing} is named ('{how[1]}')" if how[0] == "named" else f"{how[1]} turns to the {thing}") + f": {r[3]}", word=how[1] if how[0] == "named" else None)
+            if fired:
+                raw = dict(raw, react=list(raw.get("react") or []) + [dict(who=e, word=f["word"], feel=f["feel"]) for e, f in fired.items() if f["word"] and e != who],
+                           feel={**{e: f["feel"] for e, f in fired.items() if not f["word"] or e == who}, **(raw.get("feel") or {})})
+                for e, f in fired.items():
+                    world._note("fired", e, f["why"])
 
             # the speaker's own feeling colours the line; everyone else reacts once it has landed
             late = {}
@@ -257,6 +280,7 @@ class Scene:
                                    reveal=reveal, react=react if late else 0, line=line, sylls=sylls,
                                    rhythm=raw.get("rhythm"), melody=raw.get("melody"), stress=raw.get("stress"),
                                    relies_on=raw.get("relies_on") or {},
+                                   fired={e: dict(thing=f["thing"], why=f["why"]) for e, f in fired.items()},
                                    appraised={e: dict(v, used=e in (raw.get("feel") or {}) or any(r["who"] == e for r in raw.get("react") or [])) for e, v in appraised.items()},
                                    reacts=reacts, stretches=self._stretches(tid, t0, who, bool(say), pause, say_at, sylls, reacts, length, hold),
                                    info=[(at, {e: o["info"] for e, o in obs.items()}) for at, obs in snaps]))
@@ -294,7 +318,8 @@ class Scene:
                                   rise=float(music.get("rise", scoring.RISE)), rise_from=float(music.get("rise_from", scoring.RISE_FROM)))
         # where the camera looks: a third derivation step, over the turns, what everyone shows, and the music
         asked = {i: raw["camera"] for i, raw in enumerate(self.script.get("turns") or []) if raw.get("camera")}
-        self.camera = camera.shots(self.turns, self.keys, self.focus, self.music, self.drama, sec, asked, self.show.cfg.get("camera"))
+        self.camera = camera.shots(self.turns, self.keys, self.focus, self.music, self.drama, sec, asked, self.show.cfg.get("camera"),
+                                   {k: v["at"] for k, v in world.things.items()})
         self.place = self.script.get("place")
         # the fourth value says the event belongs to a reaction in passing; how much quieter that is, is presentation's call
         self.events = sorted(((t, n, e, (round(t, 4), e) in self.quiet) for t, n, e in self.events), key=lambda ev: ev[0])
