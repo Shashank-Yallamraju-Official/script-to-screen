@@ -86,3 +86,22 @@ def test_the_cache_stays_within_its_size_and_drops_the_oldest_first():
     assert cache.size <= 40_000 and len(cache.frames) < stage.total // 10
     last = cache.key(stage, (stage.total - 1) // 10 * 10, 0.5, 82, False)
     assert last in cache.frames and cache.key(stage, 0, 0.5, 82, False) not in cache.frames
+
+
+def test_music_drawn_on_screen_is_part_of_what_a_frame_shows():
+    """With a way of showing music chosen, every cached frame must still equal a fresh draw."""
+    cache = FrameCache()
+    path = series(DEMO).by_id["the-morally-righteous-location"]["path"]
+    sc = Scene(path)
+
+    def staged_as(style):
+        stage = Stage.of(sc)
+        stage.look.style = dict(stage.look.style, music=style)
+        return stage
+    plain, line = staged_as("none"), staged_as("line")
+    rise = next(c for c in sc.score.music if c["kind"] == "rise")
+    frames = range(round(rise["t"] * plain.fps) - 10, round((rise["t"] + rise["length"]) * plain.fps) + 120, 3)
+    for F in frames:
+        cache.get(plain, F)
+    for F in frames:
+        assert cache.get(line, F) == frame_jpeg(line, F, 0.5, 82), f"frame {F}"

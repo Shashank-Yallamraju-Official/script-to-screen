@@ -290,6 +290,88 @@ def draw_xray(c, stage, states):
                     c.drawCircle(px, gy + 38, 5.5, stroke(color, 2))
 
 
+# ---- music you can see ---------------------------------------------------------------------------
+# Sound that something visible causes needs no mark: the motion is the mark. Music has no visible
+# source, so the look can give it one (`style: {music: line | rings | frame}` in show.yaml).
+RING_GOOD, RING_ASK = "#e0a01e", "#2f9e8f"
+
+
+def music_marks(stage):
+    """Each cue with where it is aimed: the place its subject stands as the moment lands."""
+    if getattr(stage, "_marks", None) is None:
+        cues, marks = stage.score.music, []
+        for k, c in enumerate(cues):
+            lands = c["t"] + c.get("length", 0)
+            who = c["subject"] if isinstance(c["subject"], str) else c["subject"][0]
+            o = pose(stage, who, lands + 0.01) or {}
+            later = [n["t"] for n in cues[k + 1:] if n["kind"] != "rise"]
+            marks.append(dict(c, x=slot_x(o.get("slot", (SLOTS - 1) / 2), stage.W), lands=lands,
+                              until=lands if c["kind"] == "rise" else min(c["t"] + 3.0, later[0]) if c["kind"] == "question" and later
+                              else lands + (3.0 if c["kind"] == "question" else 1.4)))
+        stage._marks = marks
+    return stage._marks
+
+
+def ground_line(c, stage, t, marks):
+    """The ground, drawn as a string the music plays. A build-up makes it hum, tighter and faster, toward where
+    the moment will land; the moment itself sends one ripple outward, down for bad news and up for good."""
+    W, gy = stage.W, ground(stage.H)
+    live = [m for m in marks if m["t"] <= t <= m["until"]]
+    if not live:
+        return c.drawLine(0, gy, W, gy, stroke(RULE, 2))
+    path, loud = skia.Path(), 0.0
+    for i in range(0, W + 4, 4):
+        y = 0.0
+        for m in live:
+            if m["kind"] == "rise":
+                p = (t - m["t"]) / max(m["length"], 1e-3)
+                wide = 620 - 500 * p                                  # it gathers toward the spot
+                y += 26 * p * p * m["strength"] * math.exp(-((i - m["x"]) / wide) ** 2) * math.sin(i / (16 - 9 * p) - t * (14 + 40 * p))
+                loud = max(loud, p * p)
+            elif m["kind"] == "question":
+                fade = 1 - (t - m["t"]) / (m["until"] - m["t"])
+                y += 5 * fade * math.exp(-((i - m["x"]) / 260) ** 2) * math.sin(i / 9 - t * 26)
+                loud = max(loud, 0.4 * fade)
+            else:
+                age = t - m["t"]
+                front = abs(i - m["x"]) - 900 * age                    # one ripple runs outward from whoever it is about
+                y += (1 if m["kind"] == "turn.bad" else -1) * 44 * m["strength"] * math.exp(-age / 0.45) * math.exp(-(front / 70) ** 2)
+                loud = max(loud, math.exp(-age / 0.45))
+        (path.moveTo if i == 0 else path.lineTo)(i, gy + y)
+    c.drawLine(0, gy, W, gy, stroke(RULE, 2, 255 * (1 - 0.8 * loud)))       # the line at rest fades as the played line takes over
+    c.drawPath(path, stroke(INK, 2 + 1.5 * loud, 60 + 150 * loud))
+
+
+def rings(c, stage, t, marks):
+    """Rings that draw in toward where a moment will land while it builds, and one that bursts outward when it does."""
+    cy = ground(stage.H) - BODY_H / 2
+    for m in marks:
+        if not m["t"] <= t <= m["until"]:
+            continue
+        if m["kind"] == "rise":
+            p = (t - m["t"]) / max(m["length"], 1e-3)
+            for k in range(3):
+                u = (p * 2.5 + k / 3) % 1                              # each ring shrinks to the spot, then another starts
+                c.drawCircle(m["x"], cy, 40 + 520 * (1 - u), stroke(INK, 2, 150 * p * u))
+        else:
+            age = t - m["t"]
+            color = INK if m["kind"] == "turn.bad" else RING_GOOD if m["kind"] == "turn.good" else RING_ASK
+            c.drawCircle(m["x"], cy, 50 + 760 * age, stroke(color, 5 if m["kind"] == "turn.bad" else 3, 230 * m["strength"] * max(0.0, 1 - age / 1.1)))
+
+
+def frame_bars(c, stage, t, marks):
+    """The frame closes in while a moment builds, and springs open as it lands."""
+    amount = 0.0
+    for m in marks:
+        if m["kind"] == "rise" and m["t"] <= t <= m["lands"] + 0.25:
+            p = min(1.0, (t - m["t"]) / max(m["length"], 1e-3))
+            amount = max(amount, p ** 1.5 if t <= m["lands"] else 1 - back((t - m["lands"]) / 0.25, 1.0))
+    if amount > 0.002:
+        h = stage.H * 0.11 * amount
+        c.drawRect(skia.Rect.MakeWH(stage.W, h), fill(INK))
+        c.drawRect(skia.Rect.MakeXYWH(0, stage.H - h, stage.W, h), fill(INK))
+
+
 def hits(stage, F):
     """What is where in frame F, front to back: [{kind, box: [x, y, w, h], ...}] in frame pixels.
     kind is `syllable` (with `line`, the bubble, and `n`, its place in that bubble from 0), `bubble`, or `token` (with `entity`).
@@ -311,7 +393,14 @@ def hits(stage, F):
 def draw_frame(c, stage, F, xray=False, slate=False):
     W, H, t, feel = stage.W, stage.H, F / stage.fps, stage.look.feel
     c.clear(col(PAPER))
-    c.drawLine(0, ground(H), W, ground(H), stroke(RULE, 2))
+    seen = stage.look.style.get("music", "none")                 # how music is shown, if at all
+    marks = music_marks(stage) if seen != "none" else []
+    if seen == "line":
+        ground_line(c, stage, t, marks)
+    else:
+        c.drawLine(0, ground(H), W, ground(H), stroke(RULE, 2))
+    if seen == "rings":
+        rings(c, stage, t, marks)
     states = {e: s for e in stage.score.pose if (s := pose(stage, e, t)) is not None}
     if xray:
         draw_xray(c, stage, states)
@@ -326,6 +415,8 @@ def draw_frame(c, stage, F, xray=False, slate=False):
         draw_token(c, stage.look.cast[e], o, W, H, feel)
     if line and line["who"] in states:
         draw_bubble(c, stage, line, t, states[line["who"]], stage.look.cast[line["who"]])
+    if seen == "frame":
+        frame_bars(c, stage, t, marks)
     if slate:
         turn = stage.score.turn_at(t)
         c.drawString(f"T{turn['id']} · {t / stage.score.step - turn['start']:.2f}", 20, 32, font(16, mono=True), fill(INK, 150))

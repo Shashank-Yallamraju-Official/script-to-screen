@@ -244,7 +244,8 @@ class Scene:
         # what happened dramatically, and which of it gets music: two derivation steps over what was just worked out
         music = self.show.cfg.get("music") or {}
         self.drama = drama.dramatic_events(self.keys, self.focus, self.quiet, self.show.cfg.get("valence"))
-        self.music = scoring.cues(self.drama, sec, float(music.get("threshold", scoring.THRESHOLD)), float(music.get("apart", scoring.APART)))
+        self.music = scoring.cues(self.drama, sec, float(music.get("threshold", scoring.THRESHOLD)), float(music.get("apart", scoring.APART)),
+                                  rise=float(music.get("rise", scoring.RISE)), rise_from=float(music.get("rise_from", scoring.RISE_FROM)))
         # the fourth value says the event belongs to a reaction in passing; how much quieter that is, is presentation's call
         self.events = sorted(((t, n, e, (round(t, 4), e) in self.quiet) for t, n, e in self.events), key=lambda ev: ev[0])
 

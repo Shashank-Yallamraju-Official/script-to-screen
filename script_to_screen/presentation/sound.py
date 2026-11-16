@@ -62,7 +62,20 @@ def sound_for(sounds, name):
 MUSIC = {"key": 220, "attack": 0.03, "ring": 0.35,
          "turn.bad": {"wave": "tri", "vol": 0.5, "notes": [[0, -12, 7], [0, -6, 7], [2, -13, 6]]},              # low, with a tritone: it sinks
          "turn.good": {"wave": "sine", "vol": 0.45, "notes": [[0, 0, 2], [1, 4, 2], [2, 7, 2], [3, 12, 6]]},      # a rising bright arpeggio
-         "question": {"wave": "sine", "vol": 0.35, "notes": [[0, 14, 9], [0.5, 19, 8]]}}                          # two high held notes: unresolved
+         "question": {"wave": "sine", "vol": 0.35, "notes": [[0, 14, 9], [0.5, 19, 8]]},                          # two high held notes: unresolved
+         "rise": {"wave": "tri", "vol": 0.4, "from": -17, "to": -5}}                                              # a tone that climbs and swells until the moment lands
+
+
+def riser(hz0, hz1, dur, vol, timbre="tri"):
+    """A build-up: one tone gliding from hz0 to hz1 over `dur` seconds, swelling as it goes, with a slow shiver that quickens."""
+    n = max(1, int(dur * RATE))
+    u = np.arange(n) / n
+    hz = hz0 * (hz1 / hz0) ** u
+    phase = 2 * np.pi * np.cumsum(hz) / RATE
+    shiver = 1 - 0.25 * (0.5 + 0.5 * np.sin(2 * np.pi * np.cumsum(3 + 9 * u) / RATE))
+    out = _osc(timbre, phase) * vol * u ** 2 * shiver
+    out[-int(0.02 * RATE):] *= np.linspace(1, 0, int(0.02 * RATE))      # let go just as the moment lands
+    return out
 
 
 def figure(music, kind):
@@ -95,6 +108,10 @@ def mix(stage):
     key, vol = float(music.get("key", MUSIC["key"])), float(feel.get("music_volume", 0.6))
     for cue in stage.score.music if vol > 0 else []:             # the score names the cue; the look says what it sounds like
         fig = figure(music, cue["kind"])
+        if cue["kind"] == "rise":
+            add(cue["t"], riser(key * 2 ** (float(fig.get("from", -17)) / 12), key * 2 ** (float(fig.get("to", -5)) / 12), cue["length"],
+                                float(fig.get("vol", 0.4)) * vol * (0.5 + 0.5 * cue["strength"]), fig.get("wave", "tri")))
+            continue
         for at, semi, length in fig.get("notes", []):
             add(cue["t"] + at * step, note(key * 2 ** (semi / 12), min(length * step, 1.6), float(fig.get("vol", 0.4)) * vol * (0.5 + 0.5 * cue["strength"]),
                                            fig.get("wave", "sine"), float(music.get("attack", MUSIC["attack"])), float(music.get("ring", MUSIC["ring"]))))
