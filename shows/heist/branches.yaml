@@ -1,0 +1,49 @@
+# Candidate answers to what story.yaml leaves open, written in the model's terms so that every combination
+# can be worked through (`s2s story --branches --show shows/heist`). The tool does not invent these; add your own.
+#
+#   snag     which obstacle changes before the job. `plan` changes a step: who it relies on, or who does it.
+#            `world_present` puts the one who stands for the world in the building during the job.
+#   harm     how the harm lands on them. `breaks` is which excuses it makes impossible to keep telling;
+#            `needs_present` means it can only happen if they are in the building; `own_doing` is how plainly
+#            it is the crew's own act (2 they did it with their hands, 1 it followed from what they did).
+#   care     a moment before the job in which someone comes to care about them: it sets a tie. Any number can be used.
+#   ending   what is given back. `meets` is whose unmet need it answers.
+snag:
+  - name: nothing changes
+  - name: the cameras are replaced the week before
+    plan: {systems: {relies_on: [sam]}}            # Ines needs Sam to let her at the new ones
+  - name: Sam is moved to the day shift
+    plan: {movement: {relies_on: [ruth, nico]}}    # he has to walk it out past the front in daylight, behind Nico's patter
+  - name: Dot is working late that night
+    world_present: true
+
+harm:
+  - name: Dot walks in on them and is knocked down
+    needs_present: true
+    own_doing: 2
+    breaks: [injury]
+  - name: Dot is blamed for it the next morning
+    own_doing: 1
+    breaks: [victim, responsibility]               # not who they pictured; and the loop wiped what would have cleared her
+  - name: what is in the vault is the staff pension
+    own_doing: 2
+    breaks: [loyalties, condemners]                # the people it was for; and who the real thieves are now
+  - name: Hale puts his own figures on Dot to cover the loss
+    own_doing: 1
+    breaks: [condemners, victim]
+
+care:
+  - name: Dot is the first person at the branch to ask Ines her name
+    ties: {ines: {dot: [1, 1]}}
+  - name: Dot covers for Nico when his story slips
+    ties: {nico: {dot: [2, 0]}}
+  - name: Ruth fixes the lock on Dot's till, and Dot tells everyone who did it
+    ties: {ruth: {dot: [1, 1]}}
+
+ending:
+  - name: they put it back
+    meets: {dot: [safety]}
+  - name: it goes to the people it was taken from
+    meets: {dot: [safety, belonging], sam: [safety]}
+  - name: what they learned getting in is used to keep the branch open
+    meets: {dot: [safety, belonging], sam: [safety], hale: [control], vera: [control], ines: [esteem]}

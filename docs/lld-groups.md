@@ -142,3 +142,31 @@ Things nobody wrote, that came out of the rules:
 - **Obstacles have no state** (set or not), and there is one stage, so no cutting between rooms.
 - **The strengths are untested.** Pressure thresholds, strain and the pecking order's weights were
   chosen once, for one crew. A second story is the test.
+
+## 9. Branches
+
+What a story leaves open forms a tree. The tool does not invent answers, so candidate answers
+are written by whoever is operating it, in the model's terms, in `branches.yaml`: which obstacle
+changes before the job, how the harm lands, moments in which someone comes to care, and what is
+given back. `s2s story --branches` takes every combination, applies it to the story, and scores
+it. The score is a sum with visible parts and weights (`readers/branches.py`), so it can be
+argued with: earned turns count most, then needs answered by the ending, less needs left
+unanswered, plus the harm happening in front of them, plus strain in the plan, less a point for
+each blow after the first.
+
+For the heist, 840 combinations were worked through, of which 504 cannot happen (the harm needs
+her in the building and she is not).
+
+- **One blow cannot do it.** No single harm breaks more than two of the five excuses. Three
+  combinations out of 840 give every member an earned turn, each needs three blows, and each
+  needs Dot to be working late that night.
+- **The moments in which they come to care matter more than which harm it is** (a spread of 6
+  points against 1). Without them the harm lands on someone three of the crew have never met.
+- **In every branch, Ines's belonging is left unanswered.** Nothing in the candidates makes the
+  crew trust her. The pair at the fault line, Ruth and Ines, have to mend for that to change.
+- **The second-ranked branch may be the better story.** With two blows and nobody hurt, Ruth's
+  excuse ("Nobody gets hurt") is still true, so she is the one who cannot give it back.
+
+What the score cannot be trusted on: which excuses a harm `breaks` and which needs an ending
+`meets` are asserted in the file, not derived. The ending ranked first is the one that was
+written as meeting the most needs, so that result is circular.

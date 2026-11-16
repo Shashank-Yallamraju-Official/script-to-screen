@@ -218,6 +218,11 @@ Its theme says nobody is good or bad, so the report requires everyone named, the
 to be surviving something. The design is in `docs/lld-groups.md`. None of this is used by scenes
 yet.
 
+What a story leaves open forms a tree. Candidate answers go in `branches.yaml`, written in the
+model's terms, and `s2s story --branches` works every combination through and ranks them by a
+score whose parts are shown. It also says which decision moves the score most, so the most
+useful question gets answered next.
+
 ## Reactions
 
 A reaction is what someone who is not speaking does about a line. There are two kinds, and
