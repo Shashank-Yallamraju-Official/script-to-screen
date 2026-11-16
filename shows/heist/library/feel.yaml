@@ -1,0 +1,21 @@
+# The micro-details: how things move, how the voice and the music sound. Tune them with the knob in the editor.
+ease: 0.34            # seconds a change takes to settle
+overshoot: 0.35       # how far a move swings past its mark before settling (0 = none)
+flip: 1.0             # how thin a token gets mid-turn, like a sheet of paper flipping (0 = none)
+squash: 0.10          # stretch while travelling, as a fraction of size
+cursor_size: 5.5      # size of the indicator that travels under a spoken line (it grows on stressed syllables)
+cursor_lift: 12       # how far the indicator rises and falls with the voice's pitch, in pixels
+cursor_tail: 0.12     # seconds of trail the indicator leaves behind it
+voice_attack: 0.015   # seconds a syllable's note takes to swell (short is percussive, long is soft)
+voice_ring: 0.7       # how much of its level a note keeps to its end (0 plucked, 1 held so syllables run together)
+bubble_pop: 0.3       # seconds a bubble takes to ease in as its line begins
+focus_dim: 0.3        # how far everyone else fades while a featured reaction holds the scene (0 = not at all)
+aside_volume: 0.4     # how loud a background reaction's sounds are, next to a featured one
+music_volume: 0.6     # how loud the music is: the short figures that mark a turn in the scene (0 = no music)
+reverb: 0.22          # how much of the shared room is heard around the music, and a little around the voices (0 = dry)
+duck: 5               # how many dB the music steps back while someone is speaking
+warmth: 0.5           # how far the music is pushed into soft saturation: rounder and fuller, peaks smoothed off
+bubble_fade: 0.4      # seconds a bubble lingers, fading, after its line has ended; the next one grows while it goes
+turn: 0.5             # seconds an entity takes to turn round
+camera_move: 1.4      # seconds the camera takes to ease from one shot to the next
+camera_lead: 0.3      # seconds before a turn that the camera starts moving for it

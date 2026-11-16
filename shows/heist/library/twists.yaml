@@ -1,0 +1,27 @@
+# Kinds of twist: what the viewer is not told until late. `in_on_it` names roles, which are worked out from the
+# crew: planner, fault_a and fault_b (the two at the plan's fault line), weak_link, watcher (whoever watches the planner).
+staged-failure:
+  hides: the failure at the fault line was planned
+  in_on_it: [planner, fault_a, fault_b]
+  viewer_fooled_during: [the job]
+  needs: the two at the fault line must be able to play enemies
+double-cross:
+  hides: one of the crew has been working for the mark
+  in_on_it: [watcher]
+  viewer_fooled_during: [the plan, the snag, the job]
+  needs: someone who watches the planner and is under pressure
+other-target:
+  hides: what they came for was never what they said
+  in_on_it: [planner]
+  viewer_fooled_during: [the plan, the snag, the job]
+  needs: a planner the crew relies on
+second-crew:
+  hides: someone else is robbing the same place the same night
+  in_on_it: []
+  viewer_fooled_during: [the job]
+  needs: nothing from the crew; it tests them from outside
+split-betrayal:
+  hides: one of them means to take it all
+  in_on_it: [weak_link]
+  viewer_fooled_during: [the job, the twist]
+  needs: someone the others do not rate, and so do not watch

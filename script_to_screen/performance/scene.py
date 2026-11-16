@@ -96,7 +96,7 @@ class Scene:
                     taken = {x: y["slot"] for x, y in st.items() if y["present"]}
                     try:
                         if i == 0 and src is None:
-                            spec["slot"], drew, why = placing.found(e, sheet, taken, world.things, sheet.get("bonds") or {}, self.show.cfg.get("valence"),
+                            spec["slot"], drew, why = placing.found(e, sheet, taken, world.things, {k: (v[0] if isinstance(v, (list, tuple)) else v) for k, v in (sheet.get("bonds") or {}).items()}, self.show.cfg.get("valence"),
                                                                     world.regards.get(e))
                             if drew and "orient" not in spec:
                                 spec["orient"] = drew        # and they face what drew them

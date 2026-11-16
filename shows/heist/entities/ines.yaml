@@ -1,0 +1,21 @@
+kind: the eyes. A contractor who maintained the branch's cameras and was never once asked her name
+color: "#35a39b"
+voice: 392
+timbre: square
+status: 1
+reflex: 1
+tells:
+  fear:  [{posture: contracted}, {distance: 1}, {attention: down}]
+  anger: [{tone: angry}, {attention: source}, {distance: -1}]
+  shame: [{attention: down}, {tone: nervous, latency: 3}, {orient: away}]
+  joy:   [{tone: cheerful}, {posture: lean_in}]
+
+# Who they are. Temperament: -2 to +2. Needs: 0 to 2, and any not listed is 1.
+# Standing is where they sit in society: wealth, status and power, each -2 to +2. It is the facet they stand for.
+# Craft is which kinds of obstacle they can get past: people, locks, systems, movement, paper.
+profile:
+  temperament: {drive: 1, caution: 1, dominance: -1, warmth: -1}
+  needs: {belonging: 2, esteem: 2}
+  standing: {wealth: 0, status: -2, power: 1}
+  craft: [systems]
+  tells_self: responsibility        # how they excuse it: injury, victim, condemners, loyalties, responsibility

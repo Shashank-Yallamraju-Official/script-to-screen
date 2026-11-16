@@ -1,0 +1,21 @@
+kind: the inside. Night security at the branch, on a contract that can be ended with a week's notice
+color: "#c26a3d"
+voice: 175
+timbre: tri
+status: 1
+reflex: 1
+tells:
+  fear:  [{posture: contracted}, {distance: 1}, {attention: down}]
+  anger: [{tone: angry}, {attention: source}, {distance: -1}]
+  shame: [{attention: down}, {tone: nervous, latency: 3}, {orient: away}]
+  joy:   [{tone: cheerful}, {posture: lean_in}]
+
+# Who they are. Temperament: -2 to +2. Needs: 0 to 2, and any not listed is 1.
+# Standing is where they sit in society: wealth, status and power, each -2 to +2. It is the facet they stand for.
+# Craft is which kinds of obstacle they can get past: people, locks, systems, movement, paper.
+profile:
+  temperament: {drive: 0, caution: 2, dominance: -1, warmth: 1}
+  needs: {safety: 2}
+  standing: {wealth: -2, status: -1, power: 1}
+  craft: [people, movement]
+  tells_self: loyalties        # how they excuse it: injury, victim, condemners, loyalties, responsibility

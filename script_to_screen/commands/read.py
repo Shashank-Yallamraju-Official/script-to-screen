@@ -113,6 +113,15 @@ def state(a):
     return dict(address=address.of(root, path, t["id"]), entities=snap, text="\n".join(text))
 
 
+@command("story", "A story as a series of filters: what each decision in story.yaml forces, narrows to a few choices, and leaves open.",
+         [], "s2s story --show shows/heist")
+def story_(a):
+    from ..readers import story
+    root = address.show_root(a.show)
+    rep = story.report(root)
+    return dict(**rep, text=story.text(rep))
+
+
 def _pairs(items, what):
     """`a.b=v` or `a=v` flags -> [(a, b or None, v)]."""
     out = []

@@ -1,0 +1,30 @@
+# The story, as decisions in the order that narrows it most. Each one is a filter: the rules carry its
+# consequences as far as they reach, and `s2s story --show shows/heist` says what is now forced, what is
+# narrowed to a few choices, and what is still open. Delete from the bottom up to widen it again.
+
+# Gate 1. What they go after (library/locks.yaml).
+lock: bank
+
+# Gate 2. Who they are (their sheets are in entities/). Whoever has no craft is the planner.
+crew: [vera, sam, ruth, nico, ines]
+mark: hale
+
+# Gate 3. How each sees each: [trust, rating], each -2 to +2. A pair not listed is neutral.
+ties:
+  vera: {sam: [1, -1], ruth: [1, 2], nico: [1, -1], ines: [0, 1]}
+  sam:  {vera: [-1, 1], ruth: [1, 1], nico: [1, -1], ines: [0, 0]}
+  ruth: {vera: [1, 1], sam: [1, 0], nico: [1, -1], ines: [0, -1]}
+  nico: {vera: [1, 1], sam: [1, 1], ruth: [1, 1], ines: [1, 1]}
+  ines: {vera: [1, 1], sam: [0, 0], ruth: [0, -1], nico: [1, -1]}
+code: [nobody gets hurt, equal shares]
+
+# Gate 4. The plan: the pins in order, who sets each, and who they have to rely on while they do.
+plan:
+  - {pin: people, who: nico, relies_on: [sam]}
+  - {pin: systems, who: ines}
+  - {pin: locks, who: ruth, relies_on: [ines]}
+  - {pin: movement, who: sam, relies_on: [ruth]}
+  - {pin: paper, who: nico, relies_on: [vera]}
+
+# Gate 5. What the viewer is not told (library/twists.yaml).
+twist: staged-failure

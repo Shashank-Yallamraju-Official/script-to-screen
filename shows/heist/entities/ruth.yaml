@@ -1,0 +1,21 @@
+kind: the hands. A locksmith whose shop closed when the landlord sold the street
+color: "#7a8b3c"
+voice: 262
+timbre: tri
+status: 1
+reflex: 1
+tells:
+  fear:  [{posture: contracted}, {distance: 1}, {attention: down}]
+  anger: [{tone: angry}, {attention: source}, {distance: -1}]
+  shame: [{attention: down}, {tone: nervous, latency: 3}, {orient: away}]
+  joy:   [{tone: cheerful}, {posture: lean_in}]
+
+# Who they are. Temperament: -2 to +2. Needs: 0 to 2, and any not listed is 1.
+# Standing is where they sit in society: wealth, status and power, each -2 to +2. It is the facet they stand for.
+# Craft is which kinds of obstacle they can get past: people, locks, systems, movement, paper.
+profile:
+  temperament: {drive: 2, caution: 0, dominance: 0, warmth: 0}
+  needs: {esteem: 2}
+  standing: {wealth: -1, status: -1, power: -1}
+  craft: [locks]
+  tells_self: injury        # how they excuse it: injury, victim, condemners, loyalties, responsibility

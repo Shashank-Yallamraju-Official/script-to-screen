@@ -1,0 +1,21 @@
+kind: the planner. Ran operations at the branch for eleven years and was let go in a restructuring
+color: "#3f5a78"
+voice: 220
+timbre: sine
+status: 1
+reflex: 1
+tells:
+  fear:  [{posture: contracted}, {distance: 1}, {attention: down}]
+  anger: [{tone: angry}, {attention: source}, {distance: -1}]
+  shame: [{attention: down}, {tone: nervous, latency: 3}, {orient: away}]
+  joy:   [{tone: cheerful}, {posture: lean_in}]
+
+# Who they are. Temperament: -2 to +2. Needs: 0 to 2, and any not listed is 1.
+# Standing is where they sit in society: wealth, status and power, each -2 to +2. It is the facet they stand for.
+# Craft is which kinds of obstacle they can get past: people, locks, systems, movement, paper.
+profile:
+  temperament: {drive: 1, caution: -1, dominance: 2, warmth: 0}
+  needs: {control: 2, esteem: 2}
+  standing: {wealth: 0, status: -1, power: -2}
+  craft: []
+  tells_self: condemners        # how they excuse it: injury, victim, condemners, loyalties, responsibility

@@ -1,0 +1,55 @@
+# Kinds of lock: what a crew might go after. Choosing one is the first story decision, because everyone
+# in the crew is defined against it. A pin is one obstacle; its `kind` is the craft that gets past it.
+bank:
+  stands_for: finance
+  takes: cash
+  inside: someone on the bank's payroll
+  mark: whoever runs the branch
+  pins:
+    - {kind: people, what: the door guard and the floor staff}
+    - {kind: systems, what: the cameras and the vault's time lock}
+    - {kind: locks, what: the vault door}
+    - {kind: movement, what: getting the cash out past the front}
+    - {kind: paper, what: the serial numbers and the audit trail}
+casino:
+  stands_for: luck sold as a product
+  takes: chips and cash
+  inside: someone on the floor
+  mark: the owner
+  pins:
+    - {kind: people, what: the pit bosses}
+    - {kind: systems, what: the cameras over every table}
+    - {kind: locks, what: the cage}
+    - {kind: movement, what: walking out with it}
+    - {kind: paper, what: turning chips into money}
+museum:
+  stands_for: culture kept behind glass
+  takes: one object
+  inside: a guard or a restorer
+  mark: the director, or the donor whose name is on the wall
+  pins:
+    - {kind: people, what: the night guards}
+    - {kind: systems, what: the sensors on the case}
+    - {kind: locks, what: the case}
+    - {kind: movement, what: an object everyone would recognise}
+    - {kind: paper, what: a provenance for the copy left behind}
+tech-company:
+  stands_for: data and the people it is about
+  takes: a file
+  inside: a contractor
+  mark: the founder
+  pins:
+    - {kind: people, what: the front desk}
+    - {kind: systems, what: the network}
+    - {kind: paper, what: credentials}
+    - {kind: movement, what: getting the file somewhere it cannot be recalled from}
+collector:
+  stands_for: inherited wealth
+  takes: something nobody else is allowed to see
+  inside: household staff
+  mark: the collector
+  pins:
+    - {kind: people, what: the household}
+    - {kind: locks, what: the room}
+    - {kind: systems, what: the alarm}
+    - {kind: movement, what: leaving a house with one road}

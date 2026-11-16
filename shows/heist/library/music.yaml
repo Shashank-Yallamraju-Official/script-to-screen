@@ -1,0 +1,18 @@
+# How the music sounds. The engine decides WHEN there is a cue and of what kind (`s2s drama <scene>`);
+# this file decides the harmony. Everything here is optional: the engine has these values built in.
+key: 220              # the pitch of the root, in Hz (220 is the A below middle C)
+
+# Which mode a cue is voiced in: the first entry whose strength the cue reaches. The modes run from
+# bright to dark: lydian, major, mixolydian, dorian, aeolian, phrygian, locrian.
+modes:
+  turn.good: [[0.5, lydian], [0, major]]                       # big good news floats (the raised fourth); plain good news is plain major
+  turn.bad: [[0.6, locrian], [0.45, phrygian], [0, aeolian]]   # the worse the news, the more notes are lowered: first the second, then the fifth too
+  question: [[0, mixolydian]]                                  # voiced in stacked fourths with no third, so it is neither major nor minor
+
+# A build-up glides between two pitches, in semitones from the root. It ends on the leading tone, one
+# semitone under the root, which the moment it leads to then resolves.
+rise: {from: -17, to: -1}
+
+# To write your own figure for a kind of cue, add `figures:` with notes as
+# [steps after the cue, scale degree, octaves up or down, steps long, how hard 0..1] under an instrument
+# (keys, warm or glass). See script_to_screen/presentation/music.py for the built-in ones.

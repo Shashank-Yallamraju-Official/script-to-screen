@@ -195,6 +195,27 @@ branches a scene could take from here; picking one, and writing the line, is the
 | Joy | share | low warmth: press |
 | Sadness | withdraw | high warmth: seek company |
 
+## A story as a series of filters
+
+Before any scene exists, a story can be decided in gates, each narrower than the last. The
+decisions live in a show's `story.yaml`; `s2s story` carries each one's consequences as far as
+the rules reach and reports what is now **forced** (only one thing can be true), **narrowed**
+(a few things could be) and **open** (someone has to invent it).
+
+    lock: bank                                   # 1. what they go after
+    crew: [vera, sam, ruth, nico, ines]          # 2. who they are
+    ties: {sam: {vera: [-1, 1]}}                 # 3. how each sees each: [trust, rating]
+    plan: [{pin: locks, who: ruth, relies_on: [ines]}]      # 4. the job, and who leans on whom
+    twist: staged-failure                        # 5. what the viewer is not told
+
+Three additions to an entity's profile feed it: `standing` (wealth, status, power: where they
+sit in society), `craft` (which kinds of obstacle they can get past) and `tells_self` (how they
+excuse it). From these the rules work out who is under pressure, who would say yes, who leads,
+who holds the group together, who gets blamed, where the plan cracks, and what the group does
+when it does. `shows/heist/` is a run-of-the-mill heist decided this way: five decisions force 31
+things and leave four open. The design is in `docs/lld-groups.md`. None of this is used by scenes
+yet.
+
 ## Reactions
 
 A reaction is what someone who is not speaking does about a line. There are two kinds, and

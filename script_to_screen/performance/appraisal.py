@@ -45,7 +45,9 @@ class Minds:
         return ((self.sheets[c].get("profile") or {}).get("temperament") or {}).get(name, 0)
 
     def bond(self, a, b):
-        return (self.sheets[a].get("bonds") or {}).get(b, 0)
+        """How far a trusts b. A bond is written as one number (trust) or as [trust, rating]: see crew.py."""
+        v = (self.sheets[a].get("bonds") or {}).get(b, 0)
+        return v[0] if isinstance(v, (list, tuple)) else v
 
     def power(self, c):
         mine = sum(1 for s in self.sides.values() if s == self.sides.get(c))
