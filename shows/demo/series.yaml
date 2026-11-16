@@ -5,12 +5,15 @@ seasons:
     title: Season one
     episodes:
       - id: s01e01
-        title: The kitchen
-        logline: Three small accusations in one room; the audience learns how Otis carries shame.
+        title: Three small accusations
+        logline: A dumpling, a vase and a thermostat. The audience learns how Otis carries shame, and who else has something to hide.
         segments:
-          - {id: the-last-dumpling, scene: episodes/s01/e01/01-the-last-dumpling.yaml}
+          - {id: the-last-dumpling, scene: episodes/s01/e01/01-the-last-dumpling.yaml}     # the cold open
+          - {id: s01e01-title, card: title}
           - {id: the-vase, scene: episodes/s01/e01/02-the-vase.yaml}
           - {id: the-thermostat, scene: episodes/s01/e01/03-the-thermostat.yaml}
+          - {id: lights-out, scene: episodes/s01/e01/04-lights-out.yaml}
+          - {id: s01e01-credits, card: credits}
   - id: studies
     title: Staging studies
     episodes:

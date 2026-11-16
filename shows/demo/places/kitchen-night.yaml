@@ -1,0 +1,6 @@
+# The kitchen with the lights off: the same room, darker, with the moon in the window.
+like: kitchen
+name: The kitchen at night
+wall: "#39425a"
+floor: "#2b3348"
+window: "#aebbe0"

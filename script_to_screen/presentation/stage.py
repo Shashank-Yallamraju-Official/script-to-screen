@@ -34,6 +34,8 @@ class Stage:
             if not file.exists():
                 raise ScriptError(f"no place '{score.place}': there is no places/{score.place}.yaml")
             look.place = load_yaml(file)
+            if look.place.get("like"):                           # a place that starts as another and changes only what differs
+                look.place = {**load_yaml(root / "places" / f"{look.place['like']}.yaml"), **look.place}
         self.W, self.H, self.fps = look.W, look.H, look.fps
         self.total = max(1, round(score.dur * look.fps))         # frames
 

@@ -51,6 +51,30 @@ FIGURES = {
 }
 
 
+def _bars(*bars):
+    """Notes written a bar at a time (16 steps to the bar) -> one list of notes."""
+    return [[16 * k + at, degree, octave, length, vel] for k, bar in enumerate(bars) for at, degree, octave, length, vel in bar]
+
+
+# The show's theme, in major. The melody is one bar-long shape, a fall from the fifth and a climb back, moved through
+# four chords (I, vi, IV, V); the title card plays its first bar and resolves, the credits play it twice and come home.
+_A = [[0, 5, 1, 2, .8], [2, 3, 1, 2, .7], [4, 8, 1, 2, .85], [6, 5, 1, 2, .7], [8, 6, 1, 2, .8], [10, 5, 1, 2, .7], [12, 3, 1, 4, .75]]
+_B = [[0, 6, 1, 2, .8], [2, 5, 1, 2, .7], [4, 3, 1, 2, .75], [6, 1, 1, 2, .7], [8, 2, 1, 2, .75], [10, 3, 1, 2, .7], [12, 1, 1, 4, .75]]
+_C = [[0, 4, 1, 2, .8], [2, 6, 1, 2, .7], [4, 8, 1, 2, .85], [6, 6, 1, 2, .7], [8, 4, 1, 2, .75], [10, 6, 1, 2, .7], [12, 5, 1, 4, .8]]
+_D = [[0, 5, 1, 2, .8], [2, 7, 1, 2, .7], [4, 9, 1, 2, .85], [6, 7, 1, 2, .7], [8, 5, 1, 2, .75], [10, 4, 1, 2, .7], [12, 2, 1, 4, .75]]
+_HOME = [[0, 5, 1, 2, .8], [2, 3, 1, 2, .75], [4, 2, 1, 4, .75], [8, 1, 1, 10, .9], [8, 8, 1, 10, .6]]
+_LOW = dict(I=[[0, 1, -1, 8, .8], [8, 5, -1, 6, .6]], vi=[[0, 6, -2, 8, .8], [8, 3, -1, 6, .6]], IV=[[0, 4, -1, 8, .8], [8, 8, -1, 6, .6]],
+            V=[[0, 5, -2, 8, .8], [8, 2, -1, 6, .6]], home=[[0, 5, -2, 6, .8], [8, 1, -1, 12, .9]])
+_PAD = dict(I=[[0, 1, 0, 14, .32], [0, 3, 0, 14, .28], [0, 5, 0, 14, .28]], vi=[[0, 6, -1, 14, .32], [0, 1, 0, 14, .28], [0, 3, 0, 14, .28]],
+            IV=[[0, 4, -1, 14, .32], [0, 6, -1, 14, .28], [0, 1, 0, 14, .28]], V=[[0, 5, -1, 14, .32], [0, 7, -1, 14, .28], [0, 2, 0, 14, .28]],
+            home=[[8, 1, 0, 16, .4], [8, 3, 0, 16, .32], [8, 5, 0, 16, .32], [8, 9, 0, 16, .25]])
+FIGURES["theme.title"] = {"keys": _A[:6] + [[12, 8, 1, 12, .9]], "warm": [[0, 1, -1, 10, .8], [12, 1, -1, 14, .9]],
+                          "glass": [[12, 1, 0, 16, .4], [12, 3, 0, 16, .32], [12, 5, 0, 16, .32], [12, 9, 0, 16, .25]]}
+FIGURES["theme.credits"] = {"keys": _bars(_A, _B, _C, _D, _A, _B, _C, _HOME),
+                            "warm": _bars(*[_LOW[c] for c in ("I", "vi", "IV", "V", "I", "vi", "IV", "home")]),
+                            "glass": _bars(*[_PAD[c] for c in ("I", "vi", "IV", "V", "I", "vi", "IV", "home")])}
+
+
 def mode_for(kind, strength, table=None):
     for least, mode in (table or MODE_FOR).get(kind, ((0.0, "major"),)):
         if strength + 1e-9 >= least:

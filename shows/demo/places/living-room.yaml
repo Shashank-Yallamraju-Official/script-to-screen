@@ -1,0 +1,12 @@
+# The living room. The thermostat is on the wall between Juno and the two suspects, and it is showing.
+name: The living room
+wall: "#e3e1e6"
+floor: "#c9c7d0"
+pieces:
+  - {kind: window, at: 0.9, wide: 1.5}
+  - {kind: thermostat, at: 3.6, color: "#e2703a"}
+  - {kind: sofa, at: 6.2, wide: 2.8}
+  - {kind: shelf, at: 7.9}
+  - {kind: lamp, at: 8.3}
+  - {kind: rug, at: 4.8, wide: 4.4}
+  - {kind: plant, at: -0.6, depth: front}

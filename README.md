@@ -204,7 +204,8 @@ decides how a line lands, so the shot is chosen by whose moment it is.
    they face right, right if they face left, centre if they face us.
 3. A reaction that happens outside the frame gets its own shot, at the moment it happens.
    Until then, the line it reacts to is heard from off screen.
-4. The same people in the same part of the frame is the same shot: the camera rests.
+4. The same people in the same part of the frame is the same shot: the camera rests. No shot
+   is shorter than `min_shot` seconds; the shot before widens to hold the newcomer instead.
 5. A hard bad surprise tips the frame.
 6. A build-up goes to whoever it is about and pushes in until it lands.
 
@@ -226,20 +227,54 @@ How the camera gets from shot to shot is a style in `show.yaml` (`style: {camera
 (`feel.camera_move` is how long); `drift` eases everything; `cut` cuts everything; `still`
 never leaves the wide shot. In a close shot, whoever it is not a shot of goes out of focus.
 
-**A place is the room a scene happens in.** A scene names one with `place: sitting-room`, and
-the place is a file in `places/`: a wall colour, a floor colour, and pieces standing along the
-same slots the entities use.
+**A place is the room a scene happens in.** A scene names one with `place: kitchen`, and the
+place is a file in `places/`: a wall colour, a floor colour, and pieces standing along the same
+slots the entities use.
 
     pieces:
-      - {kind: door, at: 0}
-      - {kind: sofa, at: 5.6, wide: 2.7}
-      - {kind: plant, at: 8.6, depth: front}     # between the entities and the camera
+      - {kind: table, at: 3.5, wide: 1.2}
+      - {kind: plate, at: 3.5, up: 72}                     # 72 pixels up: on the table
+      - {kind: thermostat, at: 3.6, color: "#e2703a"}      # a piece given a colour keeps it in every style
+      - {kind: plant, at: 8.6, depth: front}               # between the entities and the camera
 
-The kinds are door, window, picture, shelf, sofa, lamp, plant, table and rug. The wall, the
-furniture, the floor and the foreground are separate layers, so they slide against each other
-when the camera moves. A place is drawn in one of three styles (`style: {place: wash}`):
-`wash` is one hue with light from windows and lamps, `paper` is muted cut paper, and `line` is
-ink outline. Bubbles follow their speaker but stay the same size however close the camera is.
+The kinds are door, window, picture, shelf, sofa, lamp, plant, table, rug, counter, fridge,
+thermostat, pedestal, vase, shards and plate. A place can start `like:` another and change only
+what differs: the kitchen at night is `like: kitchen` with dark walls and a moonlit `window:`
+colour. The wall, the furniture, the floor and the foreground are separate layers, so they
+slide against each other when the camera moves. A place is drawn in one of three styles
+(`style: {place: wash}`): `wash` is one hue with light from windows and lamps, `paper` is muted
+cut paper, and `line` is ink outline. Bubbles follow their speaker but stay the same size
+however close the camera is.
+
+## An episode as one film
+
+`s2s render --episode s01e01` makes one file: the episode's scenes and cards in the order
+`series.yaml` lists them, joined by transitions, with one soundtrack.
+
+    segments:
+      - {id: the-last-dumpling, scene: episodes/s01/e01/01-the-last-dumpling.yaml}     # the cold open
+      - {id: s01e01-title, card: title}
+      - {id: the-vase, scene: episodes/s01/e01/02-the-vase.yaml}
+      - {id: lights-out, scene: episodes/s01/e01/04-lights-out.yaml, into: fade}
+      - {id: s01e01-credits, card: credits}
+
+A card has no file. The title card shows the show's `title` (in `show.yaml`) and the episode's
+title; the name takes ink while the theme plays, the way a spoken line does, and the cast pop
+up under it. The credits roll past the cast, who then turn to look at us.
+
+Everything about it is set in `show.yaml`:
+
+| Setting | What it changes |
+|---|---|
+| `title` | The show's name |
+| `credits` | The credits, top to bottom: `{role, name}` entries, and `cast` for everyone in the episode (name, kind, and what voices them) |
+| `episode.transition` | How one part gives way to the next: `dip` (through the paper), `fade` (one into the next) or `cut`. A segment can ask for its own with `into:` |
+| `episode.transition_seconds`, `title_seconds`, `credits_seconds` | How long each takes |
+| `style` | How rooms are drawn, how the camera moves, how the voice shows in a bubble, how music shows |
+| `camera` | How tight each kind of shot may get, the shortest a shot may be (`min_shot`), and how far the frame tips (`tilt`; 0 turns it off) |
+
+The theme is two figures in `music.py`, `theme.title` and `theme.credits`, written in scale
+degrees like every other cue; write your own under `figures:` in `library/music.yaml`.
 
 ## Music
 

@@ -43,8 +43,8 @@ def sheet(a):
     return dict(file=str(png), frames=[address.of(root, path, t["id"]) for t in sc.turns], text=str(png))
 
 
-@command("render", "Render to video: one scene, an episode (its scenes joined), or everything. Refuses while the show has errors.",
-         [A("scene", "a scene", nargs="?"), A("--episode", "an episode's id, e.g. s01e01: render its scenes and join them"), A("--all", "every scene", action="store_true"),
+@command("render", "Render to video: one scene, an episode (its scenes, title card and credits as one film), or everything. Refuses while the show has errors.",
+         [A("scene", "a scene", nargs="?"), A("--episode", "an episode's id, e.g. s01e01: render it as one film"), A("--all", "every scene", action="store_true"),
           XRAY, A("--slate", "label every frame with its turn and step", action="store_true")],
          "s2s render --episode s01e01", group="look")
 def render(a):
@@ -62,10 +62,14 @@ def render(a):
     if any(p["level"] == "error" for p in problems):
         return dict(ok=False, problems=problems, exit=FAILED,
                     text="not rendered: fix these first\n" + "\n".join(f"  {p['scene']}" + (f":{p['turn']}" if p.get("turn") is not None else "") + f"  {p['msg']}" for p in problems if p["level"] == "error"))
+    if a.episode:                                                # one film: scenes and cards in order, joined by transitions, one soundtrack
+        from ..presentation import episode
+        film, made = episode.render(root, a.episode)
+        return dict(file=str(film), parts=made, problems=problems, seconds=round(sum(m["seconds"] for m in made), 1),
+                    text="\n".join([f"warn: {p['scene']}: {p['msg']}" for p in problems] + [f"  {m['seconds']:>5}s  {m['kind']:<8} {m['id']}" for m in made]
+                                   + [f"{film} {round(sum(m['seconds'] for m in made), 1)}s"]))
     scenes = [Stage.of(Scene(p)) for p in paths]
     files = [dict(scene=st.score.id, file=str(R.render(st, a.xray, a.slate)), seconds=round(st.score.dur, 1)) for st in scenes]
     out = dict(files=files, problems=problems)
-    if a.episode:
-        out["joined"] = str(R.join(root, a.episode, scenes))
-    out["text"] = "\n".join([f"warn: {p['scene']}: {p['msg']}" for p in problems] + [f"{f['file']} {f['seconds']}s" for f in files] + ([out["joined"]] if a.episode else []))
+    out["text"] = "\n".join([f"warn: {p['scene']}: {p['msg']}" for p in problems] + [f"{f['file']} {f['seconds']}s" for f in files])
     return out

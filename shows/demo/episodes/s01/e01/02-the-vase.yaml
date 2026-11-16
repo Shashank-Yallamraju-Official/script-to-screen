@@ -1,4 +1,5 @@
 scene: The vase
+place: hallway
 offscreen:
   - feel: {otis: calm, juno: calm}
     why: A day has passed. The dumpling is forgiven, or at least not mentioned.

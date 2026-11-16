@@ -1,0 +1,12 @@
+# The hallway. The pedestal is where the vase stood; what is left of it is on the floor.
+name: The hallway
+wall: "#eadfce"
+floor: "#cfc1aa"
+pieces:
+  - {kind: picture, at: 1.8}
+  - {kind: picture, at: 6.6}
+  - {kind: door, at: 8.2}
+  - {kind: plant, at: 0.1}
+  - {kind: pedestal, at: 4.5}
+  - {kind: shards, at: 4.9}
+  - {kind: rug, at: 4.4, wide: 5.0}

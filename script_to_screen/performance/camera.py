@@ -11,7 +11,8 @@ a line lands, so the shot is chosen by whose moment it is:
      face right, on the right if they face left, in the centre if they face us.
   3. A reaction that happens outside the frame gets its own shot, at the moment it happens.
      Until then the line it reacts to is heard from off screen.
-  4. It rests when it can: the same people in the same part of the frame is the same shot.
+  4. It rests when it can: the same people in the same part of the frame is the same shot, and no
+     shot is shorter than `min_shot` seconds (the shot before widens to hold the newcomer instead).
   5. A hard bad surprise tips the frame.
   6. A build-up goes to whoever it is about and pushes in until it lands.
 
@@ -28,7 +29,7 @@ from ..world import SLOTS
 EDGE = 1.45                                  # how far the wide frame reaches past the first and last slot, in slots
 FRAME = SLOTS - 1 + 2 * EDGE                 # slots across the frame at zoom 1
 OVER = 1.3                                   # how far past the stage's edge a frame may reach, to seat someone at the edge of the stage to one side
-DEFAULTS = dict(single=3.0, two=1.9, group=1.45, margin=3.4, inset=1.0, loose=1.5, together=0.6, tilt=4.0, tilt_from=0.55, push=1.25)
+DEFAULTS = dict(single=3.0, two=1.9, group=1.45, margin=3.4, inset=1.0, loose=1.5, together=0.6, tilt=4.0, tilt_from=0.55, push=1.25, min_shot=1.8)
 SIDES = dict(left=1, centre=0, center=0, right=-1)
 SEEN = ("slot", "facing", "lx", "ly", "sx", "sy", "lean", "alpha", "tone")
 
@@ -116,13 +117,19 @@ def shots(turns, pose, focus, music, drama, step, written=None, cfg=None):
             stood = at(pose, t + 0.01)                           # where they stand while it builds
             if who not in stood:
                 continue
-            side = looking(stood[who])
-            centre, zoom = seat([stood[who]["slot"]], side, cfg)
-            wider = round(zoom / cfg["push"], 3)
-            out.append(dict(t=t, centre=seat([stood[who]["slot"]], side, cfg, wider)[0], zoom=wider, on=[who], at=side, tilt=0.0, kind="shot",
-                            why=f"the music is building toward {who}"))
-            out.append(dict(t=t + 1e-3, centre=centre, zoom=zoom, on=[who], at=side, tilt=0.0, kind="push", lasts=x.get("length", 0),
-                            why=f"the frame creeps in on {who} until the moment lands"))
+            on, side = [who], looking(stood[who])
+            if cur["kind"] == "shot" and cur["on"] and t - cur["t"] < cfg["min_shot"]:       # too soon to leave whoever we just cut to: push in on both
+                on, side = sorted(set(cur["on"]) | {who}), "centre"
+            slots = [stood[e]["slot"] for e in on if e in stood]
+            centre, zoom = seat(slots, side, cfg)
+            wider = round(max(1.0, zoom / cfg["push"]), 3)
+            first = dict(centre=seat(slots, side, cfg, wider)[0], zoom=wider, on=on, at=side, tilt=0.0, kind="shot", why=f"the music is building toward {who}")
+            if len(on) > 1:
+                cur.update(first)                                # the shot we are in becomes the start of the push
+            else:
+                out.append(dict(first, t=t))
+            out.append(dict(t=t + 1e-3, centre=centre, zoom=zoom, on=on, at=side, tilt=0.0, kind="push", lasts=x.get("length", 0),
+                            why=f"the frame creeps in on {names(on)} until the moment lands"))
             continue
         turn, (k, who) = x, extra
         t1 = (turn["start"] + turn["length"]) * step
@@ -173,6 +180,13 @@ def shots(turns, pose, focus, music, drama, step, written=None, cfg=None):
                 continue
             if k:
                 why = "a reaction outside the frame: " + why
+            if cur["kind"] == "shot" and cur["on"] and t - cur["t"] < cfg["min_shot"]:       # rule 4: no shot shorter than this
+                on = sorted(set(cur["on"]) | set(shot["on"]))
+                both = [stood[e]["slot"] for e in on if e in stood] + slots
+                centre, zoom = frame_for(both, cfg)
+                cur.update(centre=centre, zoom=zoom, on=on, at="centre", tilt=cur["tilt"] or shot["tilt"],
+                           why=cur["why"] + f"; widened to hold {names(shot['on'])} too, rather than cut again so soon")
+                continue
         out.append(dict(shot, t=t, kind="shot", why=why))
     return out
 

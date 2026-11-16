@@ -2,9 +2,12 @@
 
 A place is a file in the show's `places/` folder: a wall colour, a floor colour, and pieces
 standing along the same line of slots the entities use. A piece is a kind (door, window, sofa,
-lamp, plant, picture, table, shelf, rug), where it stands (`at`, a slot), and optionally how
-wide it is (`wide`, in slots), a `color`, and `depth: front` to stand it between the entities
-and the camera.
+lamp, plant, picture, table, shelf, rug, counter, fridge, thermostat, pedestal, vase, shards,
+plate), where it stands (`at`, a slot), and optionally how wide it is (`wide`, in slots), how
+far `up` it sits (pixels: a plate on a table), a `color`, and `depth: front` to stand it between
+the entities and the camera. A piece given a `color` keeps it in every style, so the thing a
+scene is about stands out from the room. A place can start `like:` another and change only what
+differs (a kitchen at night is the kitchen with dark walls and a moonlit `window:` colour).
 
 Every piece is built from shapes with a role (body, dark, light, line). A style decides what
 each role looks like, so the same room can be drawn three ways (`style: {place: ...}`):
@@ -22,9 +25,11 @@ from .view import ground, slot_x
 
 WALL_DEPTH, BACK_DEPTH, FRONT_DEPTH = 0.3, 0.15, -0.2
 FLOOR_UP = 46                                 # how far behind the entities' feet the wall meets the floor, in pixels
-ON_WALL = ("door", "window", "picture", "shelf")
+ON_WALL = ("door", "window", "picture", "shelf", "thermostat")
+ON_FLOOR = ("rug", "shards")
 COLORS = dict(door="#cdbb9d", window="#b9c2c4", picture="#b7a58c", sofa="#9fb0aa", lamp="#b9a98c", plant="#8fa58a", table="#b49f84",
-              shelf="#b49f84", rug="#c9b6a6")
+              shelf="#b49f84", rug="#c9b6a6", counter="#b9b3a2", fridge="#c5cbcc", thermostat="#d8d2c4", pedestal="#c2b8a6", vase="#5b7fa6",
+              shards="#5b7fa6", plate="#f4f1e8")
 
 
 def rgb(h):
@@ -109,7 +114,25 @@ def shapes(kind, w):
     if kind == "rug":
         w = w or 420
         return [("body", oval(0, 0, w / 2, 26)), ("line", oval(0, 0, w / 2 - 22, 17))]
-    raise ValueError(f"a place has no piece of kind '{kind}'; the kinds are: door, window, picture, shelf, sofa, lamp, plant, table, rug")
+    if kind == "counter":
+        w = w or 300
+        return [("body", rect(-w / 2, -96, w, 96, 4)), ("dark", rect(-w / 2 - 6, -106, w + 12, 12, 3)), ("line", rect(-w / 2 + 14, -80, w / 2 - 22, 66, 3)),
+                ("line", rect(8, -80, w / 2 - 22, 66, 3))]
+    if kind == "fridge":
+        return [("body", rect(-62, -310, 124, 310, 10)), ("line", poly((-62, -200), (62, -200), (-62, -200))), ("dark", rect(40, -262, 7, 44, 3)),
+                ("dark", rect(40, -184, 7, 70, 3))]
+    if kind == "thermostat":
+        return [("body", rect(-26, -286, 52, 52, 12)), ("light", oval(0, -260, 15, 15)), ("dark", oval(5, -265, 3.5, 3.5))]
+    if kind == "pedestal":
+        return [("body", rect(-22, -118, 44, 118)), ("dark", rect(-32, -128, 64, 12, 3)), ("dark", rect(-30, -10, 60, 10, 2))]
+    if kind == "vase":
+        return [("body", oval(0, -34, 26, 34)), ("body", rect(-11, -84, 22, 30, 5)), ("dark", rect(-15, -90, 30, 8, 3))]
+    if kind == "shards":
+        return [("body", poly((-34, 0), (-20, -14), (-10, 0))), ("dark", poly((-2, 2), (10, -18), (22, 2))), ("body", poly((30, 4), (40, -8), (52, 4))),
+                ("dark", poly((-56, 6), (-48, -4), (-42, 6)))]
+    if kind == "plate":
+        return [("body", oval(0, -3, 34, 6)), ("line", poly((-18, -8), (22, -12), (-18, -8))), ("line", poly((-16, -5), (24, -8), (-16, -5)))]
+    raise ValueError(f"a place has no piece of kind '{kind}'; the kinds are: " + ", ".join(sorted(COLORS)))
 
 
 class Painter:
@@ -121,6 +144,9 @@ class Painter:
         if style == "line":
             self.wall = self.floor = "#f5f3ee"
         self.ink = "#aaa497"
+        self.window = place.get("window", "#fffdf6")                      # what is seen through a window: daylight, or a night sky
+        dark = sum(rgb(self.wall)) < 330                                    # in a dark room, solid things are a step lighter than the wall, not darker
+        self.shade = "#aab3c8" if dark else "#2e2a24"
 
     def room(self, c, W, H, base):
         c.drawRect(skia.Rect.MakeLTRB(-W, -1.2 * H, 2 * W, base), paint(self.wall))
@@ -132,7 +158,8 @@ class Painter:
 
     def piece(self, c, piece, on_floor=False, front=False):
         kind, color = piece["kind"], piece.get("color") or COLORS[piece["kind"]]
-        under = self.floor if on_floor else self.wall
+        under, own = self.floor if on_floor else self.wall, piece.get("color")
+        lit = self.window if kind == "window" else "#fffdf6"
         for role, path in shapes(kind, piece.get("_w")):
             if self.style == "line":
                 if role == "line":
@@ -155,9 +182,12 @@ class Painter:
                     c.drawPath(path, paint(mix(self.floor, "#2e2a24", 0.42 if role != "light" else 0.34)) if role != "line" else pen(self.floor, 0, 0))
                     continue
                 if role == "line":
-                    c.drawPath(path, pen(mix(under, "#2e2a24", 0.16), 2, 160))
+                    c.drawPath(path, pen(mix(under, self.shade, 0.16), 2, 160))
                     continue
-                c.drawPath(path, paint("#fffdf6" if role == "light" else mix(under, "#2e2a24", 0.20) if role == "dark" else mix(under, "#2e2a24", 0.10)))
+                if own:                                                     # a piece given its own colour keeps it: it is what the scene is about
+                    c.drawPath(path, paint(lit if role == "light" else mix(own, "#2e2a24", 0.3) if role == "dark" else own))
+                else:
+                    c.drawPath(path, paint(lit if role == "light" else mix(under, self.shade, 0.20) if role == "dark" else mix(under, self.shade, 0.10)))
 
     def light(self, c, piece, base):
         """What a lit piece throws into the room. Only the wash style paints with light."""
@@ -166,8 +196,9 @@ class Painter:
         if piece["kind"] == "window":
             w = piece.get("_w") or 210
             pool = poly((-w / 2 + 40, base + 14), (w / 2 + 40, base + 14), (w / 2 + 230, base + 150), (-w / 2 + 130, base + 150))
+            r, g, b = rgb(self.window)
             p = skia.Paint(AntiAlias=True, Shader=skia.GradientShader.MakeLinear(
-                [skia.Point(0, base + 14), skia.Point(0, base + 150)], [skia.Color(255, 253, 246, 120), skia.Color(255, 253, 246, 0)]))
+                [skia.Point(0, base + 14), skia.Point(0, base + 150)], [skia.Color(r, g, b, 120 if sum(rgb(self.wall)) >= 330 else 60), skia.Color(r, g, b, 0)]))
             c.drawPath(pool, p)
         if piece["kind"] == "lamp":
             p = skia.Paint(AntiAlias=True, Shader=skia.GradientShader.MakeRadial(
@@ -182,7 +213,7 @@ def prepare(place, W):
     for raw in place.get("pieces") or []:
         piece = dict(raw, _x=slot_x(float(raw.get("at", 0)), W), _w=float(raw["wide"]) * spacing if raw.get("wide") else None)
         shapes(piece["kind"], piece["_w"])                                 # an unknown kind is refused here, once
-        layer = "front" if raw.get("depth") == "front" else "floor" if piece["kind"] == "rug" else "wall" if piece["kind"] in ON_WALL else "back"
+        layer = "front" if raw.get("depth") == "front" else "floor" if piece["kind"] in ON_FLOOR else "wall" if piece["kind"] in ON_WALL else "back"
         layers[layer].append(piece)
     return layers
 
@@ -203,7 +234,7 @@ def draw_behind(c, stage, cam):
             painter.room(c, stage.W, stage.H, base)
         for piece in layers[name]:
             c.save()
-            c.translate(piece["_x"], foot if name != "wall" else base)
+            c.translate(piece["_x"], (foot if name != "wall" else base) - float(piece.get("up", 0)))
             if name == "wall":
                 painter.light(c, dict(piece), 0) if piece["kind"] == "window" else None
             painter.piece(c, piece, on_floor=name == "floor")

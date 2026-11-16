@@ -21,6 +21,7 @@
 # their status, carry into the next scene. To change that, the next scene opens with
 #   offscreen: [{feel: {otis: calm}, why: A night's sleep.}]
 scene: The last dumpling
+place: kitchen
 turns:
   - id: 1
     enter: {juno: {slot: 2}, otis: {slot: 5}}

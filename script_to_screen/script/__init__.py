@@ -43,6 +43,7 @@ def find_root(path):
 
 
 STATUSES = ("draft", "staged", "tuned", "locked")
+CARDS = ("title", "credits")
 _override = {}                              # root -> series data being rehearsed (see `rehearsing`)
 
 
@@ -50,7 +51,8 @@ class Series:
     """The series from above: seasons, episodes and their segments, in order (series.yaml).
 
     A segment has an identity that does not depend on where its file is or what it is called.
-    Today every segment is a scene; a title card will be another kind.
+    A segment is a scene or a card (the title, the credits). Cards belong to their episode only:
+    `segments` and `by_id` hold scenes, and an episode's own `segments` holds both, in order.
     """
 
     def __init__(self, root, data=None):
@@ -69,11 +71,17 @@ class Series:
                                season=season["id"], segments=[])
                 season["episodes"].append(episode)
                 for sg in ep.get("segments") or []:
-                    kind = next((k for k in ("scene",) if k in sg), None)
+                    kind = next((k for k in ("scene", "card") if k in sg), None)
                     if kind is None:
-                        raise ScriptError(f"series.yaml: segment '{sg.get('id')}' has no kind; write `scene: <file>`")
+                        raise ScriptError(f"series.yaml: segment '{sg.get('id')}' has no kind; write `scene: <file>` or `card: title | credits`")
+                    if kind == "card":                           # a title card or the credits: made from show.yaml, with no file of its own
+                        if sg["card"] not in CARDS:
+                            raise ScriptError(f"series.yaml: '{sg.get('id')}' is a card of kind '{sg['card']}'; the kinds are {', '.join(CARDS)}")
+                        episode["segments"].append(dict(id=str(sg["id"]), kind="card", card=str(sg["card"]), into=sg.get("into"),
+                                                        season=season["id"], episode=episode["id"]))
+                        continue
                     seg = dict(id=str(sg["id"]), kind=kind, path=(self.root / str(sg[kind])).resolve(), file=str(sg[kind]),
-                               status=sg.get("status", "draft"), logline=sg.get("logline"),
+                               status=sg.get("status", "draft"), logline=sg.get("logline"), into=sg.get("into"),
                                season=season["id"], episode=episode["id"], index=len(self.segments))
                     if seg["id"] in self.by_id:
                         raise ScriptError(f"series.yaml: two segments are called '{seg['id']}'")

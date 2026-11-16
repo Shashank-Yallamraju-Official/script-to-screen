@@ -1,5 +1,37 @@
 # Settings for the whole show.
 schema: 2           # the file format; the engine refuses a show written for a different one
+title: House Rules  # the show's name, on the title card and at the end of the credits
+
+# How an episode is put together (`s2s render --episode <id>`). A segment in series.yaml can ask for its
+# own way in with `into: cut | dip | fade`.
+episode:
+  transition: dip            # between parts: dip (through the paper), fade (one into the next) or cut
+  transition_seconds: 0.8
+  title_seconds: 5
+  credits_seconds: 17
+
+# The credits, top to bottom. `cast` is everyone in the episode, worked out from its scenes.
+credits:
+  - {role: Created by, name: Shashank Yallamraju}
+  - cast
+  - {role: "Staging, camera and score", name: "Worked out from the script\nby script-to-screen"}
+  - {role: Voices and music, name: "Synthesised. Nothing was recorded."}
+  - {name: "No dumplings were harmed.\nOne was eaten."}
+
+# How things are drawn, where there is a choice of kind (amounts are in library/feel.yaml).
+style:
+  place: wash                # a room: wash (one hue and light), paper (muted cut paper), line (ink outline), none
+  camera: film               # film (cut to a new subject, ease a reframing), drift (ease everything), cut, still
+  indicator: fill            # the voice in a bubble: fill (words take ink), dot, trace, pill
+  music: [line, frame]       # how music shows: line (the ground is a string), frame (bars close in), rings, none
+
+# How tight the camera may get, and how restless it may be.
+camera:
+  single: 3.0                # zoom for a shot of one
+  two: 1.9                   # ... of two standing close
+  group: 1.45                # ... of a group
+  min_shot: 1.8              # no shot is shorter than this many seconds
+  tilt: 4.0                  # degrees the frame tips for a hard bad surprise (0 = never)
 width: 1280
 height: 720
 fps: 60

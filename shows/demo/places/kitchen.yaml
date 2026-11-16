@@ -1,0 +1,12 @@
+# The kitchen. The plate on the table is the one the last dumpling was on.
+name: The kitchen
+wall: "#dde4da"
+floor: "#c6cdbf"
+pieces:
+  - {kind: window, at: 4.6, wide: 1.7}
+  - {kind: shelf, at: 1.6}
+  - {kind: counter, at: 0.7, wide: 2.8}
+  - {kind: table, at: 3.5, wide: 1.2}
+  - {kind: plate, at: 3.5, up: 72}
+  - {kind: fridge, at: 7.7}
+  - {kind: rug, at: 4.2, wide: 3.6}
