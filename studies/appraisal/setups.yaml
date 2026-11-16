@@ -1,0 +1,143 @@
+# The four scenes of s01e01 as setups and events, with the feelings that were written by hand (`hand`).
+# Profiles were set before the comparison was run and not adjusted afterwards.
+# An event's `size` is how big it is in itself: 1 slight, 2 pointed, 3 undeniable.
+cast:
+  juno:
+    temperament: {drive: 1, caution: -1, dominance: 2, warmth: 0}
+    needs: {control: 2}
+    bonds: {}
+  otis:
+    temperament: {drive: 2, caution: 1, dominance: -1, warmth: 1}
+    needs: {comfort: 2}
+    bonds: {bix: 1}
+  bix:
+    temperament: {drive: 0, caution: 2, dominance: -2, warmth: 1}
+    needs: {safety: 2, belonging: 2}
+    bonds: {otis: 1, juno: 1}
+
+scenes:
+  - id: the-last-dumpling
+    present: [juno, otis]
+    facts: {dumpling: {doer: otis, knows: [otis, juno]}}
+    events:
+      - what: Juno says someone ate the last dumpling
+        kind: threat
+        need: esteem
+        size: 2
+        by: juno
+        target: otis
+        fact: dumpling
+        accuses: true
+        hand: {juno: [joy, 1], otis: [shame, 2]}
+      - what: Juno points out the sauce on his chin
+        kind: loss
+        need: esteem
+        size: 3
+        by: juno
+        target: otis
+        fact: dumpling
+        accuses: true
+        hand: {otis: [shame, 3]}
+
+  - id: the-vase
+    present: [juno, bix, otis]
+    sides: {juno: owners, bix: owners, otis: suspect}
+    facts: {vase: {doer: otis, knows: [otis, bix]}}
+    events:
+      - what: Juno says the vase was fine this morning
+        kind: threat
+        need: esteem
+        size: 2
+        by: juno
+        target: otis
+        fact: vase
+        accuses: true
+        hand: {otis: [shame, 2]}
+      - what: Bix says it saw
+        kind: loss
+        need: esteem
+        size: 3
+        by: bix
+        target: otis
+        fact: vase
+        accuses: true
+        hand: {otis: [shame, 3]}
+
+  - id: the-thermostat
+    present: [juno, otis, bix]
+    sides: {juno: owner, otis: suspects, bix: suspects}
+    facts: {dial: {doer: bix, knows: [bix]}}
+    events:
+      - what: (before the scene) Bix bumps the thermostat dial
+        kind: loss
+        need: control
+        size: 1
+        by: bix
+        target: juno
+        unseen: true
+        hand: {bix: [shame, 1]}
+      - what: Juno asks which of them touched the thermostat
+        kind: threat
+        need: esteem
+        size: 2
+        by: juno
+        target: [otis, bix]
+        fact: dial
+        accuses: true
+        hand: {otis: [shame, 3]}
+        note: {otis: "the script carries his shame over from the vase and re-aims it at her"}
+      - what: Nobody answers, and it is eighty degrees
+        kind: loss
+        need: control
+        size: 2
+        target: juno
+        hand: {juno: [anger, 2]}
+
+  - id: lights-out
+    present: [otis, bix, juno]
+    sides: {otis: suspects, bix: suspects, juno: owner}
+    facts: {dial: {doer: bix, knows: [bix]}}
+    events:
+      - what: (before the scene) Otis took the blame for the thermostat
+        kind: loss
+        need: esteem
+        size: 2
+        by: bix
+        target: otis
+        unseen: true
+        hand: {bix: [shame, 2]}
+      - what: Bix confesses to Otis
+        kind: loss
+        need: esteem
+        size: 2
+        by: bix
+        target: bix
+        fact: dial
+        hand: {bix: [shame, 3]}
+      - what: Otis learns he was blamed for what Bix did
+        kind: relief
+        need: esteem
+        size: 2
+        by: bix
+        target: otis
+        hand: {otis: [joy, 3]}
+      - what: Otis hands Bix his own excuse
+        kind: relief
+        need: belonging
+        size: 1
+        by: otis
+        target: bix
+        hand: {bix: [joy, 2]}
+      - what: Juno is in the doorway, having heard
+        kind: threat
+        need: safety
+        size: 2
+        by: juno
+        target: [otis, bix]
+        hand: {otis: [fear, 2], bix: [fear, 2]}
+      - what: Juno has caught them both
+        kind: gain
+        need: control
+        size: 1
+        target: juno
+        hand: {juno: [joy, 1]}
