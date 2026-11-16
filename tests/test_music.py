@@ -153,7 +153,7 @@ def test_the_build_up_swells_and_stops_as_the_moment_lands():
     assert loud(r[:quarter]) < loud(r[quarter:2 * quarter]) < loud(r[2 * quarter:3 * quarter]) and abs(r[-1]) < 1e-3
 
 
-def test_each_way_of_showing_music_draws_and_showing_nothing_is_the_default():
+def test_each_way_of_showing_music_draws_and_the_line_with_the_closing_frame_is_the_default():
     import hashlib
     import skia
     from script_to_screen.presentation.draw import draw_frame
@@ -161,11 +161,11 @@ def test_each_way_of_showing_music_draws_and_showing_nothing_is_the_default():
     sc = Scene(path)
     rise = next(c for c in sc.score.music if c["kind"] == "rise")
     seen = {}
-    for style in (None, "none", "line", "rings", "frame"):
+    for style in ("default", "none", "line", "rings", "frame", ("line", "frame")):
         stage = Stage.of(sc)
-        if style:
-            stage.look.style = dict(stage.look.style, music=style)
+        if style != "default":
+            stage.look.style = dict(stage.look.style, music=list(style) if isinstance(style, tuple) else style)
         surface = skia.Surface(stage.W, stage.H)
         draw_frame(surface.getCanvas(), stage, round((rise["t"] + rise["length"] * 0.8) * stage.fps))
         seen[style] = hashlib.sha256(surface.makeImageSnapshot().tobytes()).hexdigest()
-    assert seen[None] == seen["none"] and len(set(seen.values())) == 4
+    assert seen["default"] == seen[("line", "frame")] and len(set(seen.values())) == 5

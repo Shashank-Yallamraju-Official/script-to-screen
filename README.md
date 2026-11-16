@@ -223,6 +223,22 @@ in a turn, like `side`, and carries between scenes:
 Other rules: a feeling that does not show gets no music (the audience cannot be surprised by
 what it cannot see); a reaction in passing is too slight alone, but a room reacting together
 is one moment and its strengths add; two cues never crowd each other, the stronger is kept.
+**The build-up.** The strongest moment of a scene, if it is strong enough, also gets a `rise`:
+a tone that climbs and swells for two seconds and stops as the moment lands. The music then
+knows what the characters do not, trading surprise for suspense, so there is at most one per
+scene (`music: {rise: 16, rise_from: 0.55}`; `rise: 0` turns build-ups off).
+
+**Music you can see.** A sound that something visible causes needs no mark: the motion is
+the mark. Music has no visible source, so the picture gives it one:
+
+| The music | On screen |
+|---|---|
+| A build-up | The ground line hums, tighter and faster, gathering toward where the moment will land, and the frame closes in from top and bottom |
+| The moment lands | The frame springs open and one ripple runs outward along the ground from whoever it is about: down for bad news, up for good |
+| A question | The ground trembles faintly around them until the next cue settles it |
+
+`style: {music: [line, frame]}` in `show.yaml` is the default; `rings` is another way, and `none` shows nothing.
+
 `music: {threshold, apart}` in `show.yaml` sets how strong a moment must be and how far apart
 cues stay. `s2s drama <scene>` explains every event and cue; in the editor, cues are the small
 marks above the top strip, and `feel.music_volume` sets how loud the music is.

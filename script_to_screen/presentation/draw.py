@@ -292,8 +292,15 @@ def draw_xray(c, stage, states):
 
 # ---- music you can see ---------------------------------------------------------------------------
 # Sound that something visible causes needs no mark: the motion is the mark. Music has no visible
-# source, so the look can give it one (`style: {music: line | rings | frame}` in show.yaml).
+# source, so the look gives it one: `style: {music: [line, frame]}` in show.yaml, any of line, rings, frame, or none.
 RING_GOOD, RING_ASK = "#e0a01e", "#2f9e8f"
+MUSIC_SHOWN = ("line", "frame")          # unless the show says otherwise
+
+
+def music_shown(stage):
+    """The ways this show draws its music."""
+    v = stage.look.style.get("music", MUSIC_SHOWN)
+    return tuple(x for x in ([v] if isinstance(v, str) else v) if x != "none")
 
 
 def music_marks(stage):
@@ -393,13 +400,13 @@ def hits(stage, F):
 def draw_frame(c, stage, F, xray=False, slate=False):
     W, H, t, feel = stage.W, stage.H, F / stage.fps, stage.look.feel
     c.clear(col(PAPER))
-    seen = stage.look.style.get("music", "none")                 # how music is shown, if at all
-    marks = music_marks(stage) if seen != "none" else []
-    if seen == "line":
+    seen = music_shown(stage)                                    # how music is shown, if at all
+    marks = music_marks(stage) if seen else []
+    if "line" in seen:
         ground_line(c, stage, t, marks)
     else:
         c.drawLine(0, ground(H), W, ground(H), stroke(RULE, 2))
-    if seen == "rings":
+    if "rings" in seen:
         rings(c, stage, t, marks)
     states = {e: s for e in stage.score.pose if (s := pose(stage, e, t)) is not None}
     if xray:
@@ -415,7 +422,7 @@ def draw_frame(c, stage, F, xray=False, slate=False):
         draw_token(c, stage.look.cast[e], o, W, H, feel)
     if line and line["who"] in states:
         draw_bubble(c, stage, line, t, states[line["who"]], stage.look.cast[line["who"]])
-    if seen == "frame":
+    if "frame" in seen:
         frame_bars(c, stage, t, marks)
     if slate:
         turn = stage.score.turn_at(t)

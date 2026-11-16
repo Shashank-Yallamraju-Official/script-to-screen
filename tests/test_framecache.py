@@ -44,15 +44,23 @@ def test_a_turn_that_moved_by_whole_frames_is_not_drawn_again():
     cache = FrameCache()
     before = staged("the-vase")
     fill(cache, before)
-    drawn = cache.draws
 
     def longer(doc):
         doc["turns"][1]["hold"] = float(doc["turns"][1].get("hold", 8)) + 2      # 2 steps = 15 frames at 60 a second
     after = staged("the-vase", longer)
-    fill(cache, after)
-    changed = after.score.turns[1]
-    its_frames = round(changed["length"] * after.score.step * after.fps)
-    assert cache.draws - drawn <= its_frames + 2, "only the turn that changed should have been drawn"
+    score, fps = after.score, after.fps
+    frames_of = lambda t: range(round(t["start"] * score.step * fps), round((t["start"] + t["length"]) * score.step * fps))
+    drawn = {}
+    for t in score.turns:
+        was = cache.draws
+        for F in frames_of(t):
+            cache.get(after, F)
+        drawn[t["id"]] = cache.draws - was
+    assert drawn[1] == 0, "the turn before the change is untouched"
+    assert drawn[2] > 0, "the turn that changed is drawn"
+    # the turn after it starts later against the tail of turn 2's music ripple, so it is truly different and is drawn too;
+    # every turn after that only moved in time, and is not drawn again
+    assert drawn[4] <= 1 and drawn[5] <= 1, drawn          # (a frame on a boundary can belong to the turn before)
 
 
 def test_going_back_to_a_value_tried_before_draws_nothing():

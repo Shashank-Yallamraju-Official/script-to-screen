@@ -17,7 +17,7 @@ import json
 from collections import OrderedDict
 
 from ..vocabulary import params
-from .draw import music_marks
+from .draw import music_marks, music_shown
 from .render import frame_jpeg
 
 LOOK_SETTINGS = [p.name for p in params.group("feel") if p.rebuild == "look"]     # settings that change the picture
@@ -51,7 +51,7 @@ def turn_print(score, i, settled, marks=()):
         before = [(t, o) for t, o in keys if t < t0 - 1e-9][-2:]          # how it stood coming in: the last two snapshots
         pose[e] = [[_r(max(t - t0, -settled)), o] for t, o in before] + [[_r(t - t0), o] for t, o in keys if inside(t)]
     music = [[_r(m["t"] - t0), _r(m["lands"] - t0), _r(m["until"] - t0), m["kind"], m["strength"], _r(m["x"])]
-             for m in marks if m["until"] > t0 - 0.3 and m["t"] < t1]          # music that is drawn during this turn, and where it is aimed
+             for m in marks if max(m["until"], m["lands"] + 0.25) > t0 and m["t"] < t1]   # music still being drawn during this turn, and where it is aimed
     speech = []
     for b in score.speech:
         if inside(b["start"]):
@@ -71,7 +71,7 @@ class FrameCache:
         score, t = stage.score, F / stage.fps
         turn = score.turn_at(t)
         settled = round(float(stage.look.feel["ease"]) * 1.1 + 0.05, 3)
-        shown = stage.look.style.get("music", "none") != "none"
+        shown = bool(music_shown(stage))
         mark = (id(score), turn["index"], settled, shown)
         if mark not in self._prints:
             if len(self._prints) > 4000:
