@@ -290,3 +290,12 @@ script had put him by hand. Bix comes in from the left and Juno through the door
 Differences from the design: only `serves` exists (nothing `threatens`); a regard set by a turn,
 and a charge firing when a thing is named or approached, are P5; ground is still derived from
 the need for control, not written per place.
+
+## 13. What-ifs as pictures
+
+`s2s what-if --sheet` stages every column. For each it builds a two-turn scene from the setup
+(turn 1: everyone enters as the setup has them, with their sides and standing feelings; turn 2:
+the event, on its line if the setup gives one), lets the engine work it out with the variation's
+sheets in place of the real ones (`script.imagining`), and draws the frame where the event has
+landed, in the wide shot so the columns can be compared. A test checks that what the engine
+stages agrees with the table for every column.

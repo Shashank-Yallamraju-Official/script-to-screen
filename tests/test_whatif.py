@@ -46,3 +46,22 @@ def test_a_what_if_changes_nothing(capsys):
     run(["what-if", str(FILE)], capsys)
     run(["what-if", "dumpling:2", "--with", "bix", "--show", str(DEMO)], capsys)
     assert before == {p: p.read_bytes() for p in DEMO.rglob("*.yaml")}
+
+
+def test_a_staged_what_if_is_worked_out_by_the_engine_and_agrees_with_the_table(tmp_path):
+    doc = whatif.load_yaml(FILE)
+    setup, event, variations = doc["setup"], doc["event"], doc["variations"]
+    cases = whatif.table(DEMO, setup, event, variations)
+    for case, change in zip(cases, [None] + variations):
+        stage, F = whatif.staged(DEMO, setup, event, change)
+        for e, r in case["reactions"].items():
+            info = stage.score.pose[e][-1][1]["info"]
+            assert (info["felt"], info["intensity"]) == (r["feels"], r["strength"]), f"{case['name']}: {e}"
+    png = whatif.sheet(DEMO, setup, event, cases, variations, tmp_path / "sheet.png")
+    assert png.stat().st_size > 20000
+
+
+def test_someone_added_to_a_what_if_stands_where_their_regards_put_them():
+    doc = whatif.load_yaml(FILE)
+    stage, _ = whatif.staged(DEMO, doc["setup"], doc["event"], dict(present=["juno", "otis", "bix"]))
+    assert stage.score.pose["bix"][0][1]["slot"] not in (2, 5)                   # the two written places are taken

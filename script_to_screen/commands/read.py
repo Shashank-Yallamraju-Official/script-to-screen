@@ -1,5 +1,6 @@
 """Commands that read: what is in the show, what is true at a moment, and why."""
 import json
+import re
 from pathlib import Path
 
 from ..performance import Scene
@@ -130,7 +131,8 @@ def _pairs(items, what):
           A("--doer", "who did it: fact=entity", action="append"), A("--knows", "who knows: fact=a,b (or fact= for nobody)", action="append"),
           A("--dial", "a temperament dial: entity.dial=value", action="append"), A("--need", "a need: entity.need=value", action="append"),
           A("--bond", "a bond: from.to=value", action="append"), A("--side", "whose side: entity=side", action="append"),
-          A("--feeling", "what someone already feels: entity=emotion:strength", action="append")],
+          A("--feeling", "what someone already feels: entity=emotion:strength", action="append"),
+          A("--sheet", "also draw every column as a still frame, side by side, to this PNG (or out/<name>_whatif.png if no name is given)", nargs="?", const="")],
          "s2s what-if dumpling:2 --doer dumpling=bix --with bix")
 def what_if(a):
     from ..readers import whatif
@@ -165,7 +167,15 @@ def what_if(a):
         cases = whatif.table(root, setup, event, variations)
     except ScriptError as err:
         raise Refused(str(err))
-    return dict(what=title, event=edit.plain(event), setup=edit.plain(setup), cases=edit.plain(cases), text=title + "\n" + whatif.text(event, cases))
+    out = dict(what=title, event=edit.plain(event), setup=edit.plain(setup), cases=edit.plain(cases), text=title + "\n" + whatif.text(event, cases))
+    if a.sheet is not None:
+        try:
+            png = a.sheet or root / "out" / (re.sub(r"[^a-z0-9]+", "-", str(title).lower()).strip("-") + "_whatif.png")
+            out["file"] = str(whatif.sheet(root, setup, event, cases, variations, png))
+        except ScriptError as err:
+            raise Refused(str(err))
+        out["text"] += "\n\n" + out["file"]
+    return out
 
 
 @command("explain", "Why an entity looks the way it does as a turn ends: the feeling, the position, and the tells that follow.",

@@ -13,10 +13,15 @@ and the same event is appraised again. Nothing is drawn and no scene is changed.
       - {name: Otis outranks her, dials: {otis: {dominance: 2}}}
 """
 import copy
+from pathlib import Path
+
+import skia
 
 from ..performance import appraisal
 from ..performance.scene import Scene
-from ..script import ScriptError, Show, load_yaml
+from ..presentation.draw import INK, draw_frame, fill, font
+from ..presentation.stage import Stage
+from ..script import ScriptError, Show, imagining, load_yaml, series, tuning
 
 CHANGES = ("present", "sides", "facts", "feelings", "dials", "needs", "bonds", "event")
 
@@ -37,8 +42,94 @@ def from_turn(path, tid):
     st = sc.world.st
     present = [e for e, s in st.items() if s["present"]]
     setup = dict(present=present, sides={e: st[e]["side"] for e in present if st[e]["side"]}, facts=copy.deepcopy(sc.facts),
-                 feelings={e: list(st[e]["felt"]) for e in present if st[e]["felt"]}, status={e: st[e]["status"] for e in present})
+                 feelings={e: list(st[e]["felt"]) for e in present if st[e]["felt"]}, status={e: st[e]["status"] for e in present},
+                 place=script.get("place"), slots={e: st[e]["slot"] for e in present}, scene=str(path),
+                 stance={e: {k: st[e][k] for k in ("orient", "attention", "posture")} for e in present})
+    if turn.get("who") and turn.get("say"):
+        setup["line"] = dict(who=turn["who"], say=turn["say"])
     return setup, turn["event"]
+
+def _sheets(root, everyone, change):
+    """Each entity's sheet with a variation's dials, needs and bonds laid over it."""
+    out = {}
+    for e in everyone:
+        sheet = copy.deepcopy(tuning.overlay(load_yaml(root / "entities" / f"{e}.yaml")))
+        profile = sheet.setdefault("profile", {})
+        profile.setdefault("temperament", {}).update((change.get("dials") or {}).get(e) or {})
+        profile.setdefault("needs", {}).update((change.get("needs") or {}).get(e) or {})
+        sheet["bonds"] = {**(sheet.get("bonds") or {}), **((change.get("bonds") or {}).get(e) or {})}
+        out[e] = sheet
+    return out
+
+
+def staged(root, setup, event, change=None):
+    """The same case as a moment on the stage: a two-turn scene (everyone as the setup has them; then the event),
+    worked out by the engine itself. -> (stage, frame) for the moment the event has landed."""
+    change = change or {}
+    was = list(setup.get("present") or [])
+    present = list(change.get("present") or was)
+    sides = {e: s for e, s in {**(setup.get("sides") or {}), **(change.get("sides") or {})}.items() if e in present and s}
+    facts = copy.deepcopy(setup.get("facts") or {})
+    for k, v in (change.get("facts") or {}).items():
+        facts[k] = {**facts.get(k, {}), **v}
+    feelings = {**(setup.get("feelings") or {}), **(change.get("feelings") or {})}
+    gone = lambda v: isinstance(v, str) and v in was and v not in present        # facing someone this variation has taken out of the room
+    enter = {}
+    for e in present:                                                      # where the setup has them, or wherever their regards put them
+        spec = {k: v for k, v in ((setup.get("stance") or {}).get(e) or {}).items() if not gone(v)}
+        if e in (setup.get("slots") or {}):
+            spec["slot"] = setup["slots"][e]
+        enter[e] = spec
+    felt = {e: ({f[0]: f[1], **({"at": f[2]} if len(f) > 2 and f[2] in present else {})} if isinstance(f, (list, tuple)) else f)
+            for e, f in feelings.items() if f and e in present}
+    first = dict(id=1, enter=enter, why="The setup.")
+    if sides:
+        first["side"] = sides
+    if felt:
+        first["feel"] = felt
+    if setup.get("status"):
+        first["status"] = {e: v for e, v in setup["status"].items() if e in present}
+    line = setup.get("line") or {}
+    second = dict(id=2, event=change.get("event") or event, why="The event.", hold=6)
+    if line.get("who") in present:
+        second.update(who=line["who"], say=line["say"])
+    script = dict(scene="what if", turns=[first, second], facts=facts)
+    if setup.get("place"):
+        script["place"] = setup["place"]
+    host = Path(setup["scene"]) if setup.get("scene") else series(root).segments[-1]["path"]     # a what-if borrows a scene's place in the series
+    events = second["event"] if isinstance(second["event"], list) else [second["event"]]
+    everyone = set(present) | {x for ev in events for x in appraisal._targets(ev) + [ev.get("by")] if x}
+    with imagining(root, _sheets(root, everyone, change)):
+        stage = Stage.of(Scene(host, script=script, carry={}))
+    stage.look.style = dict(stage.look.style, camera="still")              # the whole room, so the columns can be compared
+    return stage, max(0, stage.total - 4)
+
+
+def sheet(root, setup, event, cases, variations, png, cols=4, scale=0.5):
+    """Every case as a still, side by side, each captioned with what everyone feels and is inclined to do."""
+    stages = [staged(root, setup, event, v) for v in [None] + list(variations)]
+    W, H = stages[0][0].W, stages[0][0].H
+    w, h, strip = int(W * scale), int(H * scale), 34 + 22 * max(len(c["reactions"]) for c in cases)
+    cols = min(cols, len(cases))
+    rows = (len(cases) + cols - 1) // cols
+    surface = skia.Surface(w * cols, (h + strip) * rows)
+    c = surface.getCanvas()
+    c.clear(skia.ColorWHITE)
+    for k, ((stage, F), case_) in enumerate(zip(stages, cases)):
+        x, y = (k % cols) * w, (k // cols) * (h + strip)
+        c.save()
+        c.translate(x, y)
+        c.clipRect(skia.Rect.MakeWH(w - 3, h))
+        c.scale(scale, scale)
+        draw_frame(c, stage, F)
+        c.restore()
+        c.drawString(case_["name"], x + 10, y + h + 22, font(15), fill(INK))
+        for n, (e, r) in enumerate(case_["reactions"].items()):
+            said = "nothing" if not r["feels"] else f"{r['feels']} {r['strength']}, inclined to {r['inclined']}"
+            c.drawString(f"{e}: {said}", x + 10, y + h + 44 + 22 * n, font(13), fill(INK, 170))
+    Path(png).parent.mkdir(parents=True, exist_ok=True)
+    surface.makeImageSnapshot().save(str(png), skia.kPNG)
+    return Path(png)
 
 
 def case(root, setup, event, change=None):

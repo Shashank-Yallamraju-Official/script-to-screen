@@ -165,6 +165,13 @@ A file holds as many variations as you like, and prints one column for each:
     otis   shame 2 > deny   fear 2 > back away   shame 2 > deny    shame 2 > hit back
     bix    (not here)       (not here)           fear 2 > freeze   (not here)
 
+Add `--sheet` and every column is also staged and drawn as a still, side by side: the engine
+plays a two-turn scene for each (everyone as the setup has them, then the event) and takes the
+frame where it has landed. A setup can give a `place`, `slots`, a `stance` and the `line` that
+carries the event; anyone without a slot stands where their regards put them.
+
+    s2s what-if shows/demo/what-ifs/the-accusation.yaml --sheet
+
 Each cell is what they feel, how strongly, and what that inclines them to do next. Under the
 table, every cell that differs from the first column says why. The inclinations are the
 branches a scene could take from here; picking one, and writing the line, is the writer's job.

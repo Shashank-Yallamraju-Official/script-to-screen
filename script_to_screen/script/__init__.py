@@ -132,6 +132,22 @@ def series(root):
     return Series(root, _override.get(root))
 
 
+_imagined = {}                              # root -> {entity: sheet}: sheets being tried out (see `imagining`)
+
+
+class imagining:
+    """While inside, the entities of the show at `root` are read as if their sheets were `sheets`. For what-ifs."""
+
+    def __init__(self, root, sheets):
+        self.root, self.sheets = Path(root).resolve(), sheets
+
+    def __enter__(self):
+        _imagined[self.root] = self.sheets
+
+    def __exit__(self, *exc):
+        _imagined.pop(self.root, None)
+
+
 class rehearsing:
     """While inside, the show at `root` is read as if series.yaml held `data`. For dry runs."""
 
@@ -183,7 +199,7 @@ class Show:
         p = self.root / "entities" / f"{eid}.yaml"
         if not p.exists():
             raise ScriptError(f"no entity file entities/{eid}.yaml")
-        ent = tuning.overlay(load_yaml(p))
+        ent = copy.deepcopy(_imagined.get(Path(self.root).resolve(), {}).get(eid)) or tuning.overlay(load_yaml(p))
         ent["id"] = eid
         tells = dict(ent.get("tells") or {})
         order = {sg["id"]: sg["index"] for sg in series(self.root).segments}

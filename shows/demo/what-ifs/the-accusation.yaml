@@ -3,7 +3,11 @@
 # A variation can change: present, sides, facts, feelings, dials, needs, bonds, event.
 name: Juno says someone ate the last dumpling
 setup:
+  place: kitchen
   present: [juno, otis]
+  slots: {juno: 2, otis: 5}            # leave someone out and they stand where their regards put them
+  stance: {juno: {orient: otis}}
+  line: {who: juno, say: Some·one ate the last dumpling.}
   facts:
     dumpling: {doer: otis, knows: [otis, juno]}
 event: {kind: threat, need: esteem, size: 2, by: juno, target: otis, fact: dumpling, accuses: true}
