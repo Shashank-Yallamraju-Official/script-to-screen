@@ -170,3 +170,27 @@ her in the building and she is not).
 What the score cannot be trusted on: which excuses a harm `breaks` and which needs an ending
 `meets` are asserted in the file, not derived. The ending ranked first is the one that was
 written as meeting the most needs, so that result is circular.
+
+## 10. The branch taken, the scenes it forces, and the first one staged
+
+The branch chosen is the holdout: Dot is working late; what is in the vault is the staff pension;
+she is blamed the next morning; all three moments of coming to care; what they learned is used to
+keep the branch open. It is gate 6 in `story.yaml`. Four of the crew lose their excuse over someone
+they care about. Ruth's ("Nobody gets hurt") stays true, and the report works out that she gives
+it back anyway, without shame, because the crew already gave her what she came for.
+
+`s2s story --beats` lists the twelve scenes the decisions force, each with what it must do and
+what is still open in it (always the lines; sometimes more).
+
+The first, "The counter", is written and staged. It is the first scene to use the group model on
+screen, in three places:
+
+- **Scenes read the story's ties.** Sam is afraid for Dot when Hale snaps at her, because
+  `story.yaml` says he cares about her.
+- **A thing that serves a need draws whoever has that need.** The vault serves control. When Vera
+  turns to it, her anger at Hale gives way to something lighter, with nothing written on the turn.
+- **Two overrides,** both logged in the script: Sam's worked-out pleasure at Vera being hurt (he
+  distrusts her) is overruled, since nobody here enjoys this; and Dot steadies herself once Hale
+  has gone.
+
+Still not on screen: rating, standing, craft, tendencies and the plan.

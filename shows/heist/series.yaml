@@ -1,2 +1,13 @@
-# No scenes yet. The story is being decided gate by gate in story.yaml (`s2s story --show shows/heist`).
-seasons: []
+# The series from above. The story itself is decided gate by gate in story.yaml (`s2s story`), and
+# `s2s story --beats` lists the scenes those decisions force. Scenes are added here as they are written.
+seasons:
+  - id: film
+    title: The Count
+    episodes:
+      - id: the-count
+        title: "One: the counter"
+        logline: Five people take what they think they need, and find out what it costs someone else.
+        segments:
+          - {id: the-count-title, card: title}
+          - {id: the-counter, scene: episodes/e01/01-the-counter.yaml}
+          - {id: the-count-credits, card: credits}

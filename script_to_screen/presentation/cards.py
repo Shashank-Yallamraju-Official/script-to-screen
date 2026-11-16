@@ -106,7 +106,7 @@ class Credits:
                 y += 44
                 for e in cast:
                     sheet = sheets[e]
-                    self.blocks.append((y, "cast", e, f"{sheet.get('kind', 'entity')}  ·  voiced by {WAVES.get(sheet.get('timbre', 'sine'), 'a wave')} at {sheet.get('voice', 0)} Hz"))
+                    self.blocks.append((y, "cast", e, f"{str(sheet.get('kind', 'entity')).split('.')[0]}  ·  voiced by {WAVES.get(sheet.get('timbre', 'sine'), 'a wave')} at {sheet.get('voice', 0)} Hz"))
                     y += 74
                 y += 36
                 continue

@@ -115,7 +115,9 @@ def state(a):
 
 @command("story", "A story as a series of filters: what each decision in story.yaml forces, narrows to a few choices, and leaves open.",
          [A("--branches", "work through every combination of the candidate answers in branches.yaml, and rank them", action="store_true"),
-          A("--top", "with --branches: how many to show", type=int, default=5)], "s2s story --branches --show shows/heist")
+          A("--top", "with --branches: how many to show", type=int, default=5),
+          A("--beats", "the scenes the decisions force, in order: what each must do, and what is still open in it", action="store_true")],
+         "s2s story --branches --show shows/heist")
 def story_(a):
     from ..readers import branches, story
     root = address.show_root(a.show)
@@ -123,6 +125,9 @@ def story_(a):
         rep = branches.explore(root)
         return dict(branches=len(rep["leaves"]), skipped=rep["skipped"], sway=rep["sway"], all_earned=rep["all_earned"], top=rep["leaves"][:a.top * 4],
                     weights=branches.WEIGHTS, text=branches.text(rep, a.top))
+    if a.beats:
+        bs = story.beats(root)
+        return dict(beats=bs, text=story.beats_text(bs))
     rep = story.report(root)
     return dict(**rep, text=story.text(rep))
 

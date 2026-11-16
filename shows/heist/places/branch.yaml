@@ -1,0 +1,12 @@
+# The branch: the banking hall. The street door is on the left; the vault is at the back, on the right.
+name: The branch
+wall: "#e4e2dc"
+floor: "#c9c5ba"
+pieces:
+  - {kind: door, at: 0.2}
+  - {kind: window, at: 2.0, wide: 1.6}
+  - {kind: sign, at: 4.6, wide: 1.6}
+  - {kind: counter, at: 4.6, wide: 3.4}
+  - {id: vault, kind: vault, at: 7.8, serves: control, aka: [vault]}      # it serves control: whoever needs control strongly is drawn to it
+  - {kind: plant, at: -0.7, depth: front}
+  - {kind: rug, at: 3.6, wide: 4.6}

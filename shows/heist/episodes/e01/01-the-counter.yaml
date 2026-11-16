@@ -1,0 +1,79 @@
+# Beat 1, the score (see `s2s story --beats`). What this scene must do: Vera sees what she could take, and why;
+# Hale is surviving too; Dot is kind to her and Hale is not. Feelings are worked out from `event:`.
+scene: The counter
+place: branch
+facts:
+  let-go: {doer: hale, knows: [hale, vera, dot, sam]}
+turns:
+  - id: 1
+    enter: {dot: {slot: 5, orient: out}, sam: {slot: 1, orient: out}}
+    why: A weekday morning at the branch. Dot is at the counter, where she has been for thirty years. Sam is finishing the night shift by the door.
+
+  - id: 2
+    enter: {vera: {orient: dot}}
+    why: Vera comes in from the street. Three weeks ago she ran this floor.
+    hold: 5
+
+  - id: 3
+    who: dot
+    do: {dot: {orient: vera}}
+    say: Vera! You came back to see us.
+    event: {kind: gain, need: belonging, size: 2, by: vera, target: dot}
+    why: Dot is plainly glad. It does not cross her mind that this could be awkward.
+
+  - id: 4
+    who: vera
+    do: {vera: {move: {toward: dot, zone: personal}}}
+    say: I'm a customer now, Dot.
+    why: She walks to the counter from the wrong side of it, and says it lightly.
+    hold: 5
+
+  - id: 5
+    who: dot
+    say: Eleven years. And they gave you a box.
+    event: {kind: loss, need: esteem, size: 2, by: hale, target: vera, fact: let-go}
+    feel: {sam: calm}      # worked out: joy, because Sam distrusts her. Overruled: he is not a man who enjoys this, and nobody here is.
+    why: Dot means it as sympathy. It lands as the thing itself, said out loud.
+    hold: 6
+
+  - id: 6
+    enter: {hale: {from: right, orient: dot}}
+    why: Hale comes out of the back office with a folder. He has not slept.
+    hold: 3
+
+  - id: 7
+    who: hale
+    say: Dorothy. The spring figures. Today.
+    event:
+      - {kind: threat, need: safety, size: 2, by: hale, target: dot}
+      - {kind: loss, need: esteem, size: 3, by: hale, target: vera, fact: let-go}
+    why: He speaks to Dot as if Vera were not standing there. He is not being cruel. He is frightened, and the figures are all he can see.
+    hold: 4
+
+  - id: 8
+    exit: [hale]
+    why: He goes back in. He never looked at her.
+    hold: 6
+
+  - id: 9
+    who: dot
+    say: He's not sleeping, love. None of us are.
+    feel: {dot: calm, sam: calm}      # written: she steadies herself the moment he is gone, and Sam with her
+    why: Dot will not have him be the villain. She has known him twenty years.
+    hold: 4
+
+  - id: 10
+    do: {vera: {orient: vault, attention: vault}}
+    why: Vera turns and looks at the vault. She knows what is in it and when. Nobody has changed the schedule since she wrote it.
+    hold: 12
+
+  - id: 11
+    who: vera
+    say: They're the real thieves, Dot.
+    why: Her excuse, said aloud for the first time, to the one person who will not agree with it.
+
+  - id: 12
+    who: dot
+    say: Oh, they're just frightened. Same as us.
+    why: What the film is about, said by the person it will land on, before anyone is ready to hear it.
+    hold: 14

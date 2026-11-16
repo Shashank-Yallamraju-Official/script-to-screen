@@ -13,7 +13,7 @@ import copy
 from ..performance import appraisal, crew, standing, tendencies
 from ..script import ScriptError, load_yaml
 
-GATES = ("the lock", "the crew", "the ties", "the plan", "the twist")
+GATES = ("the lock", "the crew", "the ties", "the plan", "the twist", "the branch")
 THEME = "the theme"
 ASKS = {  # what each gate will answer once it is decided: these are open until then
     "the theme": ["what it is about", "what each excuse has to meet", "whether anyone is to be scored against", "what the ending has to do"],
@@ -22,8 +22,9 @@ ASKS = {  # what each gate will answer once it is decided: these are open until 
     "the ties": ["how each sees each", "who leads", "who sides with whom", "who holds it together", "who gets blamed"],
     "the plan": ["the order of the job", "who does what", "where it goes wrong", "what each does when it does", "who takes charge"],
     "the twist": ["what the viewer is not told", "who is in on it", "what it does to the crew afterwards", "who wavers at the split", "how it can end"],
+    "the branch": ["which obstacle changes before the job", "how the harm lands", "how they come to care", "what is given back"],
 }
-ALWAYS_OPEN = ["every line of dialogue", "the places: rooms, and what is in them", "the snag: which obstacle changes before the job", "names, and the title"]
+ALWAYS_OPEN = ["every line of dialogue", "the places: rooms, and what is in them", "names, and the title"]
 BEATS = ("the score", "the crew", "the plan", "the snag", "the job", "the twist", "the split")
 
 
@@ -285,6 +286,96 @@ def _twist(root, story, sheets, members, planner, read, fault, theme=None):
     return g
 
 
+def _branch(root, story, sheets, members):
+    """Gate 6: the answers chosen from branches.yaml, and what they settle."""
+    from . import branches as B
+    g = dict(n=6, name=GATES[5], decided=None, forced=[], narrowed=[], open=[], problems=[])
+    if not (story.get("harms") and story.get("ending")):
+        return g, None
+    options = load_yaml(root / "branches.yaml")
+    pick = lambda kind, name: next((o for o in options.get(kind) or [] if o["name"] == name), None)
+    snag, ending = pick("snag", story.get("snag") or "nothing changes"), pick("ending", story["ending"])
+    harms, cares = [pick("harm", h) for h in story["harms"]], [pick("care", c) for c in story.get("care") or []]
+    lost = [n for n, o in [(story.get("snag"), snag), (story["ending"], ending)] + list(zip(story["harms"], harms)) + list(zip(story.get("care") or [], cares)) if o is None]
+    if lost:
+        raise ScriptError("story.yaml chooses answers that are not in branches.yaml: " + "; ".join(map(str, lost)))
+    x = B.leaf(root, story, sheets, members, (snag, harms, cares, ending))
+    if x is None:
+        g["decided"] = "a combination that cannot happen"
+        g["problems"].append("one of the harms needs them in the building, and the snag does not put them there")
+        return g, None
+    g["decided"] = f"{snag['name']}; {' and '.join(story['harms'])}; {len(cares)} moments; {ending['name']}"
+    g["forced"].append(f"{', '.join(x['earned'])} each lose their excuse over someone they care about: an earned turn. {x['first']} turns first")
+    after = copy.deepcopy(sheets)
+    for c in cares:
+        for a_, ties in c["ties"].items():
+            after[a_].setdefault("bonds", {}).update(ties)
+    read = crew.readings(after, members)
+    for m in x["unbroken"]:
+        left = standing.pressures(after[m], read["incoming"][m])
+        excuse = (after[m].get("profile") or {}).get("tells_self")
+        g["forced"].append(f"{m}'s excuse (\"{standing.EXCUSES.get(excuse, '')}\") is never broken: it stays true. " +
+                           (f"{m} gives it back anyway, without shame, because nothing they came for is still needed: a different road to the same place" if not left else
+                            f"{m} is the one who cannot give it back: they still need {left[0][0]}"))
+    for m in x["unearned"]:
+        g["problems"].append(f"{m}'s excuse breaks but they feel nothing: their turn is not earned")
+    if x["resolved"]:
+        g["forced"].append("the ending answers " + ", ".join(x["resolved"]))
+    for r in x["remaining"]:
+        who, need = r.split("'s ")
+        g["open"].append(f"{r} is answered by nothing so far" + (": a moment in which the crew comes to trust them" if need == "belonging" else ""))
+    return g, x
+
+
+def beats(root):
+    """The scenes the decisions force, in order: [{n, name, who, must, open}]. A template for a heist, filled in from the gates."""
+    story = load_yaml(root / "story.yaml") or {}
+    rep = report(root)
+    g = {x["name"]: x for x in rep["gates"]}
+    members, world, mark = list(story.get("crew") or []), story.get("world"), story.get("mark")
+    if not all(g[n]["decided"] for n in GATES):
+        raise ScriptError("the scenes follow from the decisions: decide every gate first (`s2s story` says which is next)")
+    sheets = _sheets(root, members + [mark, world], story.get("ties"))
+    planner = next(m for m in members if not _craft(sheets[m]))
+    yes = [m for m in members if m != planner and standing.answer(sheets[m])[0] == "yes"]
+    talk = [m for m in members if standing.answer(sheets[m])[0] == "persuade"]
+    find = lambda gate, word: next((f for f in g[gate]["forced"] if word in f), "")
+    out, n = [], 0
+
+    def add(name, who, must, open_=()):
+        nonlocal n
+        n += 1
+        out.append(dict(n=n, name=name, who=who, must=[m for m in must if m], open=list(open_) + ["the lines"]))
+
+    add("the score", [planner, world, mark], [f"{planner} sees what they could take, and why: " + find("the crew", f"{planner} ("),
+                                              find("the theme", f"{mark}, the mark"), f"{world} is kind to {planner}; {mark} is not"])
+    add("the crew: those who say yes", [planner] + yes, [find("the crew", f"{m} (") for m in yes])
+    for m in talk:
+        add(f"the crew: {m} is talked round", [planner, m], [find("the crew", f"{m} ("), next((x for x in g["the crew"]["narrowed"] if m in x), "")])
+    add("the plan", members, [find("the ties", "pecking order"), find("the ties", "not simple reliance"), find("the ties", "holds it together"),
+                              "the code is agreed: " + ", ".join(story.get("code") or [])])
+    for c in story.get("care") or []:
+        who = next(m for m in members if m.capitalize() in c)
+        add("a moment", [who, world], [c, f"from here {who} cares what happens to {world}"])
+    add("the snag", members, [story.get("snag"), "they go ahead anyway"], ["who argues against going ahead, and what is said to them"])
+    add("the job", members + [world], [find("the plan", "it goes wrong"), find("the plan", "threat rigidity"), find("the plan", "scapegoating"),
+                                       story["harms"][0], find("the branch", "earned turn")])
+    for h in story["harms"][1:]:
+        add("the morning after", members + [world, mark], [h, f"{mark} does it to survive, not out of malice"])
+    add("the turn", members, [find("the theme", "the turn"), find("the branch", "is never broken"), find("the twist", "a real loss")] ,
+        [x for x in g["the branch"]["open"]])
+    add("giving back", members + [world, mark], [story["ending"], find("the branch", "the ending answers")])
+    return out
+
+
+def beats_text(bs):
+    lines = []
+    for b in bs:
+        lines.append(f"{b['n']:>2}. {b['name'].upper()}   {', '.join(b['who'])}")
+        lines += [f"      must   {m}" for m in b["must"]] + [f"      open   {o}" for o in b["open"]] + [""]
+    return "\n".join(lines)
+
+
 def report(root):
     file = root / "story.yaml"
     if not file.exists():
@@ -301,6 +392,7 @@ def report(root):
     g4, fault = _plan(story, sheets, members, lock, read) if sheets and read else (dict(n=4, name=GATES[3], decided=None, forced=[], narrowed=[], open=[], problems=[]), None)
     gates.append(g4)
     gates.append(_twist(root, story, sheets, members, planner, read, fault, theme) if sheets else dict(n=5, name=GATES[4], decided=None, forced=[], narrowed=[], open=[], problems=[]))
+    gates.append(_branch(root, story, sheets, members)[0] if sheets and story.get("plan") else dict(n=6, name=GATES[5], decided=None, forced=[], narrowed=[], open=[], problems=[]))
     for g in gates:
         if not g["decided"]:
             g["open"] = list(ASKS[g["name"]])

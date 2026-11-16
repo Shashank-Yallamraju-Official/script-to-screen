@@ -47,7 +47,8 @@ def test_the_theme_says_what_everything_after_has_to_do(copy):
     assert any("come to care about dot" in x for x in g["the twist"]["open"])
     text = (copy / "story.yaml").read_text()
     (copy / "story.yaml").write_text(text.replace("twist: the-turn", "twist: staged-failure"))
-    assert any("does not serve the theme" in p for p in story.report(copy)["gates"][-1]["problems"])       # the standard twist is the wrong one here
+    twist = next(x for x in story.report(copy)["gates"] if x["name"] == "the twist")
+    assert any("does not serve the theme" in p for p in twist["problems"])                                 # the standard twist is the wrong one here
     (copy / "story.yaml").write_text(text.replace("world: dot", "# world: dot"))
     assert any("nobody stands for the world" in p for p in story.report(copy)["gates"][0]["problems"])
 
@@ -70,7 +71,7 @@ def test_every_decision_leaves_less_open(copy):
     assert full == sorted(full, reverse=True) and full[0] > full[-1] >= len(story.ALWAYS_OPEN)
     cut(copy, "# Gate 3.")
     rep = story.report(copy)
-    assert rep["next"] == "the ties" and [g["decided"] is not None for g in rep["gates"]] == [True, True, True, False, False, False]
+    assert rep["next"] == "the ties" and [g["decided"] is not None for g in rep["gates"]] == [True, True, True, False, False, False, False]
     assert rep["gates"][3]["open"] == story.ASKS["the ties"]
     cut(copy, "# Gate 1.")
     rep = story.report(copy)
@@ -128,3 +129,31 @@ def test_conformity_needs_someone_alone_and_reciprocity_needs_a_gift():
     assert not any(x["name"] == "conformity" for x in backed)
     given = tendencies.apply(dict(present=members, gift={"from": "vera", "to": "sam", "what": "the truth, first"}), sheets)
     assert any(x["name"] == "reciprocity" and x["to"] == ["sam"] for x in given)
+
+
+def test_the_chosen_branch_is_a_gate_and_the_scenes_follow_from_the_decisions():
+    g = {x["name"]: x for x in story.report(HEIST)["gates"]}
+    said = all_of(g["the branch"])
+    assert "vera, sam, nico, ines each lose their excuse" in said
+    assert "ruth's excuse" in said and "is never broken" in said and "gives it back anyway, without shame" in said
+    assert any("ines's belonging" in x for x in g["the branch"]["open"])
+    beats = story.beats(HEIST)
+    assert [b["name"] for b in beats][:4] == ["the score", "the crew: those who say yes", "the crew: sam is talked round", "the plan"]
+    assert [b["name"] for b in beats].count("a moment") == 3 and beats[-1]["name"] == "giving back"
+    job = next(b for b in beats if b["name"] == "the job")
+    assert any("it goes wrong at step 3" in m for m in job["must"]) and any("staff pension" in m for m in job["must"])
+
+
+def test_a_scene_reads_the_storys_ties_and_a_thing_that_serves_a_need_draws_the_eye():
+    from script_to_screen.performance.scene import Scene
+    from script_to_screen.script import series
+    sc = Scene(series(HEIST).by_id["the-counter"]["path"])
+    assert sc.ents["sam"]["bonds"]["dot"] == [2, 1]                                 # from story.yaml, not from his sheet
+    seven = next(t for t in sc.turns if t["id"] == 7)
+    assert seven["appraised"]["sam"]["feel"] == {"fear": 3, "at": "hale"}           # afraid for Dot, whom he cares about
+    assert seven["info"][-1][1]["vera"]["felt"] == "anger"
+    ten = next(t for t in sc.turns if t["id"] == 10)
+    assert ten["fired"]["vera"]["thing"] == "vault" and ten["info"][-1][1]["vera"]["felt"] == "joy"   # it serves control, and she needs control
+    slots = [{e: [o["slot"] for kt, o in ks if kt <= t + 1e-6][-1] for e, ks in sc.keys.items() if any(kt <= t + 1e-6 and o["alpha"] for kt, o in ks)}
+             for t in sorted({kt for ks in sc.keys.values() for kt, _ in ks})]
+    assert all(len(set(s.values())) == len(s) for s in slots)                       # nobody is ever standing on anybody

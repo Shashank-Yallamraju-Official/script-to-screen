@@ -32,3 +32,14 @@ plan:
 
 # Gate 5. What the viewer is not told (library/twists.yaml).
 twist: the-turn
+
+# Gate 6. The branch: answers to what was left open, chosen from branches.yaml (`s2s story --branches`).
+snag: Dot is working late that night
+harms:
+  - what is in the vault is the staff pension
+  - Dot is blamed for it the next morning
+care:
+  - Dot is the first person at the branch to ask Ines her name
+  - Dot covers for Nico when his story slips
+  - Ruth fixes the lock on Dot's till, and Dot tells everyone who did it
+ending: what they learned getting in is used to keep the branch open

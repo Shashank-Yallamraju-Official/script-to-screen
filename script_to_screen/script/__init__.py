@@ -202,6 +202,11 @@ class Show:
             raise ScriptError(f"no entity file entities/{eid}.yaml")
         ent = copy.deepcopy(_imagined.get(Path(self.root).resolve(), {}).get(eid)) or tuning.overlay(load_yaml(p))
         ent["id"] = eid
+        story = Path(self.root) / "story.yaml"                    # a show decided as a story holds its ties there: how each sees each
+        if story.exists():
+            ties = ((load_yaml(story) or {}).get("ties") or {}).get(eid)
+            if ties:
+                ent["bonds"] = {**(ent.get("bonds") or {}), **ties}
         tells = dict(ent.get("tells") or {})
         order = {sg["id"]: sg["index"] for sg in series(self.root).segments}
         for step in ent.get("arc") or []:          # the slow clock: the map itself changes

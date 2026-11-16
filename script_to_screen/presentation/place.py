@@ -25,11 +25,11 @@ from .view import ground, slot_x
 
 WALL_DEPTH, BACK_DEPTH, FRONT_DEPTH = 0.3, 0.15, -0.2
 FLOOR_UP = 46                                 # how far behind the entities' feet the wall meets the floor, in pixels
-ON_WALL = ("door", "window", "picture", "shelf", "thermostat")
+ON_WALL = ("door", "window", "picture", "shelf", "thermostat", "vault", "sign")
 ON_FLOOR = ("rug", "shards")
 COLORS = dict(door="#cdbb9d", window="#b9c2c4", picture="#b7a58c", sofa="#9fb0aa", lamp="#b9a98c", plant="#8fa58a", table="#b49f84",
               shelf="#b49f84", rug="#c9b6a6", counter="#b9b3a2", fridge="#c5cbcc", thermostat="#d8d2c4", pedestal="#c2b8a6", vase="#5b7fa6",
-              shards="#5b7fa6", plate="#f4f1e8")
+              shards="#5b7fa6", plate="#f4f1e8", vault="#9aa3a8", sign="#b9b3a2")
 
 
 def rgb(h):
@@ -114,6 +114,12 @@ def shapes(kind, w):
     if kind == "rug":
         w = w or 420
         return [("body", oval(0, 0, w / 2, 26)), ("line", oval(0, 0, w / 2 - 22, 17))]
+    if kind == "vault":
+        return [("body", rect(-96, -330, 192, 330, 6)), ("dark", oval(0, -168, 78, 78)), ("body", oval(0, -168, 64, 64)), ("dark", oval(0, -168, 14, 14)),
+                ("line", poly((-52, -168), (52, -168), (-52, -168))), ("line", poly((0, -220), (0, -116), (0, -220))), ("dark", rect(70, -190, 16, 44, 4))]
+    if kind == "sign":
+        w = w or 150
+        return [("body", rect(-w / 2, -350, w, 44, 6)), ("light", rect(-w / 2 + 12, -338, w - 24, 8, 3)), ("light", rect(-w / 2 + 12, -324, w - 60, 6, 3))]
     if kind == "counter":
         w = w or 300
         return [("body", rect(-w / 2, -96, w, 96, 4)), ("dark", rect(-w / 2 - 6, -106, w + 12, 12, 3)), ("line", rect(-w / 2 + 14, -80, w / 2 - 22, 66, 3)),
