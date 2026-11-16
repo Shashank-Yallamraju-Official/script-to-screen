@@ -248,7 +248,7 @@ class Scene:
                                   rise=float(music.get("rise", scoring.RISE)), rise_from=float(music.get("rise_from", scoring.RISE_FROM)))
         # where the camera looks: a third derivation step, over the turns, what everyone shows, and the music
         asked = {i: raw["camera"] for i, raw in enumerate(self.script.get("turns") or []) if raw.get("camera")}
-        self.camera = camera.shots(self.turns, self.keys, self.focus, self.music, sec, asked, self.show.cfg.get("camera"))
+        self.camera = camera.shots(self.turns, self.keys, self.focus, self.music, self.drama, sec, asked, self.show.cfg.get("camera"))
         self.place = self.script.get("place")
         # the fourth value says the event belongs to a reaction in passing; how much quieter that is, is presentation's call
         self.events = sorted(((t, n, e, (round(t, 4), e) in self.quiet) for t, n, e in self.events), key=lambda ev: ev[0])

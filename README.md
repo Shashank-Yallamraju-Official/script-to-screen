@@ -194,23 +194,35 @@ A turn can also place a sound by hand: `sfx: [{at: 4, sound: thud}]`.
 
 ## The camera and places
 
-**The camera is worked out from the scene, by three rules.**
+**Who is on screen decides how a line lands, so the camera is chosen by whose moment it is.**
 
-1. It never hides a change. Whoever speaks, moves or shows something new in a turn is in
-   frame, and a speaker is framed with whoever they face.
-2. It moves only when it must. If everyone who matters is comfortably in frame, and the
-   frame is not much looser than they need, it rests.
-3. A build-up pushes in. While the music rises into the strongest moment, the frame creeps
-   toward whoever that moment is about.
+1. A turn belongs to whoever its strongest dramatic event happens to, else to whoever speaks.
+   One owner gets a single, two who change together a two-shot, three or more the group.
+2. A single is taken over the shoulder of the other party: the listener's if the owner is
+   speaking, the speaker's if the line is landing on the owner. The other's line then comes in
+   from off screen.
+3. A reaction that happens outside the frame gets its own shot, at the moment it happens.
+4. The same people from the same side is the same shot: the camera rests.
+5. Height is standing. We look up at someone who outranks the room and down at someone the
+   room outranks. A hard bad surprise tips the frame.
+6. A build-up goes to whoever it is about and pushes in until it lands.
 
 A scene opens wide. Every shot records why it exists (`s2s score <scene> --json`, under
-`camera`). To overrule it, write `camera:` on a turn: `wide`, `stay`, an entity, or a list of
-entities. How tight each kind of shot may get is `camera:` in `show.yaml`
-(`close`, `two`, `group`, `margin`, `loose`, `push`).
+`camera`). To choose a shot yourself, write `camera:` on a turn:
 
-How the camera gets from shot to shot is a style in `show.yaml`: `style: {camera: drift}`
-eases (the default; `feel.camera_move` is how long, `feel.camera_lead` is how early it starts),
-`cut` cuts, and `still` never leaves the wide shot.
+    camera: wide                                   # everyone
+    camera: stay                                   # hold the shot we are in
+    camera: michael                                # a single
+    camera: [chidi, tahani, jason]                 # a group
+    camera: {on: michael, over: eleanor, angle: -1, tilt: 3}     # low, over her shoulder, tipped
+
+How tight each kind of shot may get is `camera:` in `show.yaml` (`single`, `two`, `group`,
+`margin`, `lean`, `tilt`, `push`).
+
+How the camera gets from shot to shot is a style in `show.yaml` (`style: {camera: film}`):
+`film`, the default, cuts to a new subject and eases when the same subject is reframed
+(`feel.camera_move` is how long); `drift` eases everything; `cut` cuts everything; `still`
+never leaves the wide shot. In a close shot, whoever it is not a shot of goes out of focus.
 
 **A place is the room a scene happens in.** A scene names one with `place: sitting-room`, and
 the place is a file in `places/`: a wall colour, a floor colour, and pieces standing along the

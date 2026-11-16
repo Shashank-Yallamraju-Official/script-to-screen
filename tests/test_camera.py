@@ -11,15 +11,24 @@ DEMO = Path(__file__).resolve().parent.parent / "shows" / "demo"
 SCENES = [sg["path"] for sg in series(DEMO).segments if sg["kind"] == "scene"]
 
 
-def test_whoever_changes_or_speaks_is_in_frame_once_the_camera_has_settled():
+def test_whoever_changes_or_speaks_is_in_frame_as_it_happens():
     for path in SCENES:
         score = Scene(path).score
         for turn in score.turns[1:]:
-            who = camera.subjects(turn, score.pose, score.focus, score.step)
-            shot = [s for s in score.camera if s["kind"] != "push" and s["t"] <= turn["start"] * score.step + 1e-9][-1]
-            half = camera.FRAME / shot["zoom"] / 2
-            for e, slots in who.items():
-                assert all(shot["centre"] - half <= s <= shot["centre"] + half for s in slots), f"{score.id} turn {turn['id']}: {e} is out of frame"
+            for t, who in camera.changes(turn, score.pose, score.step, camera.DEFAULTS["together"]):
+                shot = [s for s in score.camera if s["t"] <= t + 2e-3][-1]
+                half = camera.FRAME / shot["zoom"] / 2
+                for e, slots in who.items():
+                    assert all(shot["centre"] - half <= s <= shot["centre"] + half for s in slots), f"{score.id} turn {turn['id']}: {e} is out of frame"
+
+
+def test_a_single_is_taken_over_the_other_partys_shoulder_and_height_follows_standing():
+    score = Scene(series(DEMO).by_id["the-morally-righteous-location"]["path"]).score
+    first = [s for s in score.camera if s["on"] == ["chidi"]][0]
+    assert first["over"] == "tahani"                       # he is speaking to her, so we stand behind her
+    low = [s for s in score.camera if s["on"] == ["michael"]]
+    assert low and all(s["angle"] < 0 for s in low)        # he outranks the room: we look up at him
+    assert any(s["tilt"] for s in low)                     # and his laugh, a hard bad surprise, tips the frame
 
 
 def test_a_scene_opens_wide_and_every_shot_says_why():
@@ -39,6 +48,9 @@ def test_the_script_can_ask_for_a_shot():
     shots = Scene(path, script=script).score.camera
     assert [s for s in shots if s["why"] == "the script asks for the wide shot"]
     assert [s for s in shots if s["on"] == ["jason"] and s["zoom"] > 1.5]
+    script["turns"][8]["camera"] = dict(on="michael", over="eleanor", angle=-1)
+    shots = Scene(path, script=script).score.camera
+    assert [s for s in shots if s["on"] == ["michael"] and s["over"] == "eleanor" and s["angle"] == -1]
 
 
 def test_the_still_style_never_leaves_the_wide_shot_and_drift_does():

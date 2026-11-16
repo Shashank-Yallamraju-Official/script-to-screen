@@ -20,7 +20,7 @@ import skia
 
 from .view import ground, slot_x
 
-WALL_DEPTH, BACK_DEPTH, FRONT_DEPTH = 0.3, 0.15, -0.6
+WALL_DEPTH, BACK_DEPTH, FRONT_DEPTH = 0.3, 0.15, -0.2
 FLOOR_UP = 46                                 # how far behind the entities' feet the wall meets the floor, in pixels
 ON_WALL = ("door", "window", "picture", "shelf")
 COLORS = dict(door="#cdbb9d", window="#b9c2c4", picture="#b7a58c", sofa="#9fb0aa", lamp="#b9a98c", plant="#8fa58a", table="#b49f84",
@@ -123,12 +123,12 @@ class Painter:
         self.ink = "#aaa497"
 
     def room(self, c, W, H, base):
-        c.drawRect(skia.Rect.MakeLTRB(-3 * W, -3 * H, 4 * W, base), paint(self.wall))
-        c.drawRect(skia.Rect.MakeLTRB(-3 * W, base, 4 * W, 4 * H), paint(self.floor))
+        c.drawRect(skia.Rect.MakeLTRB(-W, -1.2 * H, 2 * W, base), paint(self.wall))
+        c.drawRect(skia.Rect.MakeLTRB(-W, base, 2 * W, 1.35 * H), paint(self.floor))
         if self.style == "line":
-            c.drawLine(-3 * W, base, 4 * W, base, pen(self.ink, 2))
+            c.drawLine(-W, base, 2 * W, base, pen(self.ink, 2))
         else:
-            c.drawRect(skia.Rect.MakeLTRB(-3 * W, base - 12, 4 * W, base), paint(mix(self.wall, self.floor, 0.5)))    # a skirting board
+            c.drawRect(skia.Rect.MakeLTRB(-W, base - 12, 2 * W, base), paint(mix(self.wall, self.floor, 0.5)))    # a skirting board
 
     def piece(self, c, piece, on_floor=False, front=False):
         kind, color = piece["kind"], piece.get("color") or COLORS[piece["kind"]]

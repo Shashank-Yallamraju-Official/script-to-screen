@@ -23,8 +23,11 @@ def col(h, a=255):
     return skia.Color(int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16), int(a))
 
 
-def fill(color, a=255):
-    return skia.Paint(AntiAlias=True, Color=col(color, a))
+def fill(color, a=255, blur=0.0):
+    p = skia.Paint(AntiAlias=True, Color=col(color, a))
+    if blur > 0.05:
+        p.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, blur))     # out of focus
+    return p
 
 
 def stroke(color, w, a=255):
@@ -36,7 +39,7 @@ def font(size=28, mono=False):
     return skia.Font(skia.Typeface("DejaVu Sans Mono" if mono else "DejaVu Sans", skia.FontStyle.Bold()), size)
 
 
-def draw_token(c, ent, o, W, H, feel):
+def draw_token(c, ent, o, W, H, feel, blur=0.0):
     a = 255 * o["alpha"]
     if a < 1:
         return
@@ -53,9 +56,9 @@ def draw_token(c, ent, o, W, H, feel):
         toe.lineTo(f * (BODY_W / 2 + 20 * abs(f)), -2)
         toe.lineTo(f * 18, -24)
         toe.close()
-        c.drawPath(toe, fill(ent["color"], a))
-    c.drawRoundRect(skia.Rect.MakeXYWH(-BODY_W / 2, -BODY_H, BODY_W, BODY_H), BODY_W / 2, BODY_W / 2, fill(ent["color"], a))
-    c.drawCircle(o["lx"] * 14, -BODY_H + 40 + o["ly"] * 15, 8, fill(INK, a))   # attention
+        c.drawPath(toe, fill(ent["color"], a, blur))
+    c.drawRoundRect(skia.Rect.MakeXYWH(-BODY_W / 2, -BODY_H, BODY_W, BODY_H), BODY_W / 2, BODY_W / 2, fill(ent["color"], a, blur))
+    c.drawCircle(o["lx"] * 14, -BODY_H + 40 + o["ly"] * 15, 8, fill(INK, a, blur))   # attention
     c.restore()
 
 
@@ -175,8 +178,9 @@ def bubble_box(stage, line, o, cam):
     lane = lift + 2 * rad * WEIGHT[2] + 4 if marked else 8       # room under each row, for the styles that draw something there
     lh = size + 6 + lane
     w, h = max(150, tw + 2 * pad), len(rows) * lh + 2 * pad - 14
-    hx, top = cam.x(slot_x(o["slot"], W)), cam.y(ground(H) - BODY_H * o["sy"]) - 24
-    hx = min(max(hx, 60), W - 60)
+    hx, top = cam.point(slot_x(o["slot"], W), ground(H) - BODY_H * o["sy"])
+    off = hx < -20 or hx > W + 20                                # the speaker is out of frame: the line comes in from that edge
+    hx, top = min(max(hx, 64), W - 64), min(max(top - 24, h + 60), H * 0.72) if not off else H * 0.46
     bx = min(max(hx - w / 2, 24), W - w - 40)
     by = top - h - 24
     return dict(f=f, size=size, rows=rows, chunks=chunks, pad=pad, lift=lift, rad=rad, lh=lh, w=w, h=h, hx=hx, top=top, bx=bx, by=by)
@@ -343,7 +347,7 @@ def ground_line(c, stage, t, marks, rule=RULE):
     W, gy = stage.W, ground(stage.H)
     live = [m for m in marks if m["t"] <= t <= m["until"]]
     if not live:
-        return c.drawLine(0, gy, W, gy, stroke(rule, 2))
+        return c.drawLine(-W, gy, 2 * W, gy, stroke(rule, 2))
     path, loud = skia.Path(), 0.0
     for i in range(0, W + 4, 4):
         y = 0.0
@@ -363,7 +367,7 @@ def ground_line(c, stage, t, marks, rule=RULE):
                 y += (1 if m["kind"] == "turn.bad" else -1) * 44 * m["strength"] * math.exp(-age / 0.45) * math.exp(-(front / 70) ** 2)
                 loud = max(loud, math.exp(-age / 0.45))
         (path.moveTo if i == 0 else path.lineTo)(i, gy + y)
-    c.drawLine(0, gy, W, gy, stroke(rule, 2, 255 * (1 - 0.8 * loud)))       # the line at rest fades as the played line takes over
+    c.drawLine(-W, gy, 2 * W, gy, stroke(rule, 2, 255 * (1 - 0.8 * loud)))       # the line at rest fades as the played line takes over
     c.drawPath(path, stroke(INK, 2 + 1.5 * loud, 60 + 150 * loud))
 
 
@@ -397,6 +401,17 @@ def frame_bars(c, stage, t, marks):
         c.drawRect(skia.Rect.MakeXYWH(0, stage.H - h, stage.W, h), fill(INK))
 
 
+def shoulder(c, stage, cam, states):
+    """The near party in an over-the-shoulder shot: large, dark and out of focus at the edge of the frame they stand toward."""
+    W, H = stage.W, stage.H
+    subject = [states[e]["slot"] for e in cam.on if e in states] or [cam.cx]
+    side = 1 if states[cam.over]["slot"] > sum(subject) / len(subject) else -1
+    w, top = W * 0.30, H * 0.36
+    x = W / 2 + side * (W / 2 - w * 0.22) + side * (1 - smooth(cam.over_there)) * w        # it slides in from outside the frame
+    color = place.mix(stage.look.cast[cam.over]["color"], "#1d1d1f", 0.38)
+    c.drawRoundRect(skia.Rect.MakeXYWH(x - w / 2, top, w, H), w / 2, w / 2, fill(color, 255 * min(1.0, cam.over_there * 1.5), 9))
+
+
 def hits(stage, F):
     """What is where in frame F, front to back: [{kind, box: [x, y, w, h], ...}] in frame pixels.
     kind is `syllable` (with `line`, the bubble, and `n`, its place in that bubble from 0), `bubble`, or `token` (with `entity`).
@@ -412,7 +427,8 @@ def hits(stage, F):
         out.append(dict(kind="bubble", line=line, box=[g["bx"], g["by"], g["w"], g["h"]]))
     for e, o in states.items():
         w, h = (BODY_W * o["sx"] + 24) * cam.zoom, BODY_H * o["sy"] * cam.zoom
-        out.append(dict(kind="token", entity=e, box=[cam.x(slot_x(o["slot"], stage.W)) - w / 2, cam.y(ground(stage.H)) - h, w, h]))
+        fx, fy = cam.point(slot_x(o["slot"], stage.W), ground(stage.H))
+        out.append(dict(kind="token", entity=e, box=[fx - w / 2, fy - h, w, h]))
     return out
 
 
@@ -429,7 +445,7 @@ def draw_frame(c, stage, F, xray=False, slate=False):
     if "line" in seen:
         ground_line(c, stage, t, marks, rule)
     else:
-        c.drawLine(0, ground(H), W, ground(H), stroke(rule, 2))
+        c.drawLine(-W, ground(H), 2 * W, ground(H), stroke(rule, 2))
     if "rings" in seen:
         rings(c, stage, t, marks)
     states = {e: s for e in stage.score.pose if (s := pose(stage, e, t)) is not None}
@@ -441,10 +457,15 @@ def draw_frame(c, stage, F, xray=False, slate=False):
         if a0 - lead / 2 <= t <= a1 + lead / 2:
             focal = who
             dim = float(feel["focus_dim"]) * smooth((t - a0 + lead / 2) / lead) * (1 - smooth((t - a1 + lead / 2) / lead))
-    for e in sorted(states, key=lambda e: bool(line and line["who"] == e)):
+    soft = min(1.0, max(0.0, (cam.zoom - 1.9) / 0.8)) if cam.on else 0.0     # in a close shot, whoever it is not a shot of goes out of focus
+    for e in sorted(states, key=lambda e: (e in cam.on, bool(line and line["who"] == e))):
         o = states[e] if e == focal or not dim else dict(states[e], alpha=states[e]["alpha"] * (1 - dim))
-        draw_token(c, stage.look.cast[e], o, W, H, feel)
+        if e == cam.over:                                        # the one whose shoulder we are behind is not also standing in the shot
+            o = dict(o, alpha=o["alpha"] * (1 - cam.over_there))
+        draw_token(c, stage.look.cast[e], o, W, H, feel, 0.0 if e in cam.on else 2.2 * soft)
     c.restore()
+    if cam.over in states and cam.over_there > 0.01:
+        shoulder(c, stage, cam, states)
     if housed:
         place.draw_in_front(c, stage, cam)
     for said, there in bubbles_showing(stage, t):                # a bubble that has ended is still fading as the next one grows

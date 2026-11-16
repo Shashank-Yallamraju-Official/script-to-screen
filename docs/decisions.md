@@ -333,19 +333,29 @@ simple enough to explain in one sentence, which every rule in this project must 
 real technique. `sympathy` is one more thing to write, though only where it changes. The
 surprise measure knows nothing of plot: a twist that changes no feeling is silent.
 
-## 24. The camera is derived, never hides a change, and moves only when it must
+## 24. The camera is derived from whose moment it is, and who is on screen is a dramatic choice
 
 Where the camera looks is a derivation step over the score, like drama and music: the script
-does not say it unless it wants to. Three rules, in order. It never hides a change: whoever
-speaks, moves or shows something new in a turn is in frame, and a speaker is framed with
-whoever they face. It moves only when it must: if everyone who matters is comfortably in
-frame and the frame is not much looser than they need, it rests. A build-up pushes in. Each
-shot records why it exists. The alternative, a close-up for each speaker, was tried first and
-gave ten moves in 34 seconds; these rules give five. The score holds framing (a centre on the
-line of slots and a zoom); whether a change of shot is an eased move or a cut is the look's
-choice. A place is the same split: the score holds its name, and the look holds what it is
-made of and how it is drawn. Bubbles are lettering, so they follow their speaker but do not
-scale with the camera.
+does not say it unless it wants to. A line lands differently depending on who is seen while it
+is said, so the camera is chosen by whose moment a turn is: the one whose change is the
+strongest dramatic event in it, else the speaker. One owner gets a single, taken over the
+shoulder of the other party (the listener's if the owner speaks, the speaker's if the line is
+landing on the owner). Two who change together get a two-shot, and three or more the group. A
+reaction outside the frame gets its own shot when it happens. The same people from the same
+side is the same shot, so the camera rests. Height comes from standing in the room (we look up
+at whoever outranks it), and a hard bad surprise tips the frame. A build-up goes to its subject
+and pushes in. Each shot records why it exists, and a turn can overrule it with `camera:`.
+
+Two earlier rules were tried and dropped. A frame that only panned and zoomed to keep every
+change visible was calm but said nothing: every line was seen the same way. A close-up of each
+speaker ignored who the line was for.
+
+The score holds framing (who, over whom, centre, zoom, angle, tilt); whether a change of shot
+is a cut or an eased move is the look's choice, and by default a new subject is a cut and the
+same subject reframed is a move. A place is the same split: the score holds its name, and the
+look holds what it is made of and how it is drawn. Bubbles are lettering, so they follow their
+speaker but do not scale with the camera; a line from someone out of frame comes in from that
+edge.
 
 ## Open questions
 
@@ -361,6 +371,8 @@ These are not decided, because the conversation has not yet produced the evidenc
   held-in feeling is how film music creates dramatic irony.
 - **Is music heard by the characters?** A title card's theme is not. A character singing is.
   The `sing:` line already sits on this boundary.
+- **Does the audience learn a tell it was not shown?** The ledger counts every tell that
+  happens. Now that the camera can leave someone out of frame, it probably should not.
 - **Should a place know things the world uses?** A door is where people come in, and a sofa
   is somewhere to sit. Today a place is only looked at.
 - **Should the tool itself hold changes for approval?** As designed it does not: rehearsing
