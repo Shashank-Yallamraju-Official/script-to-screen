@@ -23,11 +23,12 @@ class World:
         self.st, self.ents, self.log = {}, {}, []
         self.cause = None                                         # the turn now being played (None: off-screen)
         self.known = show.known()
+        self.things = {}                                          # what in the place can be named and faced: {id: {at, kind, serves}}
 
     def _allowed(self, e, spec, what):
         """Flag anything in a deliberate action that the channel declarations do not allow."""
         for k, v in spec.items():
-            why = channels.problem("do", k, v, entities=self.known)
+            why = channels.problem("do", k, v, entities=self.known | set(self.things))
             if why:
                 self.flag("error", self.cause, f"{e}'s {what}: {why}")
 
@@ -104,10 +105,11 @@ class World:
         for k in ("slot", "orient", "attention", "posture"):
             if k in spec:
                 s[k] = spec[k]
-        if "move" in spec:                   # {toward: other, zone: personal}
-            other = self.need(spec["move"]["toward"])
-            side = sgn(s["slot"] - other["slot"]) or -1
-            s["slot"] = max(0, min(SLOTS - 1, other["slot"] + side * ZONES[spec["move"]["zone"]]))
+        if "move" in spec:                   # {toward: other, zone: personal}; the other can be a thing in the place
+            to = spec["move"]["toward"]
+            there = self.things[to]["at"] if to in self.things else self.need(to)["slot"]
+            side = sgn(s["slot"] - there) or -1
+            s["slot"] = max(0, min(SLOTS - 1, round(there + side * ZONES[spec["move"]["zone"]])))
         self._note("do", e, spec)
 
     def feel(self, e, f, speaker=None):

@@ -10,11 +10,11 @@ offscreen:
     why: Hours later. Juno gave up and went to bed. Bix has been carrying the thermostat alone, and Otis took the blame for it without knowing.
 turns:
   - id: 1
-    enter: {otis: {slot: 6, orient: out}}
+    enter: [otis]      # nobody's place is written in this scene: Otis is found by the fridge, which serves his comfort
     why: Otis is in the kitchen in the dark, by the fridge, because that is where the dumplings are kept.
 
   - id: 2
-    enter: {bix: {slot: 2, orient: otis}}
+    enter: {bix: {from: left, orient: otis}}
     side: {otis: suspects, bix: suspects}
     why: Bix rolls in. It has come to say something and has not worked out how to start.
     hold: 6
@@ -70,7 +70,7 @@ turns:
     hold: 10
 
   - id: 11
-    enter: {juno: {slot: 8, orient: otis}}
+    enter: {juno: {orient: otis}}      # through the door
     side: {juno: owner}
     event: {kind: threat, need: safety, size: 2, by: juno, target: [otis, bix]}
     why: Juno is in the doorway. Nobody heard her come down.

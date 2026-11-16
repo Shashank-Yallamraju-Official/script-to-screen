@@ -8,5 +8,6 @@ pieces:
   - {kind: counter, at: 0.7, wide: 2.8}
   - {kind: table, at: 3.5, wide: 1.2}
   - {kind: plate, at: 3.5, up: 72}
-  - {kind: fridge, at: 7.7}
+  - {kind: fridge, at: 6.6, serves: comfort}     # a piece that `serves` a need draws whoever has that need strongly
+  - {kind: door, at: 8.3}
   - {kind: rug, at: 4.2, wide: 3.6}

@@ -34,6 +34,28 @@ def load_yaml(p):
     return copy.deepcopy(_read[key][1])
 
 
+def place(root, name):
+    """A place's file, with `like:` resolved: a place that starts as another and changes only what differs."""
+    file = Path(root) / "places" / f"{name}.yaml"
+    if not file.exists():
+        raise ScriptError(f"no place '{name}': there is no places/{name}.yaml")
+    data = load_yaml(file) or {}
+    return {**place(root, data["like"]), **data} if data.get("like") else data
+
+
+def things(place_data):
+    """What in a place can be named, faced and cared about: {id: {at, kind, serves}}. A piece's id is its `id:`,
+    or its kind when it is the only piece of that kind."""
+    pieces = (place_data or {}).get("pieces") or []
+    kinds = [p["kind"] for p in pieces]
+    out = {}
+    for p in pieces:
+        name = p.get("id") or (p["kind"] if kinds.count(p["kind"]) == 1 else None)
+        if name:
+            out[str(name)] = dict(at=float(p.get("at", 0)), kind=p["kind"], serves=p.get("serves"))
+    return out
+
+
 def find_root(path):
     path = Path(path).resolve()
     for p in [path] + list(path.parents):

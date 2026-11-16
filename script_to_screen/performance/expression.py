@@ -10,7 +10,7 @@ from ..world import SLOTS, sgn
 POSTURE = {"upright": (1.0, 1.0, 0), "contracted": (1.12, 0.8, 0), "lean_in": (1.0, 1.0, 1), "lean_back": (1.0, 1.0, -1)}
 
 
-def observe(st, ents, gcfg, flag, tid):
+def observe(st, ents, gcfg, flag, tid, things=None):
     """st: the world's state per entity. -> {entity: observable channels + `info` (why)}."""
     present = [e for e in st if st[e]["present"]]
     sided = [e for e in present if st[e]["side"]]
@@ -57,8 +57,10 @@ def observe(st, ents, gcfg, flag, tid):
                 slot -= sgn(slot - base)
         slots[e] = slot
 
+    where = {**{k: v["at"] for k, v in (things or {}).items()}, **slots}      # things in the place can be faced and looked at too
+
     def toward(e, other):
-        return (sgn(slots[other] - slots[e]) or 1) if other in slots and other != e else 0
+        return (sgn(where[other] - slots[e]) or 1) if isinstance(other, str) and other in where and other != e else 0
 
     obs = {}
     for e, s in st.items():

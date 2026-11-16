@@ -10,9 +10,9 @@ All times inside `_build` are in steps; the score is in seconds.
 import re
 from pathlib import Path
 
-from ..script import ScriptError, Show, find_root, load_yaml, scene_key, scene_paths, tuning
+from ..script import ScriptError, Show, find_root, load_yaml, place, scene_key, scene_paths, things, tuning
 from ..world import World
-from . import appraisal, camera, drama, scoring, speech
+from . import appraisal, camera, drama, placing, scoring, speech
 from .expression import observe
 from .score import Score
 
@@ -42,6 +42,11 @@ class Scene:
         self.problems, self.keys, self.turns, self.lines, self.events = [], {}, [], [], []
         self.focus, self.quiet = [], set()       # featured reactions (start, end, who); background ones (time, who)
         self.world = World(self.show, self.key, carry, self.flag)
+        if self.script.get("place"):                         # what in the place can be named, faced and cared about
+            self.world.things = things(place(self.root, str(self.script["place"])))
+            clash = set(self.world.things) & self.world.known
+            if clash:
+                raise ScriptError(f"the place has a piece called '{sorted(clash)[0]}', which is also an entity; give the piece another `id:`")
         self.carry, self.ents = self.world.carry, self.world.ents
         self._score = None
         self._build()
@@ -50,7 +55,7 @@ class Scene:
         self.problems.append(dict(level=level, turn=turn, msg=msg))
 
     def _observe(self, tid):
-        return observe(self.world.st, self.ents, self.show.cfg["gain"], self.flag, tid)
+        return observe(self.world.st, self.ents, self.show.cfg["gain"], self.flag, tid, self.world.things)
 
     # ---- the script, turn by turn (all times here are in steps) --------------------------------
     def _build(self):
@@ -78,7 +83,25 @@ class Scene:
             bubbles = []
             world.cause = tid
             world.drop_takes()                       # a background take ends with the turn it happened in
-            for e, spec in (raw.get("enter") or {}).items():
+            entering = raw.get("enter") or {}
+            entering = {e: {} for e in entering} if isinstance(entering, list) else entering
+            for e, spec in entering.items():
+                spec = dict(spec or {})
+                src = spec.pop("from", None)
+                if "slot" not in spec:                       # not written: they stand where what they care about puts them, or come in by the door
+                    sheet = self.show.entity(e, self.key)
+                    taken = {x: y["slot"] for x, y in st.items() if y["present"]}
+                    try:
+                        if i == 0 and src is None:
+                            spec["slot"], drew, why = placing.found(e, sheet, taken, world.things, sheet.get("bonds") or {}, self.show.cfg.get("valence"))
+                            if drew and "orient" not in spec:
+                                spec["orient"] = drew        # and they face what drew them
+                        else:
+                            spec["slot"], why = placing.arrives(e, dict(spec, **({"from": src} if src else {})), taken, world.things)
+                    except ValueError as err:
+                        raise ScriptError(f"turn {tid}: {e} cannot enter: {err}")
+                    world.cause = tid
+                    world._note("placed", e, f"slot {spec['slot']}: {why}")
                 world.enter(e, spec)
                 self.keys.setdefault(e, [])
             for e in raw.get("exit") or []:

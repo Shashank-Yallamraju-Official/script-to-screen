@@ -120,6 +120,33 @@ it was and why. A reaction with nothing written (`{who: otis, word: dumpling}`) 
 feeling worked out for that entity and decides only when it lands. The design, and how the
 rule was tested against scenes written by hand, is in `docs/lld-profiles.md`.
 
+## Things, regards, and where people stand
+
+A piece in a place can be named, faced and cared about. Its name is its `id:`, or its kind when
+it is the only one of that kind. A piece can say which need it `serves`.
+
+    pieces:
+      - {kind: fridge, at: 6.6, serves: comfort}
+      - {kind: door, at: 8.3}
+
+**A regard** is what a thing makes someone feel. It follows from their needs (a thing that
+serves a need that is strong in them is a joy to them), or is written on their sheet, where it
+wins: `regards: {plate: {shame: 2}}`.
+
+**Where someone stands need not be written.** Leave `slot` out of `enter:` and:
+
+| Who | Stands |
+|---|---|
+| Found in the room as the scene opens | Beside the thing that draws them most and facing it; away from what they dread; near whoever they are bonded to; a civil distance from everyone else |
+| Arrives later | By the door, or from the side the script names |
+
+    enter: [otis]                               # found by the fridge, which serves his comfort
+    enter: {bix: {from: left, orient: otis}}    # rolls in from the left
+    enter: {juno: {orient: otis}}               # through the door
+
+`s2s explain <scene:turn> <entity>` says where they were put and why. A thing can also be the
+target of `orient`, `attention` and `move`: `do: {otis: {orient: fridge}}`.
+
 ## What if
 
 `s2s what-if` maps a situation out without writing it: one setup, one event, and how everyone

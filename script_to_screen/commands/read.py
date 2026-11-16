@@ -185,6 +185,9 @@ def explain(a):
     carried = sc.carried.get(a.entity)
     if carried:
         steps.append(f"Came into the scene feeling {carried[0]} {carried[1]}" + (f" about {carried[2]}" if carried[2] else "") + ", carried from earlier scenes.")
+    for h in history:
+        if h["what"] == "placed":
+            steps.append(f"Nobody wrote where they stand: {h['value']}.")
     tells, shown, held = [], [], []
     if s["feels"]:
         tells = edit.plain(ent["tells"].get(s["feels"]) or [])

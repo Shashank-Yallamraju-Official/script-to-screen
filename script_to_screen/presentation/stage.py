@@ -4,7 +4,7 @@ The score says what happens. The look says how that appears and sounds: frame si
 the small motions, the place, each tone's lettering, each sound, each emotion's colour, and each
 entity's colour and voice. A change to the look never needs the scene worked out again.
 """
-from ..script import ScriptError, Show, load_yaml, tuning
+from ..script import Show, load_yaml, place, tuning
 
 
 class Look:
@@ -30,12 +30,7 @@ class Stage:
     def __init__(self, score, look, root):
         self.score, self.look, self.root = score, look, root
         if score.place and look.place is None:                   # the score names the place; what it looks like is the show's
-            file = root / "places" / f"{score.place}.yaml"
-            if not file.exists():
-                raise ScriptError(f"no place '{score.place}': there is no places/{score.place}.yaml")
-            look.place = load_yaml(file)
-            if look.place.get("like"):                           # a place that starts as another and changes only what differs
-                look.place = {**load_yaml(root / "places" / f"{look.place['like']}.yaml"), **look.place}
+            look.place = place(root, score.place)
         self.W, self.H, self.fps = look.W, look.H, look.fps
         self.total = max(1, round(score.dur * look.fps))         # frames
 

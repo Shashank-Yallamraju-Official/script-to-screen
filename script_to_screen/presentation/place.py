@@ -145,8 +145,8 @@ class Painter:
             self.wall = self.floor = "#f5f3ee"
         self.ink = "#aaa497"
         self.window = place.get("window", "#fffdf6")                      # what is seen through a window: daylight, or a night sky
-        dark = sum(rgb(self.wall)) < 330                                    # in a dark room, solid things are a step lighter than the wall, not darker
-        self.shade = "#aab3c8" if dark else "#2e2a24"
+        self.dark = sum(rgb(self.wall)) < 330                               # in a dark room, solid things are a step lighter than the wall, not darker
+        self.shade = "#aab3c8" if self.dark else "#2e2a24"
 
     def room(self, c, W, H, base):
         c.drawRect(skia.Rect.MakeLTRB(-W, -1.2 * H, 2 * W, base), paint(self.wall))
@@ -159,7 +159,7 @@ class Painter:
     def piece(self, c, piece, on_floor=False, front=False):
         kind, color = piece["kind"], piece.get("color") or COLORS[piece["kind"]]
         under, own = self.floor if on_floor else self.wall, piece.get("color")
-        lit = self.window if kind == "window" else "#fffdf6"
+        lit = self.window if kind == "window" else mix(under, self.shade, 0.28) if self.dark and kind != "lamp" else "#fffdf6"   # in the dark, only windows and lamps are bright
         for role, path in shapes(kind, piece.get("_w")):
             if self.style == "line":
                 if role == "line":

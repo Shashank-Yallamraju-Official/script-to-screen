@@ -1,7 +1,7 @@
 # Low-level design: profiles, regards and appraisal
 
-Status: slices P1, P2 and P3 are built (profiles, bonds, facts, events, and appraisal with the three
-changes of section 7; see section 10). P4 and P5 are designed only. The prototype the rule was
+Status: slices P1 to P4 are built (profiles, bonds, facts, events, and appraisal with the three
+changes of section 7; see section 10). P5 is designed only. The prototype the rule was
 first tested with is kept in `studies/appraisal/` as it was.
 
 ## 1. What this is for
@@ -272,3 +272,21 @@ passed, and an `offscreen` event sets the feeling outright.
 
 Not built: a what-if is a table of words. Staging each variation as a still frame, so the
 branches can be looked at, needs positions for entities who are not in the scene (P4).
+
+## 12. What was built (P4)
+
+`performance/placing.py`. A piece in a place has a name and can say which need it `serves`;
+`things()` in the script layer lists them, and the world holds them so that `orient`,
+`attention` and `move` can name a thing as well as an entity. A regard follows from needs or is
+written on a sheet. An entity entering with no `slot` is placed: if it is found in the room as
+the scene opens, by a score over every free place (drawn to what serves a strong need, best
+right beside it; repelled by what it dreads; near a bond; a civil distance from others), and it
+faces what drew it; if it arrives later, by the door or from the side named. Every placement is
+logged with its reason.
+
+"Lights out" no longer writes anyone's place. Otis is found at the fridge, in the place the
+script had put him by hand. Bix comes in from the left and Juno through the door.
+
+Differences from the design: only `serves` exists (nothing `threatens`); a regard set by a turn,
+and a charge firing when a thing is named or approached, are P5; ground is still derived from
+the need for control, not written per place.
