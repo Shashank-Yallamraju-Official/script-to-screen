@@ -194,3 +194,28 @@ def test_a_fresh_scene_starts_with_nobody_feeling_what_they_felt_before_and_old_
     told = next(t for t in night.turns if t["id"] == 4)
     assert "vera" not in told["appraised"]                                          # she has known for weeks
     assert told["appraised"]["sam"]["feel"]["fear"] == 3
+
+
+def test_what_happens_between_people_changes_how_they_see_each_other_and_is_carried():
+    from script_to_screen.performance.scene import Scene
+    from script_to_screen.script import series
+    carry, moved = {}, []
+    for seg in series(HEIST).segments:
+        sc = Scene(seg["path"], carry=carry)
+        carry = sc.carry_out
+        moved += [(seg["id"], m["who"], m["toward"], m["now"]) for t in sc.turns for m in t["ties"]]
+    assert ("her-name", "ines", "dot", [1, 0]) in moved                          # Dot asked her name: someone who does you good gains your trust
+    assert ("the-survey", "nico", "dot", [1, 0]) in moved and ("the-till", "ruth", "dot", [1, 0]) in moved
+    assert ("the-till", "dot", "ruth", [0, 1]) in moved and ("the-till", "sam", "ruth", [1, 2]) in moved      # a deed done well raises how they rate you
+    assert ("the-night-shift", "sam", "vera", [-2, 1]) in moved and ("the-plan", "ines", "ruth", [-1, -1]) in moved   # harm loses it
+    assert not any(who == "dot" and toward == "hale" for _, who, toward, _ in moved)                        # Dot is warm enough to let his snapping go
+    assert carry["ines"]["ties"]["dot"] == [1, 0] and carry["vera"]["ties"]["hale"] == [-2, 0]
+    assert sum(1 for s, who, toward, _ in moved if (s, who, toward) == ("the-shop", "ruth", "vera")) == 1   # trust rises one step a scene
+
+
+def test_ties_do_not_move_in_a_show_that_names_no_group():
+    from script_to_screen.performance.scene import Scene
+    from script_to_screen.script import series
+    demo = HEIST.parent / "demo"
+    sc = Scene(series(demo).by_id["the-last-dumpling"]["path"])
+    assert all(t["ties"] == [] for t in sc.turns) and all("ties" not in v for v in sc.carry_out.values())

@@ -13,4 +13,7 @@ seasons:
           - {id: the-shop, scene: episodes/e01/02-the-shop.yaml}
           - {id: the-night-shift, scene: episodes/e01/03-the-night-shift.yaml}
           - {id: the-plan, scene: episodes/e01/04-the-plan.yaml}
+          - {id: her-name, scene: episodes/e01/05-her-name.yaml}
+          - {id: the-survey, scene: episodes/e01/06-the-survey.yaml}
+          - {id: the-till, scene: episodes/e01/07-the-till.yaml}
           - {id: the-count-credits, card: credits}

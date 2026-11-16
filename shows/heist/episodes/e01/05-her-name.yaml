@@ -1,0 +1,42 @@
+# Beat 5, a moment. What this scene must do: Dot is the first person at the branch to ask Ines her name, and from
+# here Ines cares what happens to her. The tie changes by rule: someone who does you good gains your trust.
+scene: Her name
+place: branch
+fresh: true
+turns:
+  - id: 1
+    enter: {dot: {slot: 5, orient: out}, ines: {slot: 7, orient: vault}}
+    why: A weekday. Ines is in overalls by the vault, "servicing" the camera above it. She has done this for six years and is furniture.
+
+  - id: 2
+    who: dot
+    do: {dot: {orient: ines}}
+    say: You're the camera girl.
+    why: Dot has seen her a hundred times and has never been busy enough to stop noticing.
+    hold: 4
+
+  - id: 3
+    who: ines
+    say: I only do the cameras.
+    why: Her line, the one she tells herself. Here it is just true, and small.
+    hold: 4
+
+  - id: 4
+    who: dot
+    say: What's your name, love?
+    event: {kind: gain, need: esteem, size: 3, by: dot, target: ines}
+    why: Six years, and nobody at the branch has asked. It lands harder than the offer did.
+    hold: 8
+
+  - id: 5
+    who: ines
+    do: {ines: {orient: dot}}
+    say: Ines.
+    why: She turns round to say it.
+    hold: 4
+
+  - id: 6
+    who: dot
+    say: Ines. We'd be blind without you.
+    why: Dot means the cameras. Ines hears the rest.
+    hold: 12

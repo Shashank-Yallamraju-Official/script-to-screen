@@ -68,6 +68,7 @@ class Scene:
         story = self.root / "story.yaml"                         # a show decided as a story names its group: the ones whose ties make it a crew
         self.group = list((load_yaml(story) or {}).get("crew") or []) if story.exists() else []
         self.off = [k for k, v in (self.show.cfg.get("tendencies") or {}).items() if v in ("off", False)]
+        self._warmed = set()                                     # who has already gained whose trust in this scene: it rises one step a scene
         for e, r in (self.script.get("regards") or {}).items():       # what things mean to people as the scene opens
             for thing, f in r.items():
                 world.regard(e, thing, f)
@@ -159,6 +160,38 @@ class Scene:
 
             # What groups usually do in a situation like this one (tendencies.py). Worked out only on a turn where something
             # happens (an event, or someone standing `against` what is proposed), and only among a group the show has named.
+            # What happens between people changes how they see each other (in a show that names its group). Someone who does
+            # you good gains your trust, once a scene; someone who harms you loses it, unless you are warm enough to let it go;
+            # a deed done well in front of people raises how they rate you. A turn can also set a tie outright (`tie:`).
+            moved = []
+            if self.group:
+                def step(e, other, why, **change):
+                    got = world.tie(e, other, why=why, **change)
+                    if got:
+                        moved.append(dict(who=e, toward=other, was=got[0], now=got[1], why=why))
+
+                for x in (self._events(raw["event"], tid) if raw.get("event") else []):
+                    by = x.get("by")
+                    for t in appraisal._targets(x):
+                        if not by or by == t or x.get("unseen") or t not in st or not st[t]["present"]:
+                            continue
+                        warm = ((self.ents[t].get("profile") or {}).get("temperament") or {}).get("warmth", 0)
+                        if x["kind"] in appraisal.GOOD and (t, by) not in self._warmed:
+                            self._warmed.add((t, by))
+                            step(t, by, f"{by} did {t} good", trust=1)
+                        elif x["kind"] in appraisal.BAD and int(x.get("size", 2)) >= 2 and not (warm >= 2 and int(x.get("size", 2)) < 3):
+                            step(t, by, f"{by} did {t} harm", trust=-1)
+                deed = raw.get("deed")
+                if deed:                                     # {who: ruth}: done well, in front of whoever is here
+                    for e, y in st.items():
+                        if y["present"] and e != deed["who"]:
+                            step(e, deed["who"], f"{e} saw {deed['who']} do it well", rate=1)
+            for e, others in (raw.get("tie") or {}).items():
+                for other, to in others.items():
+                    got = world.tie(e, other, to=to, why="the script says so")
+                    if got:
+                        moved.append(dict(who=e, toward=other, was=got[0], now=got[1], why="the script says so"))
+
             tended = []
             group = [e for e, x in st.items() if x["present"] and e in self.group]      # only a show that names its group has one
             if (raw.get("event") or raw.get("against")) and len(group) >= 3:
@@ -324,7 +357,7 @@ class Scene:
                                    reveal=reveal, react=react if late else 0, line=line, sylls=sylls,
                                    rhythm=raw.get("rhythm"), melody=raw.get("melody"), stress=raw.get("stress"),
                                    relies_on=raw.get("relies_on") or {},
-                                   tendencies=tended, listening=listening,
+                                   tendencies=tended, listening=listening, ties=moved,
                                    fired={e: dict(thing=f["thing"], why=f["why"]) for e, f in fired.items()},
                                    appraised={e: dict(v, used=e in (raw.get("feel") or {}) or any(r["who"] == e for r in raw.get("react") or [])) for e, v in appraised.items()},
                                    reacts=reacts, stretches=self._stretches(tid, t0, who, bool(say), pause, say_at, sylls, reacts, length, hold),

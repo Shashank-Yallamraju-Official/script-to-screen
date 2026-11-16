@@ -220,6 +220,11 @@ rate and not to anyone else; what groups usually do (`performance/tendencies.py`
 where something happens; `fresh: true` on a scene means time has passed and nobody is still
 feeling what they felt; `against: [sam]` on a turn says who opposes what is proposed.
 
+Ties move with what happens. Doing someone good gains their trust, one step a scene; harming
+them loses it, a step each time, unless they are warm enough to let it go; `deed: {who: ruth}`
+on a turn (a thing done well, in front of whoever is there) raises how they rate her; and
+`tie: {ines: {dot: [1, 1]}}` sets one outright. Changes are logged and carried into later scenes.
+
 What a story leaves open forms a tree. Candidate answers go in `branches.yaml`, written in the
 model's terms, and `s2s story --branches` works every combination through and ranks them by a
 score whose parts are shown. It also says which decision moves the score most, so the most

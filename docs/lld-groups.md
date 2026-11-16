@@ -225,3 +225,35 @@ feeling at a time and cannot lower one by a step); Nico is calm again when the c
 
 One thing came out that was not written: when Vera turns the room on Sam, she feels a flicker of
 shame, because she is doing it to someone she trusts. It is the first sign of the turn.
+
+## 12. Ties that move (scenes 5 to 7)
+
+How one person sees another now changes with what happens between them, in a show that names
+its group. It is world state: logged with its cause, carried into later scenes, and read by
+appraisal, by who listens to whom, and by placing.
+
+| Rule | Step |
+|---|---|
+| Someone does you good (a gain or a relief, by them, to you) | Your trust in them +1, once a scene |
+| Someone harms you (a loss or a threat of size 2 or more) | Your trust in them -1, each time; not if you are warm enough to let it go (warmth 2, and the harm is not undeniable) |
+| Someone does a thing well in front of you (`deed: {who: ruth}` on a turn) | Your rating of them +1 |
+| The script says so (`tie: {ines: {dot: [1, 1]}}`) | Set outright |
+
+Trust falls a step for every harm and rises a step a scene, so it is lost faster than it is won.
+
+The three moments are written with nothing but events, and the ties follow:
+
+| Scene | What happens | What moves |
+|---|---|---|
+| Her name | Dot asks Ines what she is called | Ines trusts Dot |
+| The survey | Hale asks Nico which office he is from; Dot says she signed him in | Nico trusts Dot, and Hale a little less |
+| The till | Ruth frees the drawer; Dot tells the hall | Dot and Sam rate Ruth; Ruth trusts Dot |
+
+The same rules, run over the four earlier scenes, moved ties nobody had planned: Ruth, Ines and
+Nico trust Vera completely after she makes each of them an offer; Sam trusts her less after she
+frightens him at two in the morning; Ines trusts Ruth less after the plan; Vera has stopped
+trusting Hale at all. Dot, alone, does not hold Hale's snapping against him.
+
+Not reconciled: `story.yaml` holds the ties as they stood when the plan was decided, and
+`s2s story` still reads those. The scenes now hold a later truth. Nothing yet feeds the scenes'
+ties back into the report.

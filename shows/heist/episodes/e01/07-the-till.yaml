@@ -1,0 +1,48 @@
+# Beat 7, a moment. What this scene must do: Ruth fixes the lock on Dot's till, Dot tells everyone who did it, and
+# from here Ruth cares what happens to her.
+scene: The till
+place: branch
+fresh: true
+turns:
+  - id: 1
+    enter: {dot: {slot: 5, orient: out}, sam: {slot: 1, orient: out}, ruth: {slot: 7, orient: vault}}
+    why: Ruth has come to look at the vault door from six feet away, as a customer waiting her turn. Sam, on a day shift for once, is by the street door.
+
+  - id: 2
+    who: dot
+    say: Thirty years this drawer has stuck.
+    why: Said to the till, loudly, as she does every morning.
+    hold: 4
+
+  - id: 3
+    who: ruth
+    do: {ruth: {move: {toward: dot, zone: personal}}}
+    say: It's the spring. Let me.
+    why: She cannot hear a lock sticking and stand still. It is the one thing in the world she is sure of.
+    hold: 8
+
+  - id: 4
+    do: {ruth: {attention: down}}
+    deed: {who: ruth}
+    why: Ten seconds, with a hairpin of Dot's. The drawer runs. Dot and Sam both watch her do it.
+    hold: 8
+
+  - id: 5
+    who: dot
+    do: {dot: {orient: sam}}
+    say: Sam! She fixed it. First go.
+    event: {kind: gain, need: esteem, size: 3, by: dot, target: ruth}
+    why: Dot tells the whole hall. It is what Ruth came into this for, handed over for nothing.
+    hold: 6
+
+  - id: 6
+    who: ruth
+    say: It was only the spring.
+    why: She cannot take it. She is delighted.
+    hold: 4
+
+  - id: 7
+    who: dot
+    say: Well. Nobody else ever looked.
+    why: Dot, on being the first to be noticed by someone, to someone who has just been.
+    hold: 12

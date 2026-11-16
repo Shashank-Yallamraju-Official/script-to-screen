@@ -1,0 +1,51 @@
+# Beat 6, a moment. What this scene must do: Dot covers for Nico when his story slips, and from here Nico cares
+# what happens to her.
+scene: The survey
+place: branch
+fresh: true
+turns:
+  - id: 1
+    enter: {dot: {slot: 5, orient: out}, nico: {slot: 3, orient: dot}}
+    why: Nico is in a borrowed suit with a clipboard, being someone from head office. He is here to learn the staff. He is very good at this.
+
+  - id: 2
+    who: nico
+    say: Just a few questions about the floor.
+    why: Warm, quick, already half believed.
+    hold: 3
+
+  - id: 3
+    enter: {hale: {from: right, orient: nico}}
+    why: Hale, out of the back office. He has had three visits from head office this month and knows all their faces.
+    hold: 3
+
+  - id: 4
+    who: hale
+    say: Which office did you say?
+    event: {kind: threat, need: safety, size: 3, by: hale, target: nico}
+    why: Not suspicion. Hale is frightened of head office, and wants to know which part of it is in his hall.
+    hold: 8
+
+  - id: 5
+    who: dot
+    do: {dot: {orient: hale}}
+    say: He's the survey, Mister Hale. I signed him in.
+    event: {kind: relief, need: safety, size: 3, by: dot, target: nico}
+    why: She did not sign him in. She has decided, in the time it took Hale to cross the floor, that the young man is in trouble and not a danger.
+    hold: 6
+
+  - id: 6
+    exit: [hale]
+    why: Hale goes. He has no room left to doubt Dot.
+    hold: 4
+
+  - id: 7
+    who: nico
+    say: Why did you do that?
+    why: He asks it straight. Nobody has covered for him before without wanting something.
+
+  - id: 8
+    who: dot
+    say: You looked like you needed it.
+    why: That is the whole of her reason. "They" had it coming, he said in the shop. This is one of them.
+    hold: 12

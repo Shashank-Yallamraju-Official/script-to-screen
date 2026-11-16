@@ -217,6 +217,9 @@ def explain(a):
     for h in history:
         if h["what"] == "placed":
             steps.append(f"Nobody wrote where they stand: {h['value']}.")
+        if h["what"] == "tie" and str(h["turn"]) == str(t["id"]):
+            other, was, now, why = h["value"]
+            steps.append(f"How they see {other} changed, from trust {was[0]:+d}, rating {was[1]:+d} to trust {now[0]:+d}, rating {now[1]:+d}: {why}.")
         if h["what"] == "tendency" and str(h["turn"]) == str(t["id"]):
             steps.append(f"What groups usually do: {h['value']}.")
         if h["what"] == "fired" and str(h["turn"]) == str(t["id"]):

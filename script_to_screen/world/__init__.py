@@ -24,7 +24,8 @@ class World:
         self.cause = None                                         # the turn now being played (None: off-screen)
         self.known = show.known()
         self.things = {}                                          # what in the place can be named and faced: {id: {at, kind, serves}}
-        self.regards = {e: dict(v.get("regards") or {}) for e, v in carry.items() if v.get("regards")}   # what a thing has come to mean to someone: {entity: {thing: (emotion, strength)}}
+        self.regards = {e: dict(v.get("regards") or {}) for e, v in carry.items() if v.get("regards")}
+        self.ties = {e: {k: list(x) for k, x in v["ties"].items()} for e, v in carry.items() if v.get("ties")}   # ties changed by what has happened: {entity: {other: [trust, rating]}}   # what a thing has come to mean to someone: {entity: {thing: (emotion, strength)}}
 
     def _allowed(self, e, spec, what):
         """Flag anything in a deliberate action that the channel declarations do not allow."""
@@ -73,6 +74,9 @@ class World:
                         self.flag("error", self.cause, f"entities/{e}.yaml, {emo} tell {n + 1}: {why}")
         self._allowed(e, spec, "entrance")
         got = self.carry.get(e, {})
+        if got.get("ties"):                                       # how they have come to see others, in the scenes so far
+            self.ents[e]["bonds"] = {**(self.ents[e].get("bonds") or {}), **{k: list(v) for k, v in got["ties"].items()}}
+            self.ties[e] = {k: list(v) for k, v in got["ties"].items()}
         self.st[e] = dict(present=True, slot=spec["slot"], orient=spec.get("orient", "out"),
                           attention=spec.get("attention", "ahead"), posture=spec.get("posture", "upright"),
                           side=None, status=got.get("status", self.ents[e].get("status", 1)), felt=got.get("felt"),
@@ -112,6 +116,22 @@ class World:
             side = sgn(s["slot"] - there) or -1
             s["slot"] = max(0, min(SLOTS - 1, round(there + side * ZONES[spec["move"]["zone"]])))
         self._note("do", e, spec)
+
+    def tie(self, e, other, trust=0, rate=0, to=None, why=""):
+        """Change how e sees someone: by steps (`trust`, `rate`), or to a stated [trust, rating]. Kept within -2..2, logged, carried."""
+        if other not in self.known:
+            raise ScriptError(f"turn {self.cause}: a tie is set toward '{other}', who is not an entity of this show")
+        ent = self.ents.get(e) or self.show.entity(e, self.key)
+        v = (ent.get("bonds") or {}).get(other, 0)
+        was = list(v) if isinstance(v, (list, tuple)) else [v, 0]
+        now = [int(x) for x in to] if to is not None else [max(-2, min(2, was[0] + trust)), max(-2, min(2, was[1] + rate))]
+        if now == was:
+            return None
+        if e in self.ents:
+            self.ents[e].setdefault("bonds", {})[other] = now
+        self.ties.setdefault(e, {})[other] = now
+        self._note("tie", e, [other, was, now, why])
+        return was, now
 
     def regard(self, e, thing, f):
         """Set what a thing means to e from now on: a feeling it brings up when it is named or approached. `calm` clears it."""
@@ -154,4 +174,6 @@ class World:
             out[e] = dict(felt=s["felt"], status=s["status"], sympathy=s["sympathy"])
         for e, r in self.regards.items():                         # what things have come to mean goes with them, wherever they go
             out.setdefault(e, {})["regards"] = dict(r)
+        for e, t in self.ties.items():                            # and so does how they have come to see each other
+            out.setdefault(e, {})["ties"] = {k: list(v) for k, v in t.items()}
         return out
