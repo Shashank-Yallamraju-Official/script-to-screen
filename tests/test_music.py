@@ -106,7 +106,7 @@ def test_music_is_heard_and_turning_it_down_to_nothing_removes_it():
     cue = next(c for c in sc.music if c["kind"] != "rise")["t"]
     i = int(cue * sound.RATE)
     assert np.abs(with_music[i:i + 8000] - without[i:i + 8000]).max() > 500         # something is added where the cue is
-    assert np.abs(with_music[:i - 2000] - without[:i - 2000]).max() == 0            # and nothing before it
+    assert np.abs(with_music[:i - 2000] - without[:i - 2000]).max() <= 2            # and nothing before it (2 of 32,768 is rounding)
 
 
 def test_the_score_names_a_cue_and_says_nothing_of_how_it_sounds(show):
@@ -169,3 +169,68 @@ def test_each_way_of_showing_music_draws_and_the_line_with_the_closing_frame_is_
         draw_frame(surface.getCanvas(), stage, round((rise["t"] + rise["length"] * 0.8) * stage.fps))
         seen[style] = hashlib.sha256(surface.makeImageSnapshot().tobytes()).hexdigest()
     assert seen["default"] == seen[("line", "frame")] and len(set(seen.values())) == 5
+
+
+# ---- harmony, instruments and the mix ---------------------------------------------------------------------
+def test_the_worse_the_news_the_darker_the_mode_and_the_better_the_brighter():
+    from script_to_screen.presentation import music
+    order = music.BRIGHT_TO_DARK
+    bad = [music.mode_for("turn.bad", s) for s in (0.36, 0.5, 0.7)]
+    assert bad == ["aeolian", "phrygian", "locrian"] and [order.index(m) for m in bad] == sorted(order.index(m) for m in bad)
+    assert music.mode_for("turn.good", 0.4) == "major" and music.mode_for("turn.good", 0.8) == "lydian"
+    for a, b in zip(order, order[1:]):                                   # each mode is the one before with exactly one note lowered a semitone
+        assert sum(x - y for x, y in zip(music.MODES[a], music.MODES[b])) == 1
+
+
+def test_a_question_has_no_third_and_bad_news_in_phrygian_leans_on_the_root_from_a_semitone_above():
+    from script_to_screen.presentation import music
+    mode = music.mode_for("question", 0.5)
+    asked = {music.semitones(mode, d, o) % 12 for _, d, o, _, _ in music.FIGURES["question"]["glass"]}
+    assert not asked & {3, 4}                                            # neither the minor nor the major third: undecided
+    sigh = [music.semitones("phrygian", d, o) for _, d, o, _, _ in music.FIGURES["turn.bad"]["keys"]]
+    assert sigh[-2] - sigh[-1] == 1                                      # the lowered second falls a semitone onto the root
+    low = [music.semitones("locrian", d, o) for _, d, o, _, _ in music.FIGURES["turn.bad"]["warm"]]
+    assert (low[1] - low[0]) % 12 == 6                                   # and in locrian the fifth over the root is a tritone
+
+
+def test_a_build_up_ends_a_semitone_under_the_root_so_the_moment_resolves_it():
+    from script_to_screen.presentation import music
+    assert MUSIC_FILE["rise"]["to"] == -1 and music.semitones("locrian", 1, -2) % 12 == 0
+
+
+def test_no_note_begins_or_ends_with_a_click_and_nothing_is_bright_enough_to_sting():
+    from script_to_screen.presentation import music
+    for name, play in music.INSTRUMENTS.items():
+        for hz in (55, 220, 880):
+            x = play(hz, 0.4, 0.9)
+            assert abs(x[0]) < 1e-6 and abs(x[-1]) < 1e-4 and np.abs(x).max() < 0.5, name
+            spec = np.abs(np.fft.rfft(x)) ** 2
+            f = np.fft.rfftfreq(len(x), 1 / sound.RATE)
+            assert spec[f > 6500].sum() / spec.sum() < 1e-4, f"{name} at {hz} Hz has energy above 6.5 kHz"
+
+
+def test_the_finished_mix_never_clips_and_the_music_steps_back_under_speech():
+    from script_to_screen.presentation import master
+    n = sound.RATE * 3
+    t = np.arange(n) / sound.RATE
+    music_bus = 0.3 * np.sin(2 * np.pi * 220 * t)
+    speech = np.zeros(n)
+    speech[sound.RATE:2 * sound.RATE] = 0.2 * np.sin(2 * np.pi * 300 * t[:sound.RATE])       # someone speaks during the middle second
+    alone = master.master(np.zeros(n), np.zeros(n), music_bus, dict(reverb=0))
+    under = master.master(speech, np.zeros(n), music_bus, dict(reverb=0)) - master.master(speech, np.zeros(n), np.zeros(n), dict(reverb=0))
+    rms = lambda x: float(np.sqrt((x ** 2).mean()))
+    middle, before = slice(int(1.4 * sound.RATE), int(1.9 * sound.RATE)), slice(int(0.4 * sound.RATE), int(0.9 * sound.RATE))
+    drop = 20 * np.log10(rms(under[middle]) / rms(alone[middle]))
+    assert -6.5 < drop < -3.5 and abs(20 * np.log10(rms(under[before]) / rms(alone[before]))) < 0.5
+    hot = master.master(5 * music_bus, 5 * speech, 5 * music_bus)                            # far too loud going in
+    assert np.abs(hot).max() <= master.DEFAULTS["ceiling"]
+
+
+def test_every_demo_scene_mixes_without_clipping():
+    for seg in series(DEMO).segments:
+        w = wave.open(io.BytesIO(sound.mix(Stage.of(Scene(seg["path"])))))
+        a = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16)
+        assert np.abs(a).max() < 32767 * 0.9, seg["id"]
+
+
+MUSIC_FILE = load_yaml(DEMO / "library" / "music.yaml")

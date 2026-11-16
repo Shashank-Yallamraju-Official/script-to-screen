@@ -60,7 +60,9 @@ def in_play(score, steps, window=4.0):
     for c in score.music:                                        # ...and the music, where a cue plays
         at = c["t"] / score.step
         if at - 1 <= steps <= at + 10:
-            add("feel.music_volume", f"music marks this moment ({c['kind']})", (at, at + 8))
+            for p in PARAMS.values():                            # its level, the room it sits in, how it ducks under speech, its warmth
+                if p.scope == "feel" and "cue" in p.exercised_by:
+                    add(p.key, f"music marks this moment ({c['kind']})", (at, at + 8))
     if line and line[0] - window <= steps < line[1] + window:    # 4. the tone of the line, and its speaker
         who, tone = turn["who"], turn["line"]["tone"]
         for name in ("rate", "pitch", "vol", "range", "stretch"):

@@ -5,6 +5,8 @@ import wave
 
 import numpy as np
 
+from . import master, music
+
 RATE = 44100
 LOUD = {0: 0.55, 1: 0.85, 2: 1.0}             # how loud a syllable is, by stress
 
@@ -57,62 +59,36 @@ def sound_for(sounds, name):
     return sounds.get(name) or sounds.get(name.split(".")[0])
 
 
-# One short figure per kind of cue, unless library/music.yaml says otherwise. `key` is the pitch of note 0 in Hz.
-# A note is [steps after the cue, semitones above the key, steps long].
-MUSIC = {"key": 220, "attack": 0.03, "ring": 0.35,
-         "turn.bad": {"wave": "tri", "vol": 0.5, "notes": [[0, -12, 7], [0, -6, 7], [2, -13, 6]]},              # low, with a tritone: it sinks
-         "turn.good": {"wave": "sine", "vol": 0.45, "notes": [[0, 0, 2], [1, 4, 2], [2, 7, 2], [3, 12, 6]]},      # a rising bright arpeggio
-         "question": {"wave": "sine", "vol": 0.35, "notes": [[0, 14, 9], [0.5, 19, 8]]},                          # two high held notes: unresolved
-         "rise": {"wave": "tri", "vol": 0.4, "from": -17, "to": -5}}                                              # a tone that climbs and swells until the moment lands
-
-
-def riser(hz0, hz1, dur, vol, timbre="tri"):
-    """A build-up: one tone gliding from hz0 to hz1 over `dur` seconds, swelling as it goes, with a slow shiver that quickens."""
-    n = max(1, int(dur * RATE))
-    u = np.arange(n) / n
-    hz = hz0 * (hz1 / hz0) ** u
-    phase = 2 * np.pi * np.cumsum(hz) / RATE
-    shiver = 1 - 0.25 * (0.5 + 0.5 * np.sin(2 * np.pi * np.cumsum(3 + 9 * u) / RATE))
-    out = _osc(timbre, phase) * vol * u ** 2 * shiver
-    out[-int(0.02 * RATE):] *= np.linspace(1, 0, int(0.02 * RATE))      # let go just as the moment lands
-    return out
-
-
-def figure(music, kind):
-    """A cue kind's figure: the show's own, else the built-in one."""
-    return {**MUSIC.get(kind, {}), **(music.get(kind) or {})}
+def riser(hz0, hz1, dur, vol, timbre=None):
+    """A build-up (see music.riser)."""
+    return music.riser(hz0, hz1, dur, vol)
 
 
 def mix(stage):
-    """The whole scene's sound: one note per syllable, plus an effect per event."""
-    audio = np.zeros(int((stage.score.dur + 0.6) * RATE), dtype=np.float64)
+    """The whole scene's sound. Voices (one note per syllable), effects (one per event) and music (the score's
+    cues, voiced in the mode their meaning calls for) are made as three buses, then mixed and mastered together."""
+    n = int((stage.score.dur + 1.6) * RATE)                      # room for the last note and the room's tail to die away
+    voices, effects = np.zeros(n), np.zeros(n)
     feel = stage.look.feel
 
-    def add(at, x):
+    def add(bus, at, x):
         i = int(at * RATE)
-        if 0 <= i < len(audio):
-            audio[i:i + len(x)] += x[: len(audio) - i]
+        if 0 <= i < n:
+            bus[i:i + len(x)] += x[: n - i]
 
     for line in stage.score.speech:
         ent, tone = stage.look.cast[line["who"]], stage.look.tones[line["tone"]]
         for s in line["sylls"]:
             hz = ent["voice"] * tone.get("pitch", 1) * 2 ** (s["semi"] / 12)
-            add(s["start"], note(hz, min(s["voiced"], 0.6), tone.get("vol", 0.5) * LOUD[s["stress"]], ent.get("timbre", "sine"),
-                                 float(feel["voice_attack"]), float(feel["voice_ring"])))
+            add(voices, s["start"], note(hz, min(s["voiced"], 0.6), tone.get("vol", 0.5) * LOUD[s["stress"]], ent.get("timbre", "sine"),
+                                         float(feel["voice_attack"]), float(feel["voice_ring"])))
     aside = float(feel["aside_volume"])                          # a reaction in passing is quieter
     for at, name, _, quiet in stage.score.events:
         p = sound_for(stage.look.sounds, name)
         if p and float(p.get("vol", 0)) > 0:
-            add(at, effect(p) * (aside if quiet else 1.0))
-    music, step = stage.look.music, stage.score.step
-    key, vol = float(music.get("key", MUSIC["key"])), float(feel.get("music_volume", 0.6))
-    for cue in stage.score.music if vol > 0 else []:             # the score names the cue; the look says what it sounds like
-        fig = figure(music, cue["kind"])
-        if cue["kind"] == "rise":
-            add(cue["t"], riser(key * 2 ** (float(fig.get("from", -17)) / 12), key * 2 ** (float(fig.get("to", -5)) / 12), cue["length"],
-                                float(fig.get("vol", 0.4)) * vol * (0.5 + 0.5 * cue["strength"]), fig.get("wave", "tri")))
-            continue
-        for at, semi, length in fig.get("notes", []):
-            add(cue["t"] + at * step, note(key * 2 ** (semi / 12), min(length * step, 1.6), float(fig.get("vol", 0.4)) * vol * (0.5 + 0.5 * cue["strength"]),
-                                           fig.get("wave", "sine"), float(music.get("attack", MUSIC["attack"])), float(music.get("ring", MUSIC["ring"]))))
-    return wav_bytes(audio)
+            add(effects, at, effect(p) * (aside if quiet else 1.0))
+    settings, vol = stage.look.music, float(feel.get("music_volume", 0.6))
+    cues = stage.score.music if vol > 0 else []                  # the score names the cue; the look says what it sounds like
+    tune = music.render(cues, stage.score.step, n, settings) * vol
+    room = dict(settings.get("mix") or {}, **{k: float(feel.get(k, master.DEFAULTS[k])) for k in ("reverb", "duck", "warmth")})
+    return wav_bytes(master.master(voices, effects, tune, room))

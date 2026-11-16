@@ -200,11 +200,38 @@ Music is scored from what happens, not placed by hand. Two steps run after a sce
 2. **Scoring** gives a cue to the moments that are surprising and prominent enough. Music is
    sparse: it marks a turn in the scene, not every feeling.
 
-| The moment is | Cue | Sounds like (set in `library/music.yaml`) |
+| The moment is | Cue | Sounds like |
 |---|---|---|
-| A surprise, and bad news | `turn.bad` | A low figure with a tritone that sinks |
-| A surprise, and good news | `turn.good` | A bright rising arpeggio |
-| A surprise, not yet good or bad (someone is surprised) | `question` | Two high held notes, unresolved |
+| A surprise, and bad news | `turn.bad` | A low root with a sigh falling onto it |
+| A surprise, and good news | `turn.good` | An arpeggio rising through the seventh to the ninth |
+| A surprise, not yet good or bad (someone is surprised) | `question` | Held notes in stacked fourths, unresolved |
+
+**Harmony follows meaning.** Figures are written in scale degrees, and the mode is chosen by
+how good or bad the news is. The seven modes of one key run from bright to dark as their
+notes are lowered one at a time, so the strength of a cue turns one dial:
+
+| News | Mode | Why it sounds that way |
+|---|---|---|
+| Strong good | Lydian | The raised fourth floats: wonder, relief |
+| Good | Major | Plain good news |
+| Bad | Aeolian (natural minor) | Plain bad news |
+| Worse | Phrygian | The lowered second leans on the root from a semitone above: dread |
+| Worst | Locrian | The fifth is lowered too, a tritone over the root: nowhere to rest |
+| A question | No third at all | The third is what makes a chord major or minor; leaving it out says "not yet" |
+| A build-up | Climbs to the leading tone | A semitone under the root, which the moment it leads to resolves |
+
+**Instruments** are built from sine partials with shaped envelopes, never bare square or
+triangle waves, which is what makes synthesised music harsh: `keys` (a soft mallet whose upper
+partials die away first), `warm` (a low rounded tone, gently saturated so small speakers can
+still play it) and `glass` (a slow-swelling held tone). No note begins or ends with a click,
+and none has energy above 6.5 kHz.
+
+**The mix.** Voices, effects and music are three buses, mastered together: rumble and edge
+filtered off each; the music dipped around 3 kHz where the ear is most sensitive, softly
+saturated and compressed; ducked a few dB while someone speaks; music and a little of the
+voices sent to one shared room; and a soft limiter so nothing can clip. `feel.reverb`,
+`feel.duck`, `feel.warmth` and `feel.music_volume` are on the knob; `library/music.yaml` holds
+the key and which strength gets which mode.
 
 **Surprising to whom?** To the audience, who expect a scene to go on as it is going. A feeling
 is surprising to the degree that it departs from where that character just was and from the

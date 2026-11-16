@@ -117,6 +117,12 @@ PARAMS = {p.key: p for p in [
       "library/feel.yaml aside_volume", "sound", exercised_by=("feel", "look", "turn", "posture"), words=("background reaction", "side-eye volume")),
     _("feel.music_volume", "Music volume", "How loud the music is: the short figures that mark a turn in the scene. 0 is no music.", "level", 0, 1, 0.05,
       "library/feel.yaml music_volume", "sound", exercised_by=("cue",), words=("music", "score", "sting", "underscore", "louder music", "quieter music")),
+    _("feel.reverb", "Room", "How much of the shared room is heard around the music, and a little around the voices. 0 is completely dry.", "amount", 0, 0.5, 0.02,
+      "library/feel.yaml reverb", "sound", exercised_by=("cue", "bubble"), words=("reverb", "room", "echo", "dry", "wet", "space", "distant", "close")),
+    _("feel.duck", "Ducking", "How many dB the music steps back while someone is speaking.", "dB", 0, 12, 0.5,
+      "library/feel.yaml duck", "sound", exercised_by=("cue",), words=("duck", "music under dialogue", "music too loud over speech", "sidechain")),
+    _("feel.warmth", "Warmth", "How far the music is pushed into soft saturation: rounder and fuller, with its peaks smoothed off.", "amount", 0, 1, 0.05,
+      "library/feel.yaml warmth", "sound", exercised_by=("cue",), words=("warm", "saturation", "round", "thin", "harsh", "fuller", "soft")),
     # ---- a sound: library/sounds.yaml -------------------------------------------------------------------
     _("sound.vol", "Volume", "Volume (0 is off).", "level", 0, 1, 0.01, "library/sounds.yaml <sound>.vol", "sound", words=("louder", "quieter", "mute")),
     _("sound.freq", "Pitch", "Starting pitch in Hz.", "Hz", 40, 2000, 5, "library/sounds.yaml <sound>.freq", "sound", words=("higher", "lower", "thud", "ping")),

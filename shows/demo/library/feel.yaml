@@ -12,3 +12,6 @@ bubble_pop: 0.14      # seconds a bubble takes to pop open
 focus_dim: 0.3        # how far everyone else fades while a featured reaction holds the scene (0 = not at all)
 aside_volume: 0.4     # how loud a background reaction's sounds are, next to a featured one
 music_volume: 0.6     # how loud the music is: the short figures that mark a turn in the scene (0 = no music)
+reverb: 0.22          # how much of the shared room is heard around the music, and a little around the voices (0 = dry)
+duck: 5               # how many dB the music steps back while someone is speaking
+warmth: 0.5           # how far the music is pushed into soft saturation: rounder and fuller, peaks smoothed off
