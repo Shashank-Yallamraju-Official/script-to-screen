@@ -22,13 +22,13 @@ def test_whoever_changes_or_speaks_is_in_frame_as_it_happens():
                     assert all(shot["centre"] - half <= s <= shot["centre"] + half for s in slots), f"{score.id} turn {turn['id']}: {e} is out of frame"
 
 
-def test_a_single_is_taken_over_the_other_partys_shoulder_and_height_follows_standing():
+def test_a_single_seats_its_subject_with_room_on_the_side_they_face():
     score = Scene(series(DEMO).by_id["the-morally-righteous-location"]["path"]).score
-    first = [s for s in score.camera if s["on"] == ["chidi"]][0]
-    assert first["over"] == "tahani"                       # he is speaking to her, so we stand behind her
-    low = [s for s in score.camera if s["on"] == ["michael"]]
-    assert low and all(s["angle"] < 0 for s in low)        # he outranks the room: we look up at him
-    assert any(s["tilt"] for s in low)                     # and his laugh, a hard bad surprise, tips the frame
+    chidi = [s for s in score.camera if s["on"] == ["chidi"]][0]          # he faces right, toward tahani
+    assert chidi["at"] == "left" and chidi["centre"] > 5                 # so he sits left, and the frame's centre is to his right
+    tahani = [s for s in score.camera if s["on"] == ["tahani"]][0]
+    assert tahani["at"] == "right" and tahani["centre"] < 6
+    assert any(s["tilt"] for s in score.camera if s["on"] == ["michael"])   # his laugh, a hard bad surprise, tips the frame
 
 
 def test_a_scene_opens_wide_and_every_shot_says_why():
@@ -48,9 +48,12 @@ def test_the_script_can_ask_for_a_shot():
     shots = Scene(path, script=script).score.camera
     assert [s for s in shots if s["why"] == "the script asks for the wide shot"]
     assert [s for s in shots if s["on"] == ["jason"] and s["zoom"] > 1.5]
-    script["turns"][8]["camera"] = dict(on="michael", over="eleanor", angle=-1)
-    shots = Scene(path, script=script).score.camera
-    assert [s for s in shots if s["on"] == ["michael"] and s["over"] == "eleanor" and s["angle"] == -1]
+    centres = {}
+    for side in ("left", "centre", "right"):
+        script["turns"][8]["camera"] = dict(on="chidi", at=side)
+        shot = [s for s in Scene(path, script=script).score.camera if s["on"] == ["chidi"] and s["why"].startswith("the script")][0]
+        centres[side] = shot["centre"]
+    assert centres["left"] > centres["centre"] > centres["right"]        # seated left, the frame looks to his right
 
 
 def test_the_still_style_never_leaves_the_wide_shot_and_drift_does():

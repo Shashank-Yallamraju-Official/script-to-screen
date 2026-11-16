@@ -194,17 +194,18 @@ A turn can also place a sound by hand: `sfx: [{at: 4, sound: thud}]`.
 
 ## The camera and places
 
-**Who is on screen decides how a line lands, so the camera is chosen by whose moment it is.**
+**The world is flat and always seen from the front, so the camera never turns.** What it
+chooses is who is in the frame, how close, and where in the frame they sit. Who is on screen
+decides how a line lands, so the shot is chosen by whose moment it is.
 
 1. A turn belongs to whoever its strongest dramatic event happens to, else to whoever speaks.
    One owner gets a single, two who change together a two-shot, three or more the group.
-2. A single is taken over the shoulder of the other party: the listener's if the owner is
-   speaking, the speaker's if the line is landing on the owner. The other's line then comes in
-   from off screen.
+2. In a single the subject sits to one side, with room in front of them: left of frame if
+   they face right, right if they face left, centre if they face us.
 3. A reaction that happens outside the frame gets its own shot, at the moment it happens.
-4. The same people from the same side is the same shot: the camera rests.
-5. Height is standing. We look up at someone who outranks the room and down at someone the
-   room outranks. A hard bad surprise tips the frame.
+   Until then, the line it reacts to is heard from off screen.
+4. The same people in the same part of the frame is the same shot: the camera rests.
+5. A hard bad surprise tips the frame.
 6. A build-up goes to whoever it is about and pushes in until it lands.
 
 A scene opens wide. Every shot records why it exists (`s2s score <scene> --json`, under
@@ -212,12 +213,13 @@ A scene opens wide. Every shot records why it exists (`s2s score <scene> --json`
 
     camera: wide                                   # everyone
     camera: stay                                   # hold the shot we are in
-    camera: michael                                # a single
+    camera: michael                                # a single, seated by the way he faces
     camera: [chidi, tahani, jason]                 # a group
-    camera: {on: michael, over: eleanor, angle: -1, tilt: 3}     # low, over her shoulder, tipped
+    camera: {on: michael, at: right}               # seat him left, centre or right of frame
+    camera: {on: michael, at: left, zoom: 2.2, tilt: 3}
 
 How tight each kind of shot may get is `camera:` in `show.yaml` (`single`, `two`, `group`,
-`margin`, `lean`, `tilt`, `push`).
+`margin`, `tilt`, `push`).
 
 How the camera gets from shot to shot is a style in `show.yaml` (`style: {camera: film}`):
 `film`, the default, cuts to a new subject and eases when the same subject is reframed

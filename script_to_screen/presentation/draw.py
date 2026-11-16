@@ -401,17 +401,6 @@ def frame_bars(c, stage, t, marks):
         c.drawRect(skia.Rect.MakeXYWH(0, stage.H - h, stage.W, h), fill(INK))
 
 
-def shoulder(c, stage, cam, states):
-    """The near party in an over-the-shoulder shot: large, dark and out of focus at the edge of the frame they stand toward."""
-    W, H = stage.W, stage.H
-    subject = [states[e]["slot"] for e in cam.on if e in states] or [cam.cx]
-    side = 1 if states[cam.over]["slot"] > sum(subject) / len(subject) else -1
-    w, top = W * 0.30, H * 0.36
-    x = W / 2 + side * (W / 2 - w * 0.22) + side * (1 - smooth(cam.over_there)) * w        # it slides in from outside the frame
-    color = place.mix(stage.look.cast[cam.over]["color"], "#1d1d1f", 0.38)
-    c.drawRoundRect(skia.Rect.MakeXYWH(x - w / 2, top, w, H), w / 2, w / 2, fill(color, 255 * min(1.0, cam.over_there * 1.5), 9))
-
-
 def hits(stage, F):
     """What is where in frame F, front to back: [{kind, box: [x, y, w, h], ...}] in frame pixels.
     kind is `syllable` (with `line`, the bubble, and `n`, its place in that bubble from 0), `bubble`, or `token` (with `entity`).
@@ -460,12 +449,8 @@ def draw_frame(c, stage, F, xray=False, slate=False):
     soft = min(1.0, max(0.0, (cam.zoom - 1.9) / 0.8)) if cam.on else 0.0     # in a close shot, whoever it is not a shot of goes out of focus
     for e in sorted(states, key=lambda e: (e in cam.on, bool(line and line["who"] == e))):
         o = states[e] if e == focal or not dim else dict(states[e], alpha=states[e]["alpha"] * (1 - dim))
-        if e == cam.over:                                        # the one whose shoulder we are behind is not also standing in the shot
-            o = dict(o, alpha=o["alpha"] * (1 - cam.over_there))
         draw_token(c, stage.look.cast[e], o, W, H, feel, 0.0 if e in cam.on else 2.2 * soft)
     c.restore()
-    if cam.over in states and cam.over_there > 0.01:
-        shoulder(c, stage, cam, states)
     if housed:
         place.draw_in_front(c, stage, cam)
     for said, there in bubbles_showing(stage, t):                # a bubble that has ended is still fading as the next one grows

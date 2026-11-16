@@ -333,29 +333,29 @@ simple enough to explain in one sentence, which every rule in this project must 
 real technique. `sympathy` is one more thing to write, though only where it changes. The
 surprise measure knows nothing of plot: a twist that changes no feeling is silent.
 
-## 24. The camera is derived from whose moment it is, and who is on screen is a dramatic choice
+## 24. The camera is flat: it chooses who is in frame and where they sit, and never turns
 
-Where the camera looks is a derivation step over the score, like drama and music: the script
-does not say it unless it wants to. A line lands differently depending on who is seen while it
-is said, so the camera is chosen by whose moment a turn is: the one whose change is the
-strongest dramatic event in it, else the speaker. One owner gets a single, taken over the
-shoulder of the other party (the listener's if the owner speaks, the speaker's if the line is
-landing on the owner). Two who change together get a two-shot, and three or more the group. A
-reaction outside the frame gets its own shot when it happens. The same people from the same
-side is the same shot, so the camera rests. Height comes from standing in the room (we look up
-at whoever outranks it), and a hard bad surprise tips the frame. A build-up goes to its subject
-and pushes in. Each shot records why it exists, and a turn can overrule it with `camera:`.
+Where the camera looks is a derivation step over the score, like drama and music. A line lands
+differently depending on who is seen while it is said, so the shot is chosen by whose moment a
+turn is: the one whose change is the strongest dramatic event in it, else the speaker. One
+owner gets a single, two who change together a two-shot, three or more the group. A reaction
+outside the frame gets its own shot when it happens. The same people in the same part of the
+frame is the same shot, so the camera rests. A build-up goes to its subject and pushes in.
+Each shot records why it exists, and a turn can overrule it with `camera:`.
 
-Two earlier rules were tried and dropped. A frame that only panned and zoomed to keep every
-change visible was calm but said nothing: every line was seen the same way. A close-up of each
-speaker ignored who the line was for.
+The world is drawn from the front and only from the front, so the camera's choices are the
+ones a flat picture can honestly make: who, how close, and where in the frame (left, centre,
+right; by default with room on the side the subject faces). Over-the-shoulder shots and a
+low or high camera were built and removed: each implies the camera has moved round or up, and
+a side-on drawing with a blurred shape or a perspective skew laid over it contradicts itself.
+The alternative, a real diorama with a camera that can go anywhere, was considered and not
+taken.
 
-The score holds framing (who, over whom, centre, zoom, angle, tilt); whether a change of shot
-is a cut or an eased move is the look's choice, and by default a new subject is a cut and the
-same subject reframed is a move. A place is the same split: the score holds its name, and the
-look holds what it is made of and how it is drawn. Bubbles are lettering, so they follow their
-speaker but do not scale with the camera; a line from someone out of frame comes in from that
-edge.
+The score holds framing (who, centre, zoom, where in frame, tilt); whether a change of shot is
+a cut or an eased move is the look's choice. A place is the same split: the score holds its
+name, and the look holds what it is made of and how it is drawn. Bubbles are lettering, so
+they follow their speaker but do not scale with the camera; a line from someone out of frame
+comes in from that edge.
 
 ## Open questions
 

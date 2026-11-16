@@ -9,8 +9,8 @@ and why). How the camera gets from one to the next is decided here, by `style: {
     still   it never leaves the wide shot
 
 Things further from the camera move less when it moves (parallax): depth 0 is where the entities
-stand, 1 is infinitely far, and below 0 is in front of them. A low or high camera is drawn as
-perspective (things converge away from it), and a tipped one as a turn of the whole frame.
+stand, 1 is infinitely far, and below 0 is in front of them. The camera never turns: the world is
+flat and always seen from the front. A tipped frame is a turn of the whole picture.
 """
 import math
 
@@ -20,7 +20,8 @@ from ..world import SLOTS
 from .motion import glide
 
 MARGIN = 170                                  # pixels from the frame's edge to the first and last slot, in the wide shot
-NUMBERS = ("centre", "height", "tilt")
+NUMBERS = ("centre", "tilt")
+OVER = 1.3                                    # slots past the stage's edge a frame may reach (see performance/camera.py)
 
 
 def slot_x(slot, W):
@@ -32,10 +33,11 @@ def ground(H):
 
 
 class View:
-    def __init__(self, W, H, cx, zoom, height=0.0, tilt=0.0, on=(), over=None, over_there=0.0):
-        self.W, self.H, self.zoom, self.height, self.tilt = W, H, zoom, height, tilt
-        self.on, self.over, self.over_there = tuple(on), over, over_there          # who the shot is of; whose shoulder it is across, and how present that is
-        self.cx = min(max(cx, W / (2 * zoom)), W - W / (2 * zoom))          # the frame never leaves the stage
+    def __init__(self, W, H, cx, zoom, tilt=0.0, on=()):
+        self.W, self.H, self.zoom, self.tilt = W, H, zoom, tilt
+        self.on = tuple(on)                                                 # who the shot is of
+        over = OVER * (W - 2 * MARGIN) / (SLOTS - 1)
+        self.cx = min(max(cx, W / (2 * zoom) - over), W - W / (2 * zoom) + over) if zoom > 1 + 1e-9 or abs(cx - W / 2) > 1 else W / 2
         self.gy = ground(H)
         # where the ground sits in the frame: a little higher as the camera closes in, then lower again once a figure fills it
         k = min(1.0, (zoom - 1) / 0.9)
@@ -50,10 +52,6 @@ class View:
             m = skia.Matrix()
             m.setTranslate(-cx, -self.gy)
             m.postScale(z, z)
-            if abs(self.height) > 1e-4:
-                p = skia.Matrix()
-                p.setPerspY(0.00034 * self.height / math.sqrt(self.zoom))    # looked up at, things shrink toward the top; looked down on, toward the feet
-                m.postConcat(p)
             if abs(self.tilt) > 1e-4:
                 m.postRotate(self.tilt)
             m.postTranslate(self.W / 2, self.gy + (self.floor - self.gy) * k)
@@ -73,8 +71,7 @@ class View:
 
 
 def _state(shot):
-    return dict(centre=shot["centre"], zoom=shot["zoom"], height=shot.get("angle", 0.0), tilt=shot.get("tilt", 0.0),
-                on=tuple(shot.get("on") or ()), over=shot.get("over"))
+    return dict(centre=shot["centre"], zoom=shot["zoom"], tilt=shot.get("tilt", 0.0), on=tuple(shot.get("on") or ()))
 
 
 def path(stage):
@@ -89,7 +86,7 @@ def path(stage):
             to = _state(s)
             if s["kind"] == "push":
                 begins, lasts = s["t"], max(float(s.get("lasts") or 0), 1e-3)
-            elif style == "cut" or (style == "film" and (to["on"] != cur["on"] or to["over"] != cur["over"])):
+            elif style == "cut" or (style == "film" and to["on"] != cur["on"]):
                 begins, lasts = s["t"], 1e-3
             elif style == "film":
                 begins, lasts = s["t"], max(move, 1e-3)
@@ -111,12 +108,6 @@ def _between(leg, t):
     out = {n: a[n] + (b[n] - a[n]) * k for n in NUMBERS}
     out["zoom"] = math.exp(math.log(a["zoom"]) + (math.log(b["zoom"]) - math.log(a["zoom"])) * k)
     out["on"] = b["on"] if k >= 0.5 else a["on"]
-    if a["over"] == b["over"]:
-        out["over"], out["there"] = b["over"], 1.0
-    elif b["over"] and k >= 0.5 or not a["over"]:
-        out["over"], out["there"] = b["over"], (k - 0.5) * 2 if a["over"] else k      # one shoulder leaves before the other arrives
-    else:
-        out["over"], out["there"] = a["over"], 1 - (k * 2 if b["over"] else k)
     return out
 
 
@@ -127,5 +118,4 @@ def view(stage, t):
         if leg[0] > t:
             break
         cur = _between(leg, t)
-    return View(stage.W, stage.H, slot_x(cur["centre"], stage.W), cur["zoom"], cur["height"], cur["tilt"], cur["on"], cur["over"],
-                cur.get("there", 1.0) if cur["over"] else 0.0)
+    return View(stage.W, stage.H, slot_x(cur["centre"], stage.W), cur["zoom"], cur["tilt"], cur["on"])
