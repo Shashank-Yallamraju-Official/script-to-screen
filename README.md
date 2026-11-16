@@ -192,6 +192,41 @@ to break a word (some·one) or a caret before the syllable that should be strong
 
 A turn can also place a sound by hand: `sfx: [{at: 4, sound: thud}]`.
 
+## The camera and places
+
+**The camera is worked out from the scene, by three rules.**
+
+1. It never hides a change. Whoever speaks, moves or shows something new in a turn is in
+   frame, and a speaker is framed with whoever they face.
+2. It moves only when it must. If everyone who matters is comfortably in frame, and the
+   frame is not much looser than they need, it rests.
+3. A build-up pushes in. While the music rises into the strongest moment, the frame creeps
+   toward whoever that moment is about.
+
+A scene opens wide. Every shot records why it exists (`s2s score <scene> --json`, under
+`camera`). To overrule it, write `camera:` on a turn: `wide`, `stay`, an entity, or a list of
+entities. How tight each kind of shot may get is `camera:` in `show.yaml`
+(`close`, `two`, `group`, `margin`, `loose`, `push`).
+
+How the camera gets from shot to shot is a style in `show.yaml`: `style: {camera: drift}`
+eases (the default; `feel.camera_move` is how long, `feel.camera_lead` is how early it starts),
+`cut` cuts, and `still` never leaves the wide shot.
+
+**A place is the room a scene happens in.** A scene names one with `place: sitting-room`, and
+the place is a file in `places/`: a wall colour, a floor colour, and pieces standing along the
+same slots the entities use.
+
+    pieces:
+      - {kind: door, at: 0}
+      - {kind: sofa, at: 5.6, wide: 2.7}
+      - {kind: plant, at: 8.6, depth: front}     # between the entities and the camera
+
+The kinds are door, window, picture, shelf, sofa, lamp, plant, table and rug. The wall, the
+furniture, the floor and the foreground are separate layers, so they slide against each other
+when the camera moves. A place is drawn in one of three styles (`style: {place: wash}`):
+`wash` is one hue with light from windows and lamps, `paper` is muted cut paper, and `line` is
+ink outline. Bubbles follow their speaker but stay the same size however close the camera is.
+
 ## Music
 
 Music is scored from what happens, not placed by hand. Two steps run after a scene is worked out:

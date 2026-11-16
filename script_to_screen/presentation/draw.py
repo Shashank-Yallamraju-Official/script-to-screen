@@ -10,9 +10,11 @@ import math
 import skia
 
 from ..world import SLOTS
+from . import place
 from .motion import back, pose, smooth
+from .view import MARGIN, ground, slot_x, view
 
-BODY_W, BODY_H, MARGIN = 66, 156, 170
+BODY_W, BODY_H = 66, 156
 INK, PAPER, RULE = "#1d1d1f", "#f5f3ee", "#c9c5bb"
 
 
@@ -28,14 +30,6 @@ def fill(color, a=255):
 def stroke(color, w, a=255):
     return skia.Paint(AntiAlias=True, Color=col(color, a), Style=skia.Paint.kStroke_Style, StrokeWidth=w,
                       StrokeJoin=skia.Paint.kRound_Join, StrokeCap=skia.Paint.kRound_Cap)
-
-
-def slot_x(slot, W):
-    return MARGIN + slot * (W - 2 * MARGIN) / (SLOTS - 1)
-
-
-def ground(H):
-    return round(H * 0.78)
 
 
 def font(size=28, mono=False):
@@ -170,8 +164,9 @@ def indicator(line, chunks, t):
     return row, x, h, w
 
 
-def bubble_box(stage, line, o):
-    """Where a bubble sits for a speaker in state `o`, and how its text is laid out inside it."""
+def bubble_box(stage, line, o, cam):
+    """Where a bubble sits in the frame for a speaker in state `o`, and how its text is laid out inside it.
+    A bubble is lettering, not scenery: it follows its speaker but stays the same size however close the camera is."""
     feel, tone = stage.look.feel, stage.look.tones[line["tone"]]
     f, size, tw, rows, chunks = layout(line, tone)
     W, H, pad = stage.W, stage.H, 22
@@ -180,7 +175,8 @@ def bubble_box(stage, line, o):
     lane = lift + 2 * rad * WEIGHT[2] + 4 if marked else 8       # room under each row, for the styles that draw something there
     lh = size + 6 + lane
     w, h = max(150, tw + 2 * pad), len(rows) * lh + 2 * pad - 14
-    hx, top = slot_x(o["slot"], W), ground(H) - BODY_H * o["sy"] - 24
+    hx, top = cam.x(slot_x(o["slot"], W)), cam.y(ground(H) - BODY_H * o["sy"]) - 24
+    hx = min(max(hx, 60), W - 60)
     bx = min(max(hx - w / 2, 24), W - w - 40)
     by = top - h - 24
     return dict(f=f, size=size, rows=rows, chunks=chunks, pad=pad, lift=lift, rad=rad, lh=lh, w=w, h=h, hx=hx, top=top, bx=bx, by=by)
@@ -204,9 +200,9 @@ def bubbles_showing(stage, t):
     return out
 
 
-def draw_bubble(c, stage, line, t, o, ent, there=1.0):
+def draw_bubble(c, stage, line, t, o, ent, cam, there=1.0):
     feel, tone = stage.look.feel, stage.look.tones[line["tone"]]
-    g = bubble_box(stage, line, o)
+    g = bubble_box(stage, line, o, cam)
     f, size, rows, chunks, pad, lift, rad, lh = (g[k] for k in ("f", "size", "rows", "chunks", "pad", "lift", "rad", "lh"))
     w, h, hx, top, bx, by = (g[k] for k in ("w", "h", "hx", "top", "bx", "by"))
     tx = min(max(hx, bx + 36), bx + w - 36)
@@ -341,13 +337,13 @@ def music_marks(stage):
     return stage._marks
 
 
-def ground_line(c, stage, t, marks):
+def ground_line(c, stage, t, marks, rule=RULE):
     """The ground, drawn as a string the music plays. A build-up makes it hum, tighter and faster, toward where
     the moment will land; the moment itself sends one ripple outward, down for bad news and up for good."""
     W, gy = stage.W, ground(stage.H)
     live = [m for m in marks if m["t"] <= t <= m["until"]]
     if not live:
-        return c.drawLine(0, gy, W, gy, stroke(RULE, 2))
+        return c.drawLine(0, gy, W, gy, stroke(rule, 2))
     path, loud = skia.Path(), 0.0
     for i in range(0, W + 4, 4):
         y = 0.0
@@ -367,7 +363,7 @@ def ground_line(c, stage, t, marks):
                 y += (1 if m["kind"] == "turn.bad" else -1) * 44 * m["strength"] * math.exp(-age / 0.45) * math.exp(-(front / 70) ** 2)
                 loud = max(loud, math.exp(-age / 0.45))
         (path.moveTo if i == 0 else path.lineTo)(i, gy + y)
-    c.drawLine(0, gy, W, gy, stroke(RULE, 2, 255 * (1 - 0.8 * loud)))       # the line at rest fades as the played line takes over
+    c.drawLine(0, gy, W, gy, stroke(rule, 2, 255 * (1 - 0.8 * loud)))       # the line at rest fades as the played line takes over
     c.drawPath(path, stroke(INK, 2 + 1.5 * loud, 60 + 150 * loud))
 
 
@@ -408,26 +404,32 @@ def hits(stage, F):
     t = F / stage.fps
     states = {e: s for e in stage.score.pose if (s := pose(stage, e, t)) is not None and s["alpha"] > 0.5}
     out, line = [], stage.score.line_at(t)
+    cam = view(stage, t)
     if line and line["who"] in states:
-        g = bubble_box(stage, line, states[line["who"]])
+        g = bubble_box(stage, line, states[line["who"]], cam)
         for n, (row, x0, _, width) in enumerate(g["chunks"]):
             out.append(dict(kind="syllable", line=line, n=n, box=[g["bx"] + g["pad"] + x0, g["by"] + g["pad"] - 8 + row * g["lh"], max(width, 6), g["lh"]]))
         out.append(dict(kind="bubble", line=line, box=[g["bx"], g["by"], g["w"], g["h"]]))
     for e, o in states.items():
-        w, h = BODY_W * o["sx"] + 24, BODY_H * o["sy"]
-        out.append(dict(kind="token", entity=e, box=[slot_x(o["slot"], stage.W) - w / 2, ground(stage.H) - h, w, h]))
+        w, h = (BODY_W * o["sx"] + 24) * cam.zoom, BODY_H * o["sy"] * cam.zoom
+        out.append(dict(kind="token", entity=e, box=[cam.x(slot_x(o["slot"], stage.W)) - w / 2, cam.y(ground(stage.H)) - h, w, h]))
     return out
 
 
 def draw_frame(c, stage, F, xray=False, slate=False):
     W, H, t, feel = stage.W, stage.H, F / stage.fps, stage.look.feel
     c.clear(col(PAPER))
+    cam = view(stage, t)
+    housed = place.draw_behind(c, stage, cam)                    # the room, if the scene is somewhere
+    c.save()
+    cam.apply(c)                                                 # from here to the restore, everything is on the stage and seen through the camera
     seen = music_shown(stage)                                    # how music is shown, if at all
     marks = music_marks(stage) if seen else []
+    rule = place.mix(stage.look.place.get("floor", "#d6cdbb"), "#2e2a24", 0.22) if housed and stage.look.style.get("place", "wash") != "line" else RULE
     if "line" in seen:
-        ground_line(c, stage, t, marks)
+        ground_line(c, stage, t, marks, rule)
     else:
-        c.drawLine(0, ground(H), W, ground(H), stroke(RULE, 2))
+        c.drawLine(0, ground(H), W, ground(H), stroke(rule, 2))
     if "rings" in seen:
         rings(c, stage, t, marks)
     states = {e: s for e in stage.score.pose if (s := pose(stage, e, t)) is not None}
@@ -442,9 +444,12 @@ def draw_frame(c, stage, F, xray=False, slate=False):
     for e in sorted(states, key=lambda e: bool(line and line["who"] == e)):
         o = states[e] if e == focal or not dim else dict(states[e], alpha=states[e]["alpha"] * (1 - dim))
         draw_token(c, stage.look.cast[e], o, W, H, feel)
+    c.restore()
+    if housed:
+        place.draw_in_front(c, stage, cam)
     for said, there in bubbles_showing(stage, t):                # a bubble that has ended is still fading as the next one grows
         if said["who"] in states:
-            draw_bubble(c, stage, said, t, states[said["who"]], stage.look.cast[said["who"]], there)
+            draw_bubble(c, stage, said, t, states[said["who"]], stage.look.cast[said["who"]], cam, there)
     if "frame" in seen:
         frame_bars(c, stage, t, marks)
     if slate:

@@ -333,6 +333,20 @@ simple enough to explain in one sentence, which every rule in this project must 
 real technique. `sympathy` is one more thing to write, though only where it changes. The
 surprise measure knows nothing of plot: a twist that changes no feeling is silent.
 
+## 24. The camera is derived, never hides a change, and moves only when it must
+
+Where the camera looks is a derivation step over the score, like drama and music: the script
+does not say it unless it wants to. Three rules, in order. It never hides a change: whoever
+speaks, moves or shows something new in a turn is in frame, and a speaker is framed with
+whoever they face. It moves only when it must: if everyone who matters is comfortably in
+frame and the frame is not much looser than they need, it rests. A build-up pushes in. Each
+shot records why it exists. The alternative, a close-up for each speaker, was tried first and
+gave ten moves in 34 seconds; these rules give five. The score holds framing (a centre on the
+line of slots and a zoom); whether a change of shot is an eased move or a cut is the look's
+choice. A place is the same split: the score holds its name, and the look holds what it is
+made of and how it is drawn. Bubbles are lettering, so they follow their speaker but do not
+scale with the camera.
+
 ## Open questions
 
 These are not decided, because the conversation has not yet produced the evidence.
@@ -347,5 +361,7 @@ These are not decided, because the conversation has not yet produced the evidenc
   held-in feeling is how film music creates dramatic irony.
 - **Is music heard by the characters?** A title card's theme is not. A character singing is.
   The `sing:` line already sits on this boundary.
+- **Should a place know things the world uses?** A door is where people come in, and a sofa
+  is somewhere to sit. Today a place is only looked at.
 - **Should the tool itself hold changes for approval?** As designed it does not: rehearsing
   and undoing are the tool's job, and asking the writer first is the assistant's.

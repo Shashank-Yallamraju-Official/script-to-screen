@@ -1,7 +1,7 @@
 """A frame cache keyed by what a frame shows, not by when it happens.
 
 A frame inside a turn depends only on that turn (what everyone shows and when, its bubbles,
-who holds the scene), on how each entity stood as the turn began, and on the look. So a
+who holds the scene, where the camera is), on how each entity stood as the turn began, and on the look. So a
 turn has a fingerprint, and a frame is found by (the turn's fingerprint, how far into the
 turn it is). Consequences:
 
@@ -19,6 +19,7 @@ from collections import OrderedDict
 from ..vocabulary import params
 from .draw import music_marks, music_shown
 from .render import frame_jpeg
+from .view import path
 
 LOOK_SETTINGS = [p.name for p in params.group("feel") if p.rebuild == "look"]     # settings that change the picture
 CAST_LOOK = ("color", "kind")
@@ -35,11 +36,11 @@ def _r(x):
 def look_print(stage):
     """Everything about the look that a frame depends on."""
     look = stage.look
-    return _digest([stage.W, stage.H, stage.fps, {k: look.feel[k] for k in LOOK_SETTINGS}, look.tones, look.emotions, look.style,
+    return _digest([stage.W, stage.H, stage.fps, {k: look.feel[k] for k in LOOK_SETTINGS}, look.tones, look.emotions, look.style, look.place,
                     {e: {k: v for k, v in sheet.items() if k in CAST_LOOK} for e, sheet in look.cast.items()}])
 
 
-def turn_print(score, i, settled, marks=(), linger=0.0):
+def turn_print(score, i, settled, marks=(), linger=0.0, legs=None):
     """Everything about turn i that its frames depend on, with all times measured from the turn's start.
     `settled` is how many seconds a change takes to finish easing; anything older than that as the turn
     begins has stopped moving, so exactly how much older does not matter."""
@@ -58,7 +59,11 @@ def turn_print(score, i, settled, marks=(), linger=0.0):
             speech.append(dict(who=b["who"], tone=b["tone"], sung=b["sung"], range=b["range"], text=b["text"], start=_r(b["start"] - t0),
                                end=_r(b["end"] - t0), sylls=[dict(s, start=_r(s["start"] - t0)) for s in b["sylls"]]))
     focus = [[_r(a - t0), _r(b - t0), who] for a, b, who in score.focus if b > t0 - 0.3 and a < t1 + 0.3]   # a held reaction fades in and out
-    return _digest([turn["id"], _r(t1 - t0), pose, speech, focus, music])
+    first, moves = legs or ((0, 1), [])
+    done = [m for m in moves if m[0] + m[1] <= t0]                    # the camera's moves that are over: only where it came to rest matters
+    rest = done[-1][3] if done else first
+    camera = [rest] + [[_r(b - t0), _r(n), a, z] for b, n, a, z in moves if b + n > t0 and b < t1]
+    return _digest([turn["id"], _r(t1 - t0), pose, speech, focus, music, camera])
 
 
 class FrameCache:
@@ -74,11 +79,12 @@ class FrameCache:
         settled = round(max(float(feel["ease"]), float(feel.get("turn", 0))) * 1.1 + 0.05, 3)     # the slowest motion there is
         linger = float(feel.get("bubble_fade", 0.0))
         shown = bool(music_shown(stage))
-        mark = (id(score), turn["index"], settled, shown, linger)
+        legs = path(stage)
+        mark = (id(score), turn["index"], settled, shown, linger, _digest(legs))
         if mark not in self._prints:
             if len(self._prints) > 4000:
                 self._prints.clear()
-            self._prints[mark] = (score, turn_print(score, turn["index"], settled, music_marks(stage) if shown else (), linger))   # holding the score keeps its id from being reused
+            self._prints[mark] = (score, turn_print(score, turn["index"], settled, music_marks(stage) if shown else (), linger, legs))   # holding the score keeps its id from being reused
         look = getattr(stage, "_look_print", None) or look_print(stage)
         stage._look_print = look
         into = round((t - turn["start"] * score.step) * stage.fps * 1000)     # thousandths of a frame into the turn

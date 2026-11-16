@@ -17,3 +17,5 @@ duck: 5               # how many dB the music steps back while someone is speaki
 warmth: 0.5           # how far the music is pushed into soft saturation: rounder and fuller, peaks smoothed off
 bubble_fade: 0.4      # seconds a bubble lingers, fading, after its line has ended; the next one grows while it goes
 turn: 0.5             # seconds an entity takes to turn round
+camera_move: 1.4      # seconds the camera takes to ease from one shot to the next
+camera_lead: 0.3      # seconds before a turn that the camera starts moving for it

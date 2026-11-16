@@ -1,14 +1,15 @@
 """A stage: a score, and the look it is to be shown with.
 
 The score says what happens. The look says how that appears and sounds: frame size and rate,
-the small motions, each tone's lettering, each sound, each emotion's colour, and each
+the small motions, the place, each tone's lettering, each sound, each emotion's colour, and each
 entity's colour and voice. A change to the look never needs the scene worked out again.
 """
-from ..script import Show, load_yaml, tuning
+from ..script import ScriptError, Show, load_yaml, tuning
 
 
 class Look:
     def __init__(self, W, H, fps, feel, tones, sounds, emotions, cast, music=None, style=None):
+        self.place = None                                        # the room, if the scene names one (see place.py)
         self.W, self.H, self.fps = W, H, fps
         self.feel, self.tones, self.sounds, self.emotions, self.cast, self.music = feel, tones, sounds, emotions, cast, music or {}
         self.style = style or {}                                 # choices of kind, not amount: e.g. how the voice is shown in a bubble
@@ -28,6 +29,11 @@ class Look:
 class Stage:
     def __init__(self, score, look, root):
         self.score, self.look, self.root = score, look, root
+        if score.place and look.place is None:                   # the score names the place; what it looks like is the show's
+            file = root / "places" / f"{score.place}.yaml"
+            if not file.exists():
+                raise ScriptError(f"no place '{score.place}': there is no places/{score.place}.yaml")
+            look.place = load_yaml(file)
         self.W, self.H, self.fps = look.W, look.H, look.fps
         self.total = max(1, round(score.dur * look.fps))         # frames
 

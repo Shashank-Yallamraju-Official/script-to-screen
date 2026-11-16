@@ -12,7 +12,7 @@ from pathlib import Path
 
 from ..script import ScriptError, Show, find_root, load_yaml, scene_key, scene_paths, tuning
 from ..world import World
-from . import drama, scoring, speech
+from . import camera, drama, scoring, speech
 from .expression import observe
 from .score import Score
 
@@ -246,6 +246,10 @@ class Scene:
         self.drama = drama.dramatic_events(self.keys, self.focus, self.quiet, self.show.cfg.get("valence"))
         self.music = scoring.cues(self.drama, sec, float(music.get("threshold", scoring.THRESHOLD)), float(music.get("apart", scoring.APART)),
                                   rise=float(music.get("rise", scoring.RISE)), rise_from=float(music.get("rise_from", scoring.RISE_FROM)))
+        # where the camera looks: a third derivation step, over the turns, what everyone shows, and the music
+        asked = {i: raw["camera"] for i, raw in enumerate(self.script.get("turns") or []) if raw.get("camera")}
+        self.camera = camera.shots(self.turns, self.keys, self.focus, self.music, sec, asked, self.show.cfg.get("camera"))
+        self.place = self.script.get("place")
         # the fourth value says the event belongs to a reaction in passing; how much quieter that is, is presentation's call
         self.events = sorted(((t, n, e, (round(t, 4), e) in self.quiet) for t, n, e in self.events), key=lambda ev: ev[0])
 
@@ -310,7 +314,7 @@ class Scene:
                 id=self.key, title=self.title, tempo=self.tempo, step=self.step, steps=self.steps, dur=self.dur,
                 grid=dict(steps_per_beat=cfg["steps_per_beat"], scale=list(cfg["scale"]), timing=dict(cfg["timing"])),
                 turns=self.turns, pose=self.keys, speech=self.lines, events=self.events, focus=self.focus,
-                drama=self.drama, music=self.music,
+                drama=self.drama, music=self.music, camera=self.camera, place=self.place,
                 cast={e: dict(tells=ent["tells"]) for e, ent in self.ents.items()},
                 carried=self.carried, offscreen=self.offscreen, carry_out=self.carry_out, problems=self.problems)
         return self._score

@@ -1,0 +1,17 @@
+# A place: the room a scene happens in. A scene uses it with `place: sitting-room`.
+# Pieces stand along the same slots the entities use (0 is the left edge of the stage, 8 the right).
+# kinds: door, window, picture, shelf, sofa, lamp, plant, table, rug.
+# Optional on a piece: `wide` (in slots), `color`, and `depth: front` (between the entities and the camera).
+name: A sitting room
+wall: "#e7e1d3"
+floor: "#d6cdbb"
+pieces:
+  - {kind: door, at: 0}              # whoever enters at slot 0 comes through it
+  - {kind: window, at: 2.3, wide: 1.9}
+  - {kind: picture, at: 4.3}
+  - {kind: shelf, at: 6.9}
+  - {kind: sofa, at: 5.6, wide: 2.7}
+  - {kind: table, at: 3.6, wide: 1.0}
+  - {kind: lamp, at: 7.7}
+  - {kind: rug, at: 5.0, wide: 4.2}
+  - {kind: plant, at: 8.6, depth: front}

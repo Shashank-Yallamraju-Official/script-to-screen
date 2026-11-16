@@ -3,6 +3,7 @@
 # follow the scene. The lines are stand-ins in my own words, not the show's dialogue.
 # Left out: Shawn and Janet, and the explanations that follow the reveal.
 scene: The morally righteous location
+place: sitting-room
 turns:
   - id: 1
     enter: {eleanor: {slot: 4, orient: chidi}, chidi: {slot: 5, orient: tahani}, tahani: {slot: 6, orient: chidi}, jason: {slot: 7, orient: tahani}}
