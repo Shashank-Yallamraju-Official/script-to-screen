@@ -92,7 +92,9 @@ def test_pressure_is_a_strong_need_that_standing_does_not_meet():
     assert standing.pressures(sam)[0][:2] == ("safety", 3)                 # needs safety, has no money
     assert standing.answer(sam)[0] == "persuade"                           # but far more cautious than driven
     hale = load_yaml(HEIST / "entities" / "hale.yaml")
-    assert standing.pressures(hale) == [] and standing.answer(hale)[0] == "no"
+    assert standing.pressures(hale)[0][:2] == ("control", 2)               # the mark is surviving something too
+    settled = dict(profile=dict(needs={"control": 2}, standing={"wealth": 2, "status": 2, "power": 2}))
+    assert standing.pressures(settled) == [] and standing.answer(settled)[0] == "no"
 
 
 def test_a_tie_is_trust_and_rating_and_the_group_is_read_off_the_ties():
