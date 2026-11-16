@@ -1,0 +1,54 @@
+# Beat 3, the crew: Sam is talked round. What this scene must do: Sam needs persuading, because he is far more
+# cautious than driven; what moves him is his safety, and the thing he tells himself.
+scene: The night shift
+place: branch-night
+fresh: true
+facts:
+  closing: {doer: hale, knows: [hale, vera]}
+turns:
+  - id: 1
+    enter: {sam: {slot: 2, orient: out}}
+    why: The branch at two in the morning. Sam is on the door, as he is five nights a week, on a contract that can end with a week's notice.
+
+  - id: 2
+    enter: {vera: {orient: sam}}
+    why: Vera lets herself in. She still has a key nobody asked for back.
+    hold: 4
+
+  - id: 3
+    who: sam
+    do: {sam: {orient: vera}}
+    say: You can't be in here, Vera.
+    event: {kind: threat, need: safety, size: 2, by: vera, target: sam}
+    why: If she is found here it is his job. He is afraid before she has said a word.
+
+  - id: 4
+    who: vera
+    say: They close this branch in the spring, Sam.
+    event: {kind: threat, need: safety, size: 3, target: sam, fact: closing, reveals: true}
+    why: He did not know. Nobody told the night staff. She has known for weeks, so it does nothing to her.
+    hold: 8
+
+  - id: 5
+    who: vera
+    do: {vera: {move: {toward: sam, zone: personal}}}
+    say: One night. You walk it out on your round.
+    why: The ask, made standing close, by someone who used to sign his rota.
+    hold: 6
+
+  - id: 6
+    who: sam
+    say: I've got people, Vera.
+    why: His no. It is also the way in, and she hears it.
+
+  - id: 7
+    who: vera
+    say: Then do it for them.
+    why: She hands him his own excuse. She is not being kind; she knows what moves him.
+    hold: 10
+
+  - id: 8
+    who: sam
+    say: For them.
+    why: His yes. He is still afraid when he says it, and says it to the floor.
+    hold: 12

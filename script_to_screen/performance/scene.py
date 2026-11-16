@@ -12,7 +12,7 @@ from pathlib import Path
 
 from ..script import ScriptError, Show, find_root, load_yaml, place, scene_key, scene_paths, things, tuning
 from ..world import World
-from . import appraisal, camera, drama, placing, scoring, speech
+from . import appraisal, camera, crew, drama, placing, scoring, speech, tendencies
 from .expression import observe
 from .score import Score
 
@@ -65,9 +65,16 @@ class Scene:
         self.carried = {e: v["felt"] for e, v in self.carry.items() if v.get("felt")}   # as the last scene left it
         self.offscreen = []
         self.facts = {k: dict(doer=v.get("doer"), knows=list(v.get("knows") or [])) for k, v in (self.script.get("facts") or {}).items()}
+        story = self.root / "story.yaml"                         # a show decided as a story names its group: the ones whose ties make it a crew
+        self.group = list((load_yaml(story) or {}).get("crew") or []) if story.exists() else []
+        self.off = [k for k, v in (self.show.cfg.get("tendencies") or {}).items() if v in ("off", False)]
         for e, r in (self.script.get("regards") or {}).items():       # what things mean to people as the scene opens
             for thing, f in r.items():
                 world.regard(e, thing, f)
+        if self.script.get("fresh"):                        # time has passed since the last scene: nobody is still feeling what they felt then
+            for e in list(world.carry):
+                if world.carry[e].get("felt"):
+                    world.carry[e] = dict(world.carry[e], felt=None)
         for ev in self.script.get("offscreen") or []:       # what happened between scenes, unseen
             if not str(ev.get("why") or "").strip():
                 self.flag("error", None, "an `offscreen` event has no `why`")
@@ -140,6 +147,43 @@ class Scene:
                         r["feel"] = appraised[r["who"]]["feel"]
                 raw = dict(raw, feel={**{e: v["feel"] for e, v in appraised.items() if e not in written and e not in {r["who"] for r in reacts_to}},
                                       **(raw.get("feel") or {})})
+
+            # People look at whoever they rate. When someone speaks, those who rate them turn to listen; the rest do not.
+            listening = {}
+            if who and raw.get("say"):
+                for e, x in st.items():
+                    if x["present"] and e != who and e not in (raw.get("do") or {}) and isinstance((self.ents[e].get("bonds") or {}).get(who), (list, tuple)):
+                        if crew.tie(self.ents, e, who)[1] >= 1:
+                            world.do(e, {"attention": who})
+                            listening[e] = who
+
+            # What groups usually do in a situation like this one (tendencies.py). Worked out only on a turn where something
+            # happens (an event, or someone standing `against` what is proposed), and only among a group the show has named.
+            tended = []
+            group = [e for e, x in st.items() if x["present"] and e in self.group]      # only a show that names its group has one
+            if (raw.get("event") or raw.get("against")) and len(group) >= 3:
+                events = self._events(raw["event"], tid) if raw.get("event") else []
+                bad = [x for x in events if x["kind"] in appraisal.BAD]
+                felt_now = {e: next(((k, v) for k, v in f.items() if k != "at"), None) for e, f in (raw.get("feel") or {}).items() if isinstance(f, dict) and e in group}
+                against = raw.get("against") or []
+                situation = dict(present=group, clock=bool(raw.get("clock") or self.script.get("clock")), loss=any(x["kind"] == "loss" for x in bad),
+                                 threat=("outside" if any(x.get("by") and x["by"] not in group for x in bad) else "inside") if bad else None,
+                                 blame="unclear" if any(not x.get("by") and not (x.get("fact") and self.facts.get(x["fact"], {}).get("doer") in group) for x in bad) else "clear",
+                                 felt={e: f for e, f in felt_now.items() if f}, dissenter=against[0] if len(against) == 1 else None,
+                                 sides={e: ("against" if e in against else "for") for e in group})
+                feel_map = dict(raw.get("feel") or {})
+                for t in tendencies.apply(situation, self.ents, self.off):
+                    act = t.get("act") or {}
+                    for e in t["to"]:
+                        if "look" in act and e not in (raw.get("do") or {}):
+                            world.do(e, {"attention": act["look"], "orient": act["look"]})
+                        if "blame" in act and e not in feel_map and e != who:
+                            feel_map[e] = {"anger": 1, "at": act["blame"]}
+                        if "catch" in act and e not in feel_map and not st[e]["felt"]:
+                            feel_map[e] = {act["catch"][1]: max(1, act["catch"][2]), "at": act["catch"][0]}
+                        world._note("tendency", e, f"{t['name']}: {t['effect']} ({t['why']})")
+                    tended.append(dict(name=t["name"], to=t["to"], effect=t["effect"], why=t["why"]))
+                raw = dict(raw, feel=feel_map)
 
             # A thing that means something to someone brings that feeling up when a line names it, or when anyone turns to it,
             # looks at it or walks to it. Whatever the turn already makes them feel wins.
@@ -280,6 +324,7 @@ class Scene:
                                    reveal=reveal, react=react if late else 0, line=line, sylls=sylls,
                                    rhythm=raw.get("rhythm"), melody=raw.get("melody"), stress=raw.get("stress"),
                                    relies_on=raw.get("relies_on") or {},
+                                   tendencies=tended, listening=listening,
                                    fired={e: dict(thing=f["thing"], why=f["why"]) for e, f in fired.items()},
                                    appraised={e: dict(v, used=e in (raw.get("feel") or {}) or any(r["who"] == e for r in raw.get("react") or [])) for e, v in appraised.items()},
                                    reacts=reacts, stretches=self._stretches(tid, t0, who, bool(say), pause, say_at, sylls, reacts, length, hold),

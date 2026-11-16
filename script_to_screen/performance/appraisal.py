@@ -17,7 +17,8 @@ How strong: the event's `size` (1 slight, 2 pointed, 3 undeniable), raised a ste
 and bent a step by temperament (caution for bad feelings, drive for good ones). A slight event stays
 slight whoever it happens to. Whoever did it feels joy if they cornered someone they know is guilty,
 and shame if they harmed someone they are bonded to. A bystander with no stake of their own feels it
-through their bond to whoever it happened to. A strong bad feeling still being carried colours the
+through their bond to whoever it happened to, never at full strength, and not if they already knew.
+A strong bad feeling still being carried colours the
 next bad thing: it lands as more of the same.
 
 A feeling written on a turn (`feel:`) always wins over the one worked out here.
@@ -109,13 +110,13 @@ def appraise(m, c, ev, others=()):
         if hurt:
             out.append(("shame", _strength(size, m.need(hurt[0], need), m.dial(c, "caution"), 1), hurt[0],
                         f"they did this to {hurt[0]}, who they are bonded to"))
-    elif not any(stake(m, c, o) for o in others):
+    elif not any(stake(m, c, o) for o in others) and not (ev.get("reveals") and fact and m.knows(c, fact)):   # news is only news once: a fact coming out does nothing to someone who knew it
         for t in targets:                                                  # a bystander feels it through their bond to whoever it happened to
             b, n = m.bond(c, t), m.need(t, need)
             if not b or not n:
                 continue
             good = (kind in GOOD) == (b > 0)
-            s = _strength(size, n, m.dial(c, "drive" if good else "caution"), 1)
+            s = min(2, _strength(size, n, m.dial(c, "drive" if good else "caution"), 1))   # a second-hand feeling is never the strongest in the room
             out.append(("joy", s, t, f"{'good' if kind in GOOD else 'bad'} for {t}, who they are {'bonded to' if b > 0 else 'against'}") if good
                        else ("fear", s, by, f"bad for {t}, who they are bonded to"))
             break

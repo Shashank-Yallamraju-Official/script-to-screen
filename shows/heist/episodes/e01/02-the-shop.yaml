@@ -1,0 +1,65 @@
+# Beat 2, the crew: those who say yes. What this scene must do: Ruth, Nico and Ines each say yes at once, each
+# for their own reason, and each says aloud the thing they tell themselves. Feelings are worked out from `event:`.
+scene: The shop
+place: shop
+fresh: true        # days later: nobody is still feeling what they felt in the last scene
+turns:
+  - id: 1
+    enter: {ruth: {slot: 6, orient: bench}, vera: {slot: 3, orient: ruth}}
+    why: Ruth's shop, shut for a year. She still comes in. Vera has asked for an hour of her time.
+
+  - id: 2
+    enter: {nico: {orient: vera}, ines: {orient: vera}}
+    why: Nico and Ines arrive together, having met on the step. Neither knows why the other is here.
+    hold: 4
+
+  - id: 3
+    who: vera
+    say: The branch on Mill Street. I know when the vault is full.
+    why: She does not build up to it. She ran the place; she knows nobody asks twice.
+    hold: 4
+
+  - id: 4
+    who: vera
+    do: {vera: {orient: ruth}}
+    say: Ruth. Nobody else can open that door.
+    event: {kind: gain, need: esteem, size: 3, by: vera, target: ruth}
+    why: The offer to Ruth is not money. It is being the only one who can.
+
+  - id: 5
+    who: ruth
+    do: {ruth: {orient: vera}}
+    say: They're insured. Nobody gets hurt.
+    why: Her yes. She says the thing that makes it possible before anyone asks.
+    hold: 4
+
+  - id: 6
+    who: vera
+    do: {vera: {orient: ines}}
+    say: Ines. You put their cameras in.
+    event: {kind: gain, need: esteem, size: 3, by: vera, target: ines}
+    why: Nobody at the branch ever used her name. Vera does, first word.
+
+  - id: 7
+    who: ines
+    say: I only do the cameras. After that it isn't on me.
+    why: Her yes, and her excuse, in one breath. Ruth does not look round while she says it.
+    hold: 4
+
+  - id: 8
+    who: nico
+    say: And me? What am I for?
+    why: He asks it as a joke. It is the question of his life.
+
+  - id: 9
+    who: vera
+    do: {vera: {orient: nico}}
+    say: People believe you, Nico. We need that.
+    event: {kind: gain, need: belonging, size: 3, by: vera, target: nico}
+    why: The word is "we". It is the one he came for.
+
+  - id: 10
+    who: nico
+    say: A bank. They had it coming.
+    why: His yes. He has decided who is on the other end of this, and it is nobody he will ever meet.
+    hold: 12

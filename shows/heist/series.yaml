@@ -5,9 +5,12 @@ seasons:
     title: The Count
     episodes:
       - id: the-count
-        title: "One: the counter"
+        title: "One: the crew"
         logline: Five people take what they think they need, and find out what it costs someone else.
         segments:
           - {id: the-count-title, card: title}
           - {id: the-counter, scene: episodes/e01/01-the-counter.yaml}
+          - {id: the-shop, scene: episodes/e01/02-the-shop.yaml}
+          - {id: the-night-shift, scene: episodes/e01/03-the-night-shift.yaml}
+          - {id: the-plan, scene: episodes/e01/04-the-plan.yaml}
           - {id: the-count-credits, card: credits}

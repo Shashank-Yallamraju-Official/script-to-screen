@@ -150,10 +150,47 @@ def test_a_scene_reads_the_storys_ties_and_a_thing_that_serves_a_need_draws_the_
     sc = Scene(series(HEIST).by_id["the-counter"]["path"])
     assert sc.ents["sam"]["bonds"]["dot"] == [2, 1]                                 # from story.yaml, not from his sheet
     seven = next(t for t in sc.turns if t["id"] == 7)
-    assert seven["appraised"]["sam"]["feel"] == {"fear": 3, "at": "hale"}           # afraid for Dot, whom he cares about
+    assert seven["appraised"]["sam"]["feel"] == {"fear": 2, "at": "hale"}           # afraid for Dot, whom he cares about; second-hand, so not at full strength
     assert seven["info"][-1][1]["vera"]["felt"] == "anger"
     ten = next(t for t in sc.turns if t["id"] == 10)
     assert ten["fired"]["vera"]["thing"] == "vault" and ten["info"][-1][1]["vera"]["felt"] == "joy"   # it serves control, and she needs control
     slots = [{e: [o["slot"] for kt, o in ks if kt <= t + 1e-6][-1] for e, ks in sc.keys.items() if any(kt <= t + 1e-6 and o["alpha"] for kt, o in ks)}
              for t in sorted({kt for ks in sc.keys.values() for kt, _ in ks})]
     assert all(len(set(s.values())) == len(s) for s in slots)                       # nobody is ever standing on anybody
+
+
+def _played(*ids):
+    from script_to_screen.performance.scene import Scene
+    from script_to_screen.script import series
+    ser, carry, out = series(HEIST), {}, {}
+    for seg in ser.segments:
+        sc = Scene(seg["path"], carry=carry)
+        carry, out[seg["id"]] = sc.carry_out, sc
+    return [out[i] for i in ids]
+
+
+def test_people_look_at_whoever_they_rate():
+    shop, = _played("the-shop")
+    ines_speaks = next(t for t in shop.turns if t["id"] == 7)
+    assert set(ines_speaks["listening"]) == {"vera", "nico"}                        # Ruth does not rate her, and does not look round
+    nico_speaks = next(t for t in shop.turns if t["id"] == 8)
+    assert nico_speaks["listening"] == {}                                           # nobody rates Nico
+    vera_speaks = next(t for t in shop.turns if t["id"] == 3)
+    assert set(vera_speaks["listening"]) == {"ruth", "nico", "ines"}
+
+
+def test_one_against_the_rest_goes_along_and_the_scene_says_so():
+    plan, = _played("the-plan")
+    turn = next(t for t in plan.turns if t["id"] == 7)
+    assert any(x["name"] == "conformity" and x["to"] == ["sam"] for x in turn["tendencies"])
+    felt = turn["info"][-1][1]
+    assert felt["sam"]["felt"] == "fear" and felt["vera"]["felt"] == "shame"        # and it costs Vera a little to do it to him
+    assert not any(x["name"] == "emotional contagion" and "vera" in x["to"] and "catches" in x["effect"] for t in plan.turns for x in t["tendencies"])
+
+
+def test_a_fresh_scene_starts_with_nobody_feeling_what_they_felt_before_and_old_news_is_not_felt_twice():
+    shop, night = _played("the-shop", "the-night-shift")
+    assert all(not v["felt"] for v in shop.turns[0]["info"][-1][1].values())        # Vera left the counter looking at the vault
+    told = next(t for t in night.turns if t["id"] == 4)
+    assert "vera" not in told["appraised"]                                          # she has known for weeks
+    assert told["appraised"]["sam"]["feel"]["fear"] == 3

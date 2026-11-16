@@ -1,0 +1,13 @@
+# Ruth's shop: a locksmith's, shut since the landlord sold the street. The shutters are down.
+name: The shop
+wall: "#e6dfd0"
+floor: "#c9bea8"
+window: "#8f8a80"          # shuttered: no daylight in it
+pieces:
+  - {kind: door, at: 0.3}
+  - {kind: window, at: 2.1, wide: 1.5}
+  - {kind: shelf, at: 3.9}
+  - {id: bench, kind: counter, at: 5.6, wide: 3.2}
+  - {kind: lamp, at: 7.9}
+  - {kind: shelf, at: 6.6}
+  - {kind: rug, at: 4.0, wide: 5.0}

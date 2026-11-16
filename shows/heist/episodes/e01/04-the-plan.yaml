@@ -1,0 +1,70 @@
+# Beat 4, the plan. What this scene must do: the pecking order shows (Vera speaks first and is deferred to); Ruth and
+# Ines dismiss each other; Nico holds it together; the code is agreed. Sam is the only one against, and goes along.
+scene: The plan
+place: shop
+fresh: true
+turns:
+  - id: 1
+    enter: {vera: {slot: 4, orient: out}, ruth: {slot: 6, orient: vera}, ines: {slot: 1, orient: vera}, nico: {slot: 3, orient: vera}, sam: {slot: 7, orient: vera}}
+    why: All five, for the first time. Ruth is by her bench. Ines has taken the place nearest the door.
+
+  - id: 2
+    who: vera
+    say: Five things in the way. One of you for each.
+    why: She speaks first and nobody thinks to question that.
+    hold: 4
+
+  - id: 3
+    who: vera
+    do: {vera: {orient: ruth}}
+    say: Ruth, the door waits on Ines. Cameras first.
+    why: The step the whole plan hangs on, given as an order of work.
+
+  - id: 4
+    who: ruth
+    say: I don't wait on a contractor.
+    event: {kind: loss, need: esteem, size: 2, by: ruth, target: ines}
+    why: Said to Vera, about Ines, in front of Ines. Ruth has met a hundred of her.
+    hold: 6
+
+  - id: 5
+    who: nico
+    do: {nico: {orient: ines}}
+    say: She means thank you, Ines.
+    feel: {ines: {fear: 1, at: ruth}, nico: calm}      # written: he takes the edge off it. It does not go away.
+    why: Nico puts himself between them. Nobody rates him, and he is the only reason they are still in one room.
+    hold: 5
+
+  - id: 6
+    who: sam
+    say: What if someone's in the building?
+    why: The only question anyone asks about another person. It comes from the one who works there.
+    hold: 3
+
+  - id: 7
+    who: vera
+    do: {vera: {orient: sam}}
+    say: Nobody will be.
+    against: [sam]
+    event: {kind: threat, need: belonging, size: 2, by: vera, target: sam}
+    why: Four of them want this to be true, and he is one against four.
+    hold: 8
+
+  - id: 8
+    who: sam
+    say: Fine.
+    why: He goes along. He has not been answered.
+    hold: 5
+
+  - id: 9
+    who: vera
+    do: {vera: {orient: out}}
+    say: Two rules. Nobody gets hurt. Equal shares.
+    feel: {nico: calm}
+    why: The code. It costs nothing to agree to tonight.
+
+  - id: 10
+    who: ruth
+    say: Nobody gets hurt.
+    why: She repeats the half she needs.
+    hold: 12

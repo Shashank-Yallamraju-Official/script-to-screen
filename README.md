@@ -215,8 +215,10 @@ excuse it). From these the rules work out who is under pressure, who would say y
 who holds the group together, who gets blamed, where the plan cracks, and what the group does
 when it does. `shows/heist/` is a heist decided this way: six decisions force 45 things and leave six open.
 Its theme says nobody is good or bad, so the report requires everyone named, the mark included,
-to be surviving something. The design is in `docs/lld-groups.md`. None of this is used by scenes
-yet.
+to be surviving something. The design is in `docs/lld-groups.md`. In a show that names its group this way, scenes use it: people turn to listen to whoever they
+rate and not to anyone else; what groups usually do (`performance/tendencies.py`) fires on turns
+where something happens; `fresh: true` on a scene means time has passed and nobody is still
+feeling what they felt; `against: [sam]` on a turn says who opposes what is proposed.
 
 What a story leaves open forms a tree. Candidate answers go in `branches.yaml`, written in the
 model's terms, and `s2s story --branches` works every combination through and ranks them by a

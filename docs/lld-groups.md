@@ -194,3 +194,34 @@ screen, in three places:
   has gone.
 
 Still not on screen: rating, standing, craft, tendencies and the plan.
+
+## 11. The group model on screen (scenes 2 to 4)
+
+Three more scenes are written and staged: the shop (Ruth, Nico and Ines say yes), the night shift
+(Sam is talked round), and the plan (all five). Getting them right put four things into the scene
+engine, and exposed four faults in the rules.
+
+Now in the engine, for any show that names its group in `story.yaml`:
+
+- **People look at whoever they rate.** When someone speaks, those who rate them turn to listen
+  and the rest do not. When Ines speaks, Ruth does not look round. When Nico speaks, nobody does.
+- **Tendencies fire in scenes,** on a turn where something happens (an event, or someone standing
+  `against` what is proposed). In the plan, Sam is one against four and conformity fires.
+  `s2s explain` reports it.
+- **`fresh: true`** on a scene: time has passed, and nobody is still feeling what they felt.
+- **`against: [sam]`** on a turn: who opposes what is being proposed.
+
+Faults the first pass showed, and the rules that fixed them:
+
+| What came out | Rule now |
+|---|---|
+| Nico as pleased as Ruth about Ruth's offer | A second-hand feeling is never the strongest in the room (at most 2) |
+| Vera afraid at news she had known for weeks | A fact coming out does nothing to someone who already knew it |
+| Vera, the leader, catching fear from Sam, whom she does not rate | A feeling spreads only to those who trust and rate its source and feel nothing of their own, one step weaker |
+| Everyone arriving at the plan still glowing from being recruited days before | `fresh` |
+
+Written overrides in these scenes: Nico takes the edge off Ines's fear (the model holds one
+feeling at a time and cannot lower one by a step); Nico is calm again when the code is agreed.
+
+One thing came out that was not written: when Vera turns the room on Sam, she feels a flicker of
+shame, because she is doing it to someone she trusts. It is the first sign of the turn.
