@@ -1,7 +1,7 @@
 # Low-level design: profiles, regards and appraisal
 
-Status: slices P1 and P2 are built (profiles, bonds, facts, events, and appraisal with the three
-changes of section 7; see section 10). P3 to P5 are designed only. The prototype the rule was
+Status: slices P1, P2 and P3 are built (profiles, bonds, facts, events, and appraisal with the three
+changes of section 7; see section 10). P4 and P5 are designed only. The prototype the rule was
 first tested with is kept in `studies/appraisal/` as it was.
 
 ## 1. What this is for
@@ -256,3 +256,19 @@ for Otis when Juno first mentions the vase, so that Juno and Bix still read as a
 Differences from the design: facts are declared per scene and are not yet carried between
 scenes; the short forms for common events (`accuse`, `confess`) are not built; `warmth` drives
 nothing yet.
+
+## 11. What was built (P3)
+
+`s2s what-if` (`readers/whatif.py`) and inclinations (`appraisal.inclined`). A what-if starts
+from a turn that has an event, or from a file holding a setup, an event and named variations
+(`shows/demo/what-ifs/the-accusation.yaml` has seven). It reports, for everyone present in each
+variation: the feeling, its strength, why, how many of their tells would show, and what the
+feeling inclines them to do.
+
+One more rule came out of using it: a strong bad feeling already carried is not lessened by a
+milder blow of the same kind. Without it, accusing someone already at shame 3 brought them
+down to shame 2. Both carry-over rules apply only inside a scene: between scenes time has
+passed, and an `offscreen` event sets the feeling outright.
+
+Not built: a what-if is a table of words. Staging each variation as a still frame, so the
+branches can be looked at, needs positions for entities who are not in the scene (P4).

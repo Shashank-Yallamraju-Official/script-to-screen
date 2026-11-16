@@ -289,7 +289,7 @@ class Scene:
         world = self.world
         sheets = {e: world.ents.get(e) or self.show.entity(e, self.key) for e in set(who) | {x for ev in events for x in appraisal._targets(ev) + [ev.get("by")] if x}}
         sides = {e: x["side"] for e, x in world.st.items() if x["present"] and x["side"] is not None}
-        standing = {e: (world.st[e]["felt"] if e in world.st else world.carry.get(e, {}).get("felt")) for e in sheets}
+        standing = {e: world.st[e]["felt"] for e in sheets if e in world.st}      # what they feel in the room now; between scenes time has passed, and an event there starts fresh
         minds = appraisal.Minds(sheets, sides, standing, self.facts, self.show.cfg.get("valence"))
         return appraisal.feelings(minds, events, who)
 

@@ -1,9 +1,10 @@
 """Commands that read: what is in the show, what is true at a moment, and why."""
 import json
+from pathlib import Path
 
 from ..performance import Scene
 from ..readers import inplay, ledger, parity
-from ..script import ScriptError, Show, series
+from ..script import ScriptError, Show, find_root, load_yaml, series
 from ..vocabulary import CHANNELS, PARAMS, params
 from . import A, COMMANDS, FAILED, Refused, address, command, describe, edit
 
@@ -109,6 +110,62 @@ def state(a):
             (f"feels {s['feels']} {s['intensity']}" + (f" about {s['about']}" if s["about"] else "") + f", shows {s['tells_shown']} tell(s)" if s["feels"] else "calm")
             for e, s in snap.items()]
     return dict(address=address.of(root, path, t["id"]), entities=snap, text="\n".join(text))
+
+
+def _pairs(items, what):
+    """`a.b=v` or `a=v` flags -> [(a, b or None, v)]."""
+    out = []
+    for item in items or []:
+        if "=" not in item:
+            raise Refused(f"'{item}' is not {what}", hint=f"write it as {what}")
+        key, v = item.split("=", 1)
+        a_, _, b_ = key.partition(".")
+        out.append((a_, b_ or None, v))
+    return out
+
+
+@command("what-if", "How everyone would react to an event, as it stands and in variations. Nothing is drawn or changed.",
+         [A("where", "a turn that has an event (scene:turn), or a what-if file (.yaml) holding a setup, an event and variations"),
+          A("--with", "also in the room: an entity", action="append", dest="with_"), A("--without", "not in the room: an entity", action="append"),
+          A("--doer", "who did it: fact=entity", action="append"), A("--knows", "who knows: fact=a,b (or fact= for nobody)", action="append"),
+          A("--dial", "a temperament dial: entity.dial=value", action="append"), A("--need", "a need: entity.need=value", action="append"),
+          A("--bond", "a bond: from.to=value", action="append"), A("--side", "whose side: entity=side", action="append"),
+          A("--feeling", "what someone already feels: entity=emotion:strength", action="append")],
+         "s2s what-if dumpling:2 --doer dumpling=bix --with bix")
+def what_if(a):
+    from ..readers import whatif
+    try:
+        if str(a.where).endswith((".yaml", ".yml")):
+            file = Path(a.where).resolve()
+            root, doc = find_root(file), load_yaml(file)
+            setup, event, variations, title = doc.get("setup") or {}, doc.get("event"), list(doc.get("variations") or []), doc.get("name") or file.stem
+            if not event:
+                raise Refused("the file has no `event:`")
+        else:
+            root, path, tid, _ = address.turn(a.where, a.show)
+            setup, event = whatif.from_turn(path, tid)
+            variations, title = [], address.of(root, path, tid)
+        v = {}
+        if a.with_ or a.without:
+            v["present"] = [e for e in list(setup.get("present") or []) + list(a.with_ or []) if e not in (a.without or [])]
+        for fact, _, who in _pairs(a.doer, "fact=entity"):
+            v.setdefault("facts", {}).setdefault(fact, {})["doer"] = who
+        for fact, _, who in _pairs(a.knows, "fact=a,b"):
+            v.setdefault("facts", {}).setdefault(fact, {})["knows"] = [x for x in who.split(",") if x]
+        for key, flag in (("dials", a.dial), ("needs", a.need), ("bonds", a.bond)):
+            for e, name, val in _pairs(flag, "entity.name=value"):
+                v.setdefault(key, {}).setdefault(e, {})[name] = float(val) if "." in val else int(val)
+        for e, _, side in _pairs(a.side, "entity=side"):
+            v.setdefault("sides", {})[e] = side
+        for e, _, f in _pairs(a.feeling, "entity=emotion:strength"):
+            emo, _, n = f.partition(":")
+            v.setdefault("feelings", {})[e] = [emo, int(n or 2), None]
+        if v:
+            variations.append(dict(v, name="as asked"))
+        cases = whatif.table(root, setup, event, variations)
+    except ScriptError as err:
+        raise Refused(str(err))
+    return dict(what=title, event=edit.plain(event), setup=edit.plain(setup), cases=edit.plain(cases), text=title + "\n" + whatif.text(event, cases))
 
 
 @command("explain", "Why an entity looks the way it does as a turn ends: the feeling, the position, and the tells that follow.",

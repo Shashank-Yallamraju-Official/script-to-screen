@@ -82,7 +82,7 @@ strong (2) or absent (0) in them; any need not listed is 1.
 | drive | Pulled hard toward what they want | Good feelings land harder |
 | caution | Hit hard by threat | Bad feelings land harder |
 | dominance | Takes charge | Power: whether they can answer what happens to them |
-| warmth | Moves toward others | (not used yet) |
+| warmth | Moves toward others | What joy and sadness incline them to do (see What if) |
 
 The needs are comfort, safety, belonging, esteem and control.
 
@@ -119,6 +119,36 @@ A feeling written on the turn always wins, and `s2s explain <scene:turn> <entity
 it was and why. A reaction with nothing written (`{who: otis, word: dumpling}`) takes the
 feeling worked out for that entity and decides only when it lands. The design, and how the
 rule was tested against scenes written by hand, is in `docs/lld-profiles.md`.
+
+## What if
+
+`s2s what-if` maps a situation out without writing it: one setup, one event, and how everyone
+would react, as it stands and in variations. Nothing is drawn and nothing is changed.
+
+    s2s what-if thermostat:2 --doer dial=otis --knows dial=otis      # a turn that has an event, with something changed
+    s2s what-if shows/demo/what-ifs/the-accusation.yaml              # a file: a setup, an event, and named variations
+
+On a turn, the setup is the scene as it stands when the event lands, and the flags change it:
+`--with` and `--without` (who is in the room), `--doer` and `--knows` (the facts), `--side`,
+`--feeling` (what someone already feels), and `--dial`, `--need`, `--bond` (who someone is).
+A file holds as many variations as you like, and prints one column for each:
+
+           as it stands     Otis didn't do it    Bix is there      Otis outranks her
+    juno   joy 1 > press    nothing              joy 1 > press     joy 1 > press
+    otis   shame 2 > deny   fear 2 > back away   shame 2 > deny    shame 2 > hit back
+    bix    (not here)       (not here)           fear 2 > freeze   (not here)
+
+Each cell is what they feel, how strongly, and what that inclines them to do next. Under the
+table, every cell that differs from the first column says why. The inclinations are the
+branches a scene could take from here; picking one, and writing the line, is the writer's job.
+
+| Feeling | Inclined to | Unless |
+|---|---|---|
+| Fear | back away | high caution: freeze |
+| Anger | confront | cannot answer it: sulk |
+| Shame | deny | high dominance: hit back; high caution: withdraw |
+| Joy | share | low warmth: press |
+| Sadness | withdraw | high warmth: seek company |
 
 ## Reactions
 

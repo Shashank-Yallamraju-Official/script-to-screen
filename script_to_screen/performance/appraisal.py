@@ -130,11 +130,32 @@ def feelings(m, events, present):
             continue
         emo, n, about, why = max(found, key=lambda r: r[1])                # the strongest wins
         was = m.standing.get(c)
-        if was and was[1] >= 2 and was[0] != emo and m.valence.get(was[0], 0) < 0 and m.valence.get(emo, 0) < 0:
-            why += f"; still carrying {was[0]} {was[1]}, so it lands as {was[0]}"       # a strong bad feeling colours the next bad thing
+        if was and was[1] >= 2 and m.valence.get(was[0], 0) < 0 and m.valence.get(emo, 0) < 0:
+            if was[0] != emo:
+                why += f"; still carrying {was[0]} {was[1]}, so it lands as {was[0]}"   # a strong bad feeling colours the next bad thing
+            elif was[1] > n:
+                why += f"; already at {was[0]} {was[1]}, and a milder blow does not lessen it"
             emo, n = was[0], max(n, was[1])
         out[c] = dict(feel={emo: n, **({"at": about} if about else {})}, why=why)
     return out
+
+
+def inclined(m, c, emotion):
+    """What a feeling inclines its owner to do next, bent by temperament: (a word, what it looks like).
+    These are the branches a scene could take from here; choosing one is the writer's job."""
+    if emotion == "fear":
+        return ("freeze", "goes still and small") if m.dial(c, "caution") >= 2 else ("back away", "puts distance between them")
+    if emotion == "anger":
+        return ("confront", "closes in and says it") if m.power(c) >= 1 else ("sulk", "turns away and says little")
+    if emotion == "shame":
+        if m.dial(c, "dominance") >= 1:
+            return "hit back", "turns it on whoever raised it"
+        return ("withdraw", "backs off and looks away") if m.dial(c, "caution") >= 2 else ("deny", "says it was not them, without facing anyone")
+    if emotion == "joy":
+        return ("press", "moves in and makes the most of it") if m.dial(c, "warmth") <= 0 else ("share", "turns to someone and lets it show")
+    if emotion == "sadness":
+        return ("seek company", "moves toward someone they are bonded to") if m.dial(c, "warmth") >= 1 else ("withdraw", "goes quiet and turns away")
+    return "stop and look", "everything else waits"
 
 
 def problems(ev, known, facts):
