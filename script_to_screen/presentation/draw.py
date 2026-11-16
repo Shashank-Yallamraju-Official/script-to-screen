@@ -186,7 +186,25 @@ def bubble_box(stage, line, o):
     return dict(f=f, size=size, rows=rows, chunks=chunks, pad=pad, lift=lift, rad=rad, lh=lh, w=w, h=h, hx=hx, top=top, bx=bx, by=by)
 
 
-def draw_bubble(c, stage, line, t, o, ent):
+def bubbles_showing(stage, t):
+    """The bubbles on screen at time t, oldest first, each with how present it is (0 to 1). A bubble eases in
+    as its line begins and lingers, fading, after it ends, so one gives way to the next instead of being swapped for it."""
+    feel = stage.look.feel
+    pop, fade = float(feel["bubble_pop"]), float(feel.get("bubble_fade", 0.0))
+    out, speech = [], stage.score.speech
+    for k, line in enumerate(speech):
+        if line["start"] - 1e-9 <= t < line["end"] + fade:
+            there = smooth((t - line["start"]) / pop) if pop > 0 else 1.0
+            if t > line["end"]:
+                nxt = speech[k + 1] if k + 1 < len(speech) else None
+                same = nxt and nxt["who"] == line["who"] and abs(nxt["start"] - line["end"]) < 1e-6
+                there *= 1 - smooth((t - line["end"]) / (min(fade, 0.16) if same else fade))    # when the same speaker goes straight on, the old bubble clears quickly so two are never read at once
+            if there > 0.004:
+                out.append((line, there))
+    return out
+
+
+def draw_bubble(c, stage, line, t, o, ent, there=1.0):
     feel, tone = stage.look.feel, stage.look.tones[line["tone"]]
     g = bubble_box(stage, line, o)
     f, size, rows, chunks, pad, lift, rad, lh = (g[k] for k in ("f", "size", "rows", "chunks", "pad", "lift", "rad", "lh"))
@@ -202,9 +220,9 @@ def draw_bubble(c, stage, line, t, o, ent):
     shape = skia.Op(box, tail, skia.PathOp.kUnion_PathOp)
     age = t - line["start"]
     pop = float(feel["bubble_pop"])
-    c.save()
-    if pop > 0 and age < pop:                                    # pops open from the speaker
-        s = 0.55 + 0.45 * back(age / pop, 1.0)
+    c.saveLayerAlpha(None, int(255 * max(0.0, min(1.0, there))))  # the whole bubble fades as one thing
+    if pop > 0 and age < pop:                                    # it grows gently out of the speaker, with no bounce
+        s = 0.86 + 0.14 * smooth(age / pop)
         c.translate(hx, top)
         c.scale(s, s)
         c.translate(-hx, -top)
@@ -235,11 +253,15 @@ def draw_bubble(c, stage, line, t, o, ent):
         for r, text in enumerate(rows):
             c.drawString(text, bx + pad, base(r), f, fill(INK, 70))
         if here:
+            soft = 16.0                                              # the ink arrives over this many pixels, so no letter is sliced in two
             for r, text in enumerate(rows[:here[0] + 1]):
-                c.save()
-                right = bx + w if r < here[0] else bx + pad + here[1] + 2
-                c.clipRect(skia.Rect.MakeLTRB(bx, base(r) - size - 6, right, base(r) + size))
+                edge = bx + w if r < here[0] else bx + pad + here[1] + soft * 0.5
+                box = skia.Rect.MakeLTRB(bx, base(r) - size - 6, bx + w, base(r) + size)
+                c.saveLayer(box, None)
                 c.drawString(text, bx + pad, base(r), f, ink)
+                wipe = skia.Paint(BlendMode=skia.BlendMode.kDstIn, Shader=skia.GradientShader.MakeLinear(
+                    [skia.Point(edge - soft, 0), skia.Point(edge, 0)], [skia.ColorBLACK, skia.ColorTRANSPARENT]))
+                c.drawRect(box, wipe)
                 c.restore()
     else:
         for r, text in enumerate(rows):                          # the whole line is there from the start
@@ -412,16 +434,17 @@ def draw_frame(c, stage, F, xray=False, slate=False):
     if xray:
         draw_xray(c, stage, states)
     line = stage.score.line_at(t)
-    focal, dim = None, 0.0
-    for a0, a1, who in stage.score.focus:                             # a featured reaction: everyone else recedes
-        if a0 - 0.15 <= t <= a1 + 0.15:
+    focal, dim, lead = None, 0.0, 0.28                           # everyone else recedes for a featured reaction, and returns, over this long
+    for a0, a1, who in stage.score.focus:
+        if a0 - lead / 2 <= t <= a1 + lead / 2:
             focal = who
-            dim = float(feel["focus_dim"]) * smooth((t - a0 + 0.15) / 0.15) * (1 - smooth((t - a1) / 0.15))
+            dim = float(feel["focus_dim"]) * smooth((t - a0 + lead / 2) / lead) * (1 - smooth((t - a1 + lead / 2) / lead))
     for e in sorted(states, key=lambda e: bool(line and line["who"] == e)):
         o = states[e] if e == focal or not dim else dict(states[e], alpha=states[e]["alpha"] * (1 - dim))
         draw_token(c, stage.look.cast[e], o, W, H, feel)
-    if line and line["who"] in states:
-        draw_bubble(c, stage, line, t, states[line["who"]], stage.look.cast[line["who"]])
+    for said, there in bubbles_showing(stage, t):                # a bubble that has ended is still fading as the next one grows
+        if said["who"] in states:
+            draw_bubble(c, stage, said, t, states[said["who"]], stage.look.cast[said["who"]], there)
     if "frame" in seen:
         frame_bars(c, stage, t, marks)
     if slate:

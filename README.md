@@ -145,7 +145,8 @@ at the defaults one step is an eighth of a second). Pauses, holds and syllables 
 the grid, and fractions of a step are allowed for nudges. A scene can set its own `tempo`.
 
 **One bubble holds one beat, and a pause is what separates beats.** A line breaks into
-bubbles wherever the speaker pauses, and each bubble replaces the one before it. A full stop,
+bubbles wherever the speaker pauses, and each bubble gives way to the next: it eases in
+(`feel.bubble_pop`) and fades after its beat ends (`feel.bubble_fade`) while the next arrives. A full stop,
 question mark, exclamation mark or ellipsis is a pause; a comma is too short to count (the
 threshold is `bubble_break` in `show.yaml`). To choose the breaks yourself, write the line as
 a list, one item per bubble; each break gets a pause:
@@ -187,7 +188,7 @@ to break a word (some·one) or a caret before the syllable that should be strong
 |---|---|
 | `library/tones.yaml` | Per tone: rhythm, melody contour, voice, letter size, and the note shown on sung lines |
 | `library/sounds.yaml` | One synthesised sound per kind of event: enter, exit, move, turn, look, posture, bubble, feel |
-| `library/feel.yaml` | The small motions (settle time, overshoot, paper flip, stretch, the bubble's pop), the speech indicator, how voiced or plucked a syllable sounds, and how strongly a featured reaction is set apart |
+| `library/feel.yaml` | The small motions (settle time, overshoot, how long a turn takes, paper flip, stretch, how a bubble eases in and fades out), the speech indicator, how voiced or plucked a syllable sounds, and how strongly a featured reaction is set apart |
 
 A turn can also place a sound by hand: `sfx: [{at: 4, sound: thud}]`.
 

@@ -63,9 +63,9 @@ def test_every_change_by_hand_is_journaled_with_its_address(sess):
 def test_a_show_wide_setting_is_written_as_a_hand_set_value_beside_the_written_one(sess):
     feel = sess.root / "library" / "feel.yaml"
     sess.nudge("feel.ease", "set", 0.4)
-    assert "ease: 0.26" in feel.read_text() and "tune: {ease: 0.4}" in feel.read_text()
+    assert "ease: 0.34" in feel.read_text() and "tune: {ease: 0.4}" in feel.read_text()
     assert sess.stage.look.feel["ease"] == 0.4 and sess.value("feel.ease")["value"] == 0.4
-    sess.nudge("feel.ease", "set", 0.26)
+    sess.nudge("feel.ease", "set", 0.34)
     assert "tune" not in feel.read_text()
 
 
@@ -203,7 +203,7 @@ def test_a_quick_run_of_nudges_is_one_undo_step(talk):
 def test_nudging_a_value_back_to_what_it_would_be_takes_the_hand_set_value_off(talk):
     talk.nudge("feel.overshoot", "set", 0.9)
     assert "tune: {overshoot: 0.9}" in (talk.root / "library" / "feel.yaml").read_text()
-    talk.nudge("feel.overshoot", "set", 0.6)
+    talk.nudge("feel.overshoot", "set", 0.35)
     assert "tune" not in (talk.root / "library" / "feel.yaml").read_text()
 
 

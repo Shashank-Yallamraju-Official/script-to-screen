@@ -11,6 +11,12 @@ def smooth(k):
     return k * k * (3 - 2 * k)
 
 
+def glide(k):
+    """Ease in and out with no sudden start or stop: slower to leave and slower to arrive than `smooth`."""
+    k = max(0.0, min(1.0, k))
+    return k * k * k * (k * (6 * k - 15) + 10)
+
+
 def back(k, amount):
     """Ease out that swings past its mark by `amount` and settles."""
     k, c = max(0.0, min(1.0, k)), 1.70158 * amount
@@ -26,13 +32,14 @@ def pose(stage, e, t):
     t1, cur = ks[idx]
     prev = ks[idx - 1][1] if idx else dict(cur, alpha=0.0) if t1 > 1e-9 else cur   # already there when a scene opens
     u = max(0.0, min(1.0, (t - t1) / max(float(feel["ease"]), 1e-3)))
-    soft, swing = smooth(u), back(u, float(feel["overshoot"]))
+    v = max(0.0, min(1.0, (t - t1) / max(float(feel.get("turn", feel["ease"])), 1e-3)))     # turning round has its own, slower clock
+    soft, swing, round_ = smooth(u), back(u, float(feel["overshoot"])), glide(v)
     out = dict(cur)
-    for n in ("facing", "lx", "ly", "alpha"):
+    for n in ("lx", "ly", "alpha"):
         out[n] = prev[n] + (cur[n] - prev[n]) * soft
+    out["facing"] = prev["facing"] + (cur["facing"] - prev["facing"]) * round_
     for n in ("slot", "sx", "sy", "lean"):
         out[n] = prev[n] + (cur[n] - prev[n]) * swing
-    pulse = math.sin(math.pi * u) if u < 1 else 0.0
-    out["flip"] = pulse if cur["facing"] != prev["facing"] else 0.0       # mid-turn, thin as paper
-    out["travel"] = pulse if cur["slot"] != prev["slot"] else 0.0         # stretched while moving
+    out["flip"] = math.sin(math.pi * round_) if v < 1 and cur["facing"] != prev["facing"] else 0.0   # mid-turn, thin as paper; it thins and fills gradually
+    out["travel"] = math.sin(math.pi * u) if u < 1 and cur["slot"] != prev["slot"] else 0.0            # stretched while moving
     return out
