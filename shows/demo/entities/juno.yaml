@@ -11,3 +11,9 @@ tells:
   joy:   [{tone: teasing}, {posture: lean_in}, {distance: -1}]
   anger: [{tone: deadpan}, {attention: source}, {distance: -1}]
   shame: [{posture: contracted}, {attention: away}, {tone: whisper}]
+
+# Who they are. Temperament dials run -2 to +2; needs run 0 to 2, and any not listed is 1.
+# What an event makes them feel is worked out from this (see docs/lld-profiles.md).
+profile:
+  temperament: {drive: 1, caution: -1, dominance: 2, warmth: 0}
+  needs: {control: 2}

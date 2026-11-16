@@ -8,3 +8,8 @@ tells:
   shame: [{attention: down}, {tone: nervous, latency: 5}, {orient: away}]
   joy:   [{tone: cheerful}, {posture: lean_in}]
   fear:  [{distance: 1}, {posture: lean_back}]
+
+profile:
+  temperament: {drive: 2, caution: 1, dominance: -1, warmth: 1}
+  needs: {comfort: 2}
+bonds: {bix: 1}       # how they regard someone else, one way: -2 against, +2 devoted

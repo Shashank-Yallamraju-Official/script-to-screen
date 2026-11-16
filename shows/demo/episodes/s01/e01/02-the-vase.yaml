@@ -1,5 +1,7 @@
 scene: The vase
 place: hallway
+facts:
+  vase: {doer: otis, knows: [otis, bix]}
 offscreen:
   - feel: {otis: calm, juno: calm}
     why: A day has passed. The dumpling is forgiven, or at least not mentioned.
@@ -13,7 +15,8 @@ turns:
     who: juno
     do: {juno: {orient: otis}, bix: {orient: otis}}
     say: The vase was fine this morning.
-    feel: {otis: {shame: 2}}
+    event: {kind: threat, need: esteem, size: 2, by: juno, target: otis, fact: vase, accuses: true}
+    feel: {bix: calm}      # worked out: fear 2 for Otis. Overruled, so that Juno and Bix still read as a pair here.
     why: The same accusation at the same strength as the dumpling. The only new thing is that he is outnumbered.
 
   - id: 3
@@ -27,7 +30,7 @@ turns:
   - id: 4
     who: bix
     say: I saw.
-    feel: {otis: {shame: 3}}
+    event: {kind: loss, need: esteem, size: 3, by: bix, target: otis, fact: vase, accuses: true, reveals: true}
     why: The witness speaks. There is nowhere left for the lie to go.
 
   - id: 5

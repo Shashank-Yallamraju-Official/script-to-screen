@@ -64,6 +64,62 @@ What an observer can see of a token:
 | Its shape | Posture: upright, contracted, leaning in, leaning back |
 | Bubble | The line. A music note appears on it only when the line is sung (`sing:` in place of `say:`) |
 
+## Who they are, and what an event makes them feel
+
+A scene can say what everyone feels (`feel:`), or say what happened and let the feelings
+follow from who the characters are. The second way needs three things.
+
+**A profile** on each entity's sheet: four temperament dials (-2 to +2) and the needs that are
+strong (2) or absent (0) in them; any need not listed is 1.
+
+    profile:
+      temperament: {drive: 2, caution: 1, dominance: -1, warmth: 1}
+      needs: {comfort: 2}
+    bonds: {bix: 1}            # how they regard someone else, one way
+
+| Dial | High means | Changes |
+|---|---|---|
+| drive | Pulled hard toward what they want | Good feelings land harder |
+| caution | Hit hard by threat | Bad feelings land harder |
+| dominance | Takes charge | Power: whether they can answer what happens to them |
+| warmth | Moves toward others | (not used yet) |
+
+The needs are comfort, safety, belonging, esteem and control.
+
+**Facts**, at the top of a scene: what is true, who did it, and who knows.
+
+    facts:
+      dumpling: {doer: otis, knows: [otis, juno]}
+
+**An event** on a turn: what happened, to whom, and which need it touches.
+
+    event: {kind: threat, need: esteem, size: 2, by: juno, target: otis, fact: dumpling, accuses: true}
+
+`kind` is gain, loss, threat or relief. `size` is 1 slight, 2 pointed, 3 undeniable. `accuses`
+says the one doing it is accusing the target of the fact; `reveals: true` makes everyone in the
+room know the fact from then on; `unseen: true` (in `offscreen:`) means only whoever did it
+knows. A turn can carry a list of events.
+
+Everyone present then asks three questions, and the answers pick the feeling:
+
+| Good or bad for my needs? | Whose doing? | Can I answer it? | Feeling |
+|---|---|---|---|
+| Bad, for esteem or belonging | Mine | (any) | Shame |
+| Bad | Someone else's | Yes | Anger |
+| Bad, or a threat to safety | Not mine | No | Fear |
+| Bad, and over | No one's | No | Sadness |
+| Good | (any) | (any) | Joy |
+
+Whoever did it feels joy if they accused someone they know is guilty, and shame if they harmed
+someone they are bonded to. A bystander with no stake of their own feels it through their bond
+to whoever it happened to. A strong bad feeling still being carried makes the next bad thing
+land as more of the same. A slight event stays slight whoever it happens to.
+
+A feeling written on the turn always wins, and `s2s explain <scene:turn> <entity>` says which
+it was and why. A reaction with nothing written (`{who: otis, word: dumpling}`) takes the
+feeling worked out for that entity and decides only when it lands. The design, and how the
+rule was tested against scenes written by hand, is in `docs/lld-profiles.md`.
+
 ## Reactions
 
 A reaction is what someone who is not speaking does about a line. There are two kinds, and

@@ -51,6 +51,10 @@ def observe(st, ents, gcfg, flag, tid):
             away = sgn(slot - st[src]["slot"]) or 1
             slot = max(0, min(SLOTS - 1, slot + expr["distance"] * away))
             slot = max(slot, st[src]["slot"] + 1) if away > 0 else min(slot, st[src]["slot"] - 1)
+            taken = {o["slot"] for x, o in st.items() if x != e and o.get("present", True)}
+            base = (s.get("take") or {}).get("slot", s["slot"])
+            while slot in taken and slot != base:            # nobody backs into a place where someone is standing: they go as far as there is room
+                slot -= sgn(slot - base)
         slots[e] = slot
 
     def toward(e, other):

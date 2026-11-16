@@ -1,9 +1,12 @@
 scene: Lights out
 place: kitchen-night
+facts:
+  dial: {doer: bix, knows: [bix]}
 # The tag. Juno has gone to bed without an answer about the thermostat, and the two suspects
 # are alone for the first time all day.
 offscreen:
-  - feel: {juno: calm, otis: calm, bix: {shame: 2, at: otis}}
+  - feel: {juno: calm, otis: calm}
+    event: {kind: loss, need: esteem, size: 2, by: bix, target: otis, unseen: true}
     why: Hours later. Juno gave up and went to bed. Bix has been carrying the thermostat alone, and Otis took the blame for it without knowing.
 turns:
   - id: 1
@@ -40,9 +43,11 @@ turns:
   - id: 7
     who: bix
     say: I touched the thermostat.
-    feel: {bix: {shame: 3, at: otis}}
+    event:
+      - {kind: loss, need: esteem, size: 2, by: bix, target: bix, fact: dial, reveals: true}
+      - {kind: relief, need: esteem, size: 2, by: bix, target: otis}
     react:
-      - {who: otis, feel: {joy: 3, at: bix}, beat: 8}
+      - {who: otis, beat: 8}
     why: The confession. Bix backs away as it says it. Otis took the blame for this an hour ago, and he is delighted, so the scene stops for him.
 
   - id: 8
@@ -60,21 +65,21 @@ turns:
     who: otis
     do: {otis: {move: {toward: bix, zone: personal}}}
     say: Vases fall.
-    feel: {bix: {joy: 2, at: otis}}
+    event: {kind: relief, need: belonging, size: 1, by: otis, target: bix}
     why: He crosses the room and hands Bix his own excuse from this morning. It is the nearest he gets to forgiving anyone.
     hold: 10
 
   - id: 11
     enter: {juno: {slot: 8, orient: otis}}
     side: {juno: owner}
-    feel: {otis: {fear: 2, at: juno}, bix: {fear: 2, at: juno}}
+    event: {kind: threat, need: safety, size: 2, by: juno, target: [otis, bix]}
     why: Juno is in the doorway. Nobody heard her come down.
     hold: 6
 
   - id: 12
     who: juno
     say: I can hear you both.
-    feel: {juno: {joy: 1}}
+    event: {kind: gain, need: control, size: 1, target: juno, fact: dial}
     why: She has known all along, and she is enjoying it, exactly as she enjoyed the dumpling.
 
   - id: 13

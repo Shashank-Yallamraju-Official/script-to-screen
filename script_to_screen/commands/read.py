@@ -135,6 +135,12 @@ def explain(a):
         last = [h for h in history if h["what"] in ("feel", "offscreen.feel")]
         steps.append(f"Feels {s['feels']} at intensity {s['intensity']}" + (f", about {s['about']}" if s["about"] else "") +
                      (f" (set in turn {last[-1]['turn']})" if last and last[-1]["turn"] is not None else " (carried in)" if last or carried else "") + ".")
+        for x in sc.turns:                                       # where the feeling came from, if it was worked out from an event
+            got = (x.get("appraised") or {}).get(a.entity)
+            if got and last and str(x["id"]) == str(last[-1]["turn"]):
+                emo = next(k for k in got["feel"] if k != "at")
+                steps.append((f"Worked out from the turn's event: {got['why']}." if emo == s["feels"] else
+                              f"The turn's event works out as {emo} {got['feel'][emo]} ({got['why']}), but the script wrote the feeling by hand."))
         if s["weight"] is None:
             steps.append("Nobody is opposed in the room, so gain is 1: what is felt is what shows.")
         else:

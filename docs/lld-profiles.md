@@ -1,7 +1,8 @@
 # Low-level design: profiles, regards and appraisal
 
-Status: designed, with a prototype of the central rule tested against the existing scenes
-(`studies/appraisal/`). Nothing here is in the engine yet.
+Status: slices P1 and P2 are built (profiles, bonds, facts, events, and appraisal with the three
+changes of section 7; see section 10). P3 to P5 are designed only. The prototype the rule was
+first tested with is kept in `studies/appraisal/` as it was.
 
 ## 1. What this is for
 
@@ -233,3 +234,25 @@ not enough to say the rule is right.
 - **Who knows what the audience knows?** Facts have knowers among the characters. The audience
   is a knower too, and dramatic irony is the gap between them. The ledger is the place for it.
 - **Zones and item state** (a doorway; a vase that is broken) are deliberately left out.
+
+## 10. What was built (P1, P2), and what it changed in s01e01
+
+`performance/appraisal.py` is the step. The four scenes of s01e01 now carry `facts:` and
+`event:` in place of every `feel:` but one, and the three entities have profiles and bonds.
+Compared with the feelings that were written by hand, turn by turn:
+
+| Scene | Who | By hand | From events | Verdict |
+|---|---|---|---|---|
+| The vase, as Bix says "I saw." | bix | calm | shame 3, about otis | Kept. Bix told on someone it is bonded to, and now says the line turning away from him |
+| The thermostat, as Juno asks who touched it | bix | shame 1 | shame 3, about juno | Kept. Bix did it and is being asked |
+| Lights out, "Vases fall." | bix | joy 2 | joy 1 | A slight event stays slight. Arguably forgiveness is not slight; the event's size was left as first written |
+| Lights out, Juno in the doorway | bix | fear 2 | fear 3 | Bix's caution and its need for safety both raise it |
+
+Every other feeling in the episode (13) comes out as it was written, including Otis carrying
+his shame from the vase into the thermostat, which the first prototype got wrong and the
+carry-over rule now gets right. One worked-out feeling is overruled in the script: Bix's fear
+for Otis when Juno first mentions the vase, so that Juno and Bix still read as a pair there.
+
+Differences from the design: facts are declared per scene and are not yet carried between
+scenes; the short forms for common events (`accuse`, `confess`) are not built; `warmth` drives
+nothing yet.

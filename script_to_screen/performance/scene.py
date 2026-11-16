@@ -12,7 +12,7 @@ from pathlib import Path
 
 from ..script import ScriptError, Show, find_root, load_yaml, scene_key, scene_paths, tuning
 from ..world import World
-from . import camera, drama, scoring, speech
+from . import appraisal, camera, drama, scoring, speech
 from .expression import observe
 from .score import Score
 
@@ -59,9 +59,15 @@ class Scene:
         st, need = world.st, world.need
         self.carried = {e: v["felt"] for e, v in self.carry.items() if v.get("felt")}   # as the last scene left it
         self.offscreen = []
+        self.facts = {k: dict(doer=v.get("doer"), knows=list(v.get("knows") or [])) for k, v in (self.script.get("facts") or {}).items()}
         for ev in self.script.get("offscreen") or []:       # what happened between scenes, unseen
             if not str(ev.get("why") or "").strip():
                 self.flag("error", None, "an `offscreen` event has no `why`")
+            if ev.get("event"):                              # an event nobody saw: those with a stake in it carry what it made them feel
+                events = self._events(ev["event"], None)
+                involved = [e for x in events for e in appraisal._targets(x) + [x.get("by")] if e]
+                felt = self._appraise(events, list(dict.fromkeys(involved)), None)
+                ev = dict(ev, feel={**{e: v["feel"] for e, v in felt.items()}, **(ev.get("feel") or {})})
             world.offscreen(ev)
             self.offscreen.append(str(ev.get("why") or ""))
         for i, raw in enumerate(self.script.get("turns") or []):
@@ -88,6 +94,22 @@ class Scene:
 
             def feel(e, f, who=who):
                 world.feel(e, f, who)
+
+            # what the turn's events make everyone feel; a feeling written on the turn wins over the one worked out
+            appraised = {}
+            if raw.get("event"):
+                events = self._events(raw["event"], tid)
+                appraised = self._appraise(events, [e for e, x in st.items() if x["present"]], tid)
+                for x in events:
+                    if x.get("reveals") and x.get("fact") in self.facts:          # now everyone in the room knows
+                        self.facts[x["fact"]]["knows"] = sorted(set(self.facts[x["fact"]]["knows"]) | {e for e, y in st.items() if y["present"]})
+                written = set(raw.get("feel") or {}) | {r["who"] for r in raw.get("react") or [] if "feel" in r}
+                reacts_to = [r for r in raw.get("react") or [] if "feel" not in r and "do" not in r]
+                for r in reacts_to:                          # a reaction with nothing written takes the feeling worked out for it
+                    if r["who"] in appraised:
+                        r["feel"] = appraised[r["who"]]["feel"]
+                raw = dict(raw, feel={**{e: v["feel"] for e, v in appraised.items() if e not in written and e not in {r["who"] for r in reacts_to}},
+                                      **(raw.get("feel") or {})})
 
             # the speaker's own feeling colours the line; everyone else reacts once it has landed
             late = {}
@@ -212,6 +234,7 @@ class Scene:
                                    reveal=reveal, react=react if late else 0, line=line, sylls=sylls,
                                    rhythm=raw.get("rhythm"), melody=raw.get("melody"), stress=raw.get("stress"),
                                    relies_on=raw.get("relies_on") or {},
+                                   appraised={e: dict(v, used=e in (raw.get("feel") or {}) or any(r["who"] == e for r in raw.get("react") or [])) for e, v in appraised.items()},
                                    reacts=reacts, stretches=self._stretches(tid, t0, who, bool(say), pause, say_at, sylls, reacts, length, hold),
                                    info=[(at, {e: o["info"] for e, o in obs.items()}) for at, obs in snaps]))
             t0 += length
@@ -252,6 +275,23 @@ class Scene:
         self.place = self.script.get("place")
         # the fourth value says the event belongs to a reaction in passing; how much quieter that is, is presentation's call
         self.events = sorted(((t, n, e, (round(t, 4), e) in self.quiet) for t, n, e in self.events), key=lambda ev: ev[0])
+
+    def _events(self, written, tid):
+        events = written if isinstance(written, list) else [written]
+        for ev in events:
+            why = appraisal.problems(ev, self.world.known, self.facts)
+            if why:
+                raise ScriptError(f"turn {tid}: {why}" if tid is not None else f"offscreen: {why}")
+        return events
+
+    def _appraise(self, events, who, tid):
+        """What these events make these entities feel, from their sheets, sides, standing feelings and the facts."""
+        world = self.world
+        sheets = {e: world.ents.get(e) or self.show.entity(e, self.key) for e in set(who) | {x for ev in events for x in appraisal._targets(ev) + [ev.get("by")] if x}}
+        sides = {e: x["side"] for e, x in world.st.items() if x["present"] and x["side"] is not None}
+        standing = {e: (world.st[e]["felt"] if e in world.st else world.carry.get(e, {}).get("felt")) for e in sheets}
+        minds = appraisal.Minds(sheets, sides, standing, self.facts, self.show.cfg.get("valence"))
+        return appraisal.feelings(minds, events, who)
 
     def _stretches(self, tid, t0, who, spoken, pause, say_at, sylls, reacts, length, hold):
         """Who owns each stretch of a turn's time. Laid end to end they are the whole turn, with no gaps

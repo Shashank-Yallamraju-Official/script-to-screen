@@ -1,9 +1,11 @@
 scene: The thermostat
 place: living-room
+facts:
+  dial: {doer: bix, knows: [bix]}
 # Otis walks in still carrying the shame of the vase, and it is still aimed at Bix, who told
 # on him. No time has passed, so nothing resets.
 offscreen:
-  - feel: {bix: {shame: 1, at: juno}}
+  - event: {kind: loss, need: control, size: 1, by: bix, target: juno, unseen: true}
     why: An hour ago Bix bumped the thermostat dial, and it knows she will ask.
 turns:
   - id: 1
@@ -15,7 +17,7 @@ turns:
     who: juno
     do: {juno: {orient: otis}}
     say: Which of you touched the thermostat?
-    feel: {otis: {shame: 3}}
+    event: {kind: threat, need: esteem, size: 2, by: juno, target: [otis, bix], fact: dial, accuses: true}
     why: A new accusation. His shame is no bigger, but now it is about her, so he turns away from her instead.
 
   - id: 3
@@ -26,7 +28,7 @@ turns:
   - id: 4
     who: juno
     say: It is eighty degrees in here.
-    feel: {juno: {anger: 2}}
+    event: {kind: loss, need: control, size: 2, target: juno, fact: dial}
     why: She is angry, but alone against two she keeps it flat.
 
   - id: 5

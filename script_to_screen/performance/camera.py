@@ -182,13 +182,13 @@ def shots(turns, pose, focus, music, drama, step, written=None, cfg=None):
                 why = "a reaction outside the frame: " + why
             if cur["kind"] == "shot" and cur["on"] and t - cur["t"] < cfg["min_shot"]:       # rule 4: no shot shorter than this
                 on = sorted(set(cur["on"]) | set(shot["on"]))
-                both = [stood[e]["slot"] for e in on if e in stood] + slots
+                both = [stood[e]["slot"] for e in on if e in stood] + slots + cur.get("_held", [])     # and everywhere the shot already had to reach
                 centre, zoom = frame_for(both, cfg)
-                cur.update(centre=centre, zoom=zoom, on=on, at="centre", tilt=cur["tilt"] or shot["tilt"],
+                cur.update(centre=centre, zoom=zoom, on=on, at="centre", tilt=cur["tilt"] or shot["tilt"], _held=both,
                            why=cur["why"] + f"; widened to hold {names(shot['on'])} too, rather than cut again so soon")
                 continue
-        out.append(dict(shot, t=t, kind="shot", why=why))
-    return out
+        out.append(dict(shot, t=t, kind="shot", why=why, _held=[] if ask else list(slots)))
+    return [{k: v for k, v in shot.items() if k != "_held"} for shot in out]
 
 
 def looking(o):

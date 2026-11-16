@@ -22,6 +22,9 @@
 #   offscreen: [{feel: {otis: calm}, why: A night's sleep.}]
 scene: The last dumpling
 place: kitchen
+# What is true, who did it, and who knows. Feelings below are worked out from `event:` and the entities' profiles.
+facts:
+  dumpling: {doer: otis, knows: [otis, juno]}
 turns:
   - id: 1
     enter: {juno: {slot: 2}, otis: {slot: 5}}
@@ -31,9 +34,9 @@ turns:
     who: juno
     do: {juno: {orient: otis}}
     say: Some·one ate the last dumpling.
-    feel: {juno: {joy: 1}}
+    event: {kind: threat, need: esteem, size: 2, by: juno, target: otis, fact: dumpling, accuses: true}
     react:
-      - {who: otis, word: dumpling, feel: {shame: 2}}
+      - {who: otis, word: dumpling}
     why: She already knows, and enjoys knowing. His eyes drop on the word itself, before she has finished.
 
   - id: 3
@@ -45,8 +48,9 @@ turns:
     who: juno
     do: {juno: {move: {toward: otis, zone: personal}}}
     say: There's sauce on your chin.
+    event: {kind: loss, need: esteem, size: 3, by: juno, target: otis, fact: dumpling, accuses: true}
     react:
-      - {who: otis, feel: {shame: 3}, beat: 6}
+      - {who: otis, beat: 6}
     why: She closes the distance to apply pressure, then gives the proof. His turning away is the moment, so the scene stops for it.
 
   - id: 5
