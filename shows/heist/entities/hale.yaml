@@ -1,4 +1,4 @@
-kind: the mark. Runs the branch
+kind: the mark. Runs the branch, and has been told by head office that it closes in the spring
 color: "#4a4a4a"
 voice: 147
 timbre: square
@@ -10,11 +10,10 @@ tells:
   shame: [{attention: down}, {tone: nervous, latency: 3}, {orient: away}]
   joy:   [{tone: cheerful}, {posture: lean_in}]
 
-# Who they are. Temperament: -2 to +2. Needs: 0 to 2, and any not listed is 1.
-# Standing is where they sit in society: wealth, status and power, each -2 to +2. It is the facet they stand for.
-# Craft is which kinds of obstacle they can get past: people, locks, systems, movement, paper.
+# He is not the villain. He is doing his own taking to survive: the figures he sends upstairs are better than the truth.
 profile:
-  temperament: {drive: 0, caution: 0, dominance: 2, warmth: -1}
+  temperament: {drive: 0, caution: 1, dominance: 2, warmth: 0}
   needs: {control: 2}
-  standing: {wealth: 2, status: 2, power: 2}
+  standing: {wealth: 1, status: 1, power: -1}
   craft: []
+  tells_self: loyalties

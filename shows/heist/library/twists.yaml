@@ -1,5 +1,11 @@
 # Kinds of twist: what the viewer is not told until late. `in_on_it` names roles, which are worked out from the
 # crew: planner, fault_a and fault_b (the two at the plan's fault line), weak_link, watcher (whoever watches the planner).
+the-turn:
+  hides: nothing. The viewer learns it as the crew does
+  in_on_it: []
+  viewer_fooled_during: []
+  needs: someone outside the crew they have come to care about, for the harm to land on
+  serves: [take-then-give]
 staged-failure:
   hides: the failure at the fault line was planned
   in_on_it: [planner, fault_a, fault_b]

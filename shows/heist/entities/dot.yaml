@@ -1,0 +1,17 @@
+kind: the world they are taking from. Has worked the counter at the branch for thirty years; her pension is in it
+color: "#8a6fb0"
+voice: 294
+timbre: sine
+status: 1
+reflex: 1
+tells:
+  fear:  [{posture: contracted}, {distance: 1}, {attention: down}]
+  anger: [{tone: angry}, {attention: source}, {distance: -1}]
+  shame: [{attention: down}, {tone: nervous, latency: 3}, {orient: away}]
+  joy:   [{tone: cheerful}, {posture: lean_in}]
+
+profile:
+  temperament: {drive: 0, caution: 1, dominance: -1, warmth: 2}
+  needs: {safety: 2, belonging: 2}
+  standing: {wealth: -1, status: 0, power: -1}
+  craft: []

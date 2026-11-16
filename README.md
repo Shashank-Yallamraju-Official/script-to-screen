@@ -202,6 +202,7 @@ decisions live in a show's `story.yaml`; `s2s story` carries each one's conseque
 the rules reach and reports what is now **forced** (only one thing can be true), **narrowed**
 (a few things could be) and **open** (someone has to invent it).
 
+    theme: take-then-give                        # 0. what it is about
     lock: bank                                   # 1. what they go after
     crew: [vera, sam, ruth, nico, ines]          # 2. who they are
     ties: {sam: {vera: [-1, 1]}}                 # 3. how each sees each: [trust, rating]
@@ -212,8 +213,9 @@ Three additions to an entity's profile feed it: `standing` (wealth, status, powe
 sit in society), `craft` (which kinds of obstacle they can get past) and `tells_self` (how they
 excuse it). From these the rules work out who is under pressure, who would say yes, who leads,
 who holds the group together, who gets blamed, where the plan cracks, and what the group does
-when it does. `shows/heist/` is a run-of-the-mill heist decided this way: five decisions force 31
-things and leave four open. The design is in `docs/lld-groups.md`. None of this is used by scenes
+when it does. `shows/heist/` is a heist decided this way: six decisions force 45 things and leave six open.
+Its theme says nobody is good or bad, so the report requires everyone named, the mark included,
+to be surviving something. The design is in `docs/lld-groups.md`. None of this is used by scenes
 yet.
 
 ## Reactions

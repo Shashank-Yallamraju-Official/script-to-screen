@@ -17,6 +17,9 @@ MEETS = dict(comfort="wealth", safety="wealth", esteem="status", control="power"
 CRAFTS = ("people", "locks", "systems", "movement", "paper")
 EXCUSES = dict(injury="Nobody gets hurt. They're insured.", victim="They had it coming.", condemners="They're the real thieves.",
                loyalties="It's for the people who depend on me.", responsibility="I only do my part. What happens after is not on me.")
+BREAKS = dict(injury="someone is hurt, and has a face", victim="the one it lands on is not who they pictured",
+              condemners="they see that they have become one", loyalties="the people it was for would be ashamed of it, or are put at risk by it",
+              responsibility="they are shown the whole of what their part did")       # what has to happen for each excuse to stop working
 CORNERS = {(True, False): "the respected and broke", (False, True): "new money", (False, False): "has nothing but what they can do"}
 
 
@@ -25,11 +28,15 @@ def profile(sheet):
     return p.get("temperament") or {}, p.get("needs") or {}, p.get("standing") or {}
 
 
-def pressures(sheet):
-    """-> [(need, pressure 1..3, why)], strongest first: the needs their standing leaves unmet."""
+def pressures(sheet, given=None):
+    """-> [(need, pressure 1..3, why)], strongest first: the needs their standing leaves unmet.
+    `given` is what a group gives them, (trust, rating) on average from its other members: enough trust meets
+    belonging, and enough rating meets esteem, whatever their standing."""
     _, needs, standing = profile(sheet)
     out = []
     for need, strength in needs.items():
+        if given and ((need == "belonging" and given[0] >= 0.75) or (need == "esteem" and given[1] >= 0.75)):
+            continue                                            # the group already gives them this
         if need == "belonging":
             short, why = 2, "belonging is met by people, and they have nobody"
         else:

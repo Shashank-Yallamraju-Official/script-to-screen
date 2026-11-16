@@ -14,7 +14,9 @@ from ..performance import appraisal, crew, standing, tendencies
 from ..script import ScriptError, load_yaml
 
 GATES = ("the lock", "the crew", "the ties", "the plan", "the twist")
+THEME = "the theme"
 ASKS = {  # what each gate will answer once it is decided: these are open until then
+    "the theme": ["what it is about", "what each excuse has to meet", "whether anyone is to be scored against", "what the ending has to do"],
     "the lock": ["what they go after", "what stands in the way", "what the crew is defined against", "which crafts are needed", "where the inside works"],
     "the crew": ["who is in it", "why each would do it", "who says yes at once and who needs persuading", "which obstacles have nobody for them", "who cannot be lost"],
     "the ties": ["how each sees each", "who leads", "who sides with whom", "who holds it together", "who gets blamed"],
@@ -41,6 +43,44 @@ def _craft(sheet):
     return list((sheet.get("profile") or {}).get("craft") or [])
 
 
+def _theme(root, story, sheets, members):
+    g = dict(n=0, name=THEME, decided=None, forced=[], narrowed=[], open=[], problems=[])
+    file = root / "library" / "themes.yaml"
+    themes = load_yaml(file) if file.exists() else {}
+    if not story.get("theme"):
+        if themes:
+            g["narrowed"].append("what it is about: one of " + ", ".join(themes))
+        return g, None
+    if story["theme"] not in themes:
+        raise ScriptError(f"story.yaml: no theme '{story['theme']}' in library/themes.yaml; there are: " + ", ".join(themes))
+    th = themes[story["theme"]]
+    g["decided"] = th["says"]
+    g["forced"].append(f"the turn: {th['turn']}")
+    if th.get("nobody_is_bad"):
+        g["forced"].append("nobody is good or bad: the audience is with everyone, so harm to anyone is scored as bad news, and nobody's gain is")
+        for e in ([story["mark"]] if story.get("mark") else []) + ([story["world"]] if story.get("world") else []) + list(members):
+            if sheets and e in sheets and not standing.pressures(sheets[e]):
+                g["problems"].append(f"nothing presses on {e}: they are a wall, not a person. Everyone here is trying to survive something")
+        mark = story.get("mark")
+        if sheets and mark in sheets and standing.pressures(sheets[mark]):
+            need, p, why = standing.pressures(sheets[mark])[0]
+            excuse = (sheets[mark].get("profile") or {}).get("tells_self")
+            g["forced"].append(f"{mark}, the mark, is surviving too: {need} is strong in them and {why}" +
+                               (f". Tells themselves: \"{standing.EXCUSES[excuse]}\"" if excuse in standing.EXCUSES else ""))
+    for m in members if sheets else []:
+        excuse = (sheets[m].get("profile") or {}).get("tells_self")
+        if excuse in standing.BREAKS:
+            g["forced"].append(f"{m}'s excuse (\"{standing.EXCUSES[excuse]}\") has to stop working: {standing.BREAKS[excuse]}")
+        else:
+            g["problems"].append(f"{m} has no excuse to lose: the theme needs each of them to be telling themselves something")
+    if sheets and members:
+        g["open"].append("how each excuse breaks: the event, and which scene it is in")
+    if not story.get("world"):
+        g["problems"].append("nobody stands for the world they are taking from. Without someone they come to care about, the harm lands on no one and nothing is felt")
+    g["narrowed"].append("what the ending does: " + "; or ".join(th["endings"]))
+    return g, th
+
+
 def _lock(root, story):
     locks = load_yaml(root / "library" / "locks.yaml")
     g = dict(n=1, name=GATES[0], decided=None, forced=[], narrowed=[], open=[], problems=[])
@@ -65,7 +105,7 @@ def _crew(root, story, lock):
     if not story.get("crew"):
         return g, None, None
     members = list(story["crew"])
-    sheets = _sheets(root, members + ([story["mark"]] if story.get("mark") else []), story.get("ties"))
+    sheets = _sheets(root, members + [story[k] for k in ("mark", "world") if story.get(k)], story.get("ties"))
     g["decided"] = ", ".join(members)
     planners = [m for m in members if not _craft(sheets[m])]
     planner = planners[0] if planners else None
@@ -96,7 +136,7 @@ def _ties(story, sheets, members):
     g = dict(n=3, name=GATES[2], decided=None, forced=[], narrowed=[], open=[], problems=[])
     if not story.get("ties"):
         return g, None
-    said = sum(len(v) for v in story["ties"].values())
+    said = sum(len([k for k in v if k in members]) for a_, v in story["ties"].items() if a_ in members)
     g["decided"] = f"{said} of {len(members) * (len(members) - 1)} ways one member sees another"
     read = crew.readings(sheets, members)
     notable = []
@@ -113,6 +153,15 @@ def _ties(story, sheets, members):
         g["forced"].append(f"{read['hinge']} holds it together: take them out and it comes apart")
     g["forced"].append(f"{read['weak_link']} is the weak link, trusted and rated least by the rest: when something fails and nobody knows why, the blame goes there")
     g["forced"].append(f"cohesion is {read['cohesion']:+.2f} on a scale of -2 to +2: " + ("tight" if read["cohesion"] >= 1 else "holding, not tight" if read["cohesion"] >= 0.4 else "loose"))
+    for m in members:                                            # what the group already gives each of them, and what it cannot
+        before, after = standing.pressures(sheets[m]), standing.pressures(sheets[m], read["incoming"][m])
+        met = [n for n, _, _ in before if n not in [x[0] for x in after]]
+        if met:
+            g["forced"].append(f"the crew already gives {m} their {' and '.join(met)}" + (": nothing they came for is still needed" if not after else
+                               f"; what is left is {after[0][0]} (pressure {after[0][1]})"))
+        elif before:
+            g["forced"].append(f"the crew does not give {m} what they came for: {before[0][0]} is still unmet (pressure {before[0][1]})")
+    said = sum(len([k for k in v if k in members]) for a_, v in story["ties"].items() if a_ in members)
     missing = len(members) * (len(members) - 1) - said
     if missing:
         g["open"].append(f"{missing} ways one sees another are undecided and count as neutral")
@@ -168,7 +217,7 @@ def _plan(story, sheets, members, lock, read):
     return g, dict(a=top[2], b=top[3], step=top[1])
 
 
-def _twist(root, story, sheets, members, planner, read, fault):
+def _twist(root, story, sheets, members, planner, read, fault, theme=None):
     twists = load_yaml(root / "library" / "twists.yaml")
     g = dict(n=5, name=GATES[4], decided=None, forced=[], narrowed=[], open=[], problems=[])
     if not story.get("twist"):
@@ -186,6 +235,32 @@ def _twist(root, story, sheets, members, planner, read, fault):
         g["problems"].append(f"this twist needs {', '.join(missing)}, and the story so far has none: {tw['needs']}")
     fooled = [m for m in members if m not in inside]
     g["decided"] = f"{story['twist']}: {tw['hides']}"
+    if theme and story.get("theme") not in (tw.get("serves") or []):
+        g["problems"].append(f"this twist does not serve the theme: nothing in it makes {theme['turn'].split(' and ')[0]}")
+    world = story.get("world")
+    if story["twist"] == "the-turn":
+        if not world or world not in sheets:
+            g["problems"].append("the turn needs someone for the harm to land on: set `world:`")
+            return g
+        where = f"at step {fault['step']}, where the plan cracks" if fault else "during the job"
+        g["forced"].append(f"the harm lands on {world} {where}, in front of them")
+        care = sorted(members, key=lambda m: -crew.tie(sheets, m, world)[0])
+        feels = [m for m in care if crew.tie(sheets, m, world)[0] >= 1]
+        cold = [m for m in care if crew.tie(sheets, m, world)[0] < 1]
+        if feels:
+            g["forced"].append(f"{', '.join(feels)} feel it as shame: it is bad for someone they care about, and their own doing. {feels[0]} turns first")
+        if cold:
+            g["forced"].append(f"{', '.join(cold)} do not feel it yet: {world} is nobody to them")
+            g["open"].append(f"a moment, before the job, in which {' and '.join(cold)} come to care about {world}; without it their turn is not earned")
+        still = [(m, standing.pressures(sheets[m], read["incoming"][m])) for m in members] if read else []
+        costly = [f"{m} ({p[0][0]}, pressure {p[0][1]})" for m, p in still if p]
+        free = [m for m, p in still if not p]
+        if free:
+            g["forced"].append(f"giving it back costs {', '.join(free)} nothing they still need: the crew already gave it to them")
+        if costly:
+            g["forced"].append("giving it back is a real loss for " + ", ".join(costly) + ": they still need what they came for")
+            g["narrowed"].append("what the others do about that: the crew makes it up to them (reciprocity); or they give it back anyway and carry the cost; or they are the one who cannot")
+        return g
     if fault and fault["a"] in inside and fault["b"] in inside and crew.strain(sheets, fault["a"], fault["b"]) > 0:
         t, r = crew.tie(sheets, fault["a"], fault["b"])
         g["narrowed"].append(f"{fault['a']} and {fault['b']} are in on it together, yet {fault['a']} {crew.attitude(t, r)} {fault['b']}: either that is the act "
@@ -217,23 +292,25 @@ def report(root):
     story = load_yaml(file) or {}
     gates = []
     g1, lock = _lock(root, story)
-    gates.append(g1)
     g2, sheets, planner = _crew(root, story, lock)
-    gates.append(g2)
     members = list(story.get("crew") or [])
+    g0, theme = _theme(root, story, sheets, members)
+    gates += [g0, g1, g2]
     g3, read = _ties(story, sheets, members) if sheets else (dict(n=3, name=GATES[2], decided=None, forced=[], narrowed=[], open=[], problems=[]), None)
     gates.append(g3)
     g4, fault = _plan(story, sheets, members, lock, read) if sheets and read else (dict(n=4, name=GATES[3], decided=None, forced=[], narrowed=[], open=[], problems=[]), None)
     gates.append(g4)
-    gates.append(_twist(root, story, sheets, members, planner, read, fault) if sheets else dict(n=5, name=GATES[4], decided=None, forced=[], narrowed=[], open=[], problems=[]))
+    gates.append(_twist(root, story, sheets, members, planner, read, fault, theme) if sheets else dict(n=5, name=GATES[4], decided=None, forced=[], narrowed=[], open=[], problems=[]))
     for g in gates:
         if not g["decided"]:
             g["open"] = list(ASKS[g["name"]])
+        elif g["name"] != THEME:
+            pass
     funnel, forced, narrowed = [], 0, 0
     for k, g in enumerate(gates):
         if g["decided"]:
             forced, narrowed = forced + len(g["forced"]), narrowed + len(g["narrowed"])
-        still = sum(len(ASKS[x["name"]]) for x in gates[k + 1:]) + len(ALWAYS_OPEN) if g["decided"] else None
+        still = sum(len(ASKS[x["name"]]) for x in gates[k + 1:] if not x["decided"] or True) + len(ALWAYS_OPEN) + sum(len(x["open"]) for x in gates[:k + 1] if x["decided"]) if g["decided"] else None
         funnel.append(dict(gate=g["name"], decided=bool(g["decided"]), forced=forced, narrowed=narrowed, open=still))
     return dict(gates=gates, funnel=funnel, always_open=ALWAYS_OPEN, next=next((g["name"] for g in gates if not g["decided"]), None))
 

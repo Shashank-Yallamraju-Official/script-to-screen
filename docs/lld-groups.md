@@ -84,28 +84,52 @@ studies, which do not hold up.
 
 | Gate | Decision | What follows from it |
 |---|---|---|
+| 0. The theme | What it is about (`library/themes.yaml`) | What each excuse has to meet, whether anyone is scored against, what the ending has to do |
 | 1. The lock | What they go after (`library/locks.yaml`) | The obstacles, the crafts needed, what the crew is defined against |
 | 2. The crew | Who is in it | The planner, why each would do it, who needs persuading, who cannot be lost |
-| 3. The ties | How each sees each | The pecking order, who holds it together, who gets blamed |
+| 3. The ties | How each sees each | The pecking order, who holds it together, who gets blamed, what the crew already gives each of them |
 | 4. The plan | The order, who does what, who relies on whom | Where it goes wrong, what each does when it does |
-| 5. The twist | What the viewer is not told (`library/twists.yaml`) | Who is in on it, what it costs in trust, who wavers at the split |
+| 5. The twist | What the viewer is not told (`library/twists.yaml`) | Who feels it, who turns first, what giving back costs each |
 
-## 7. The run-of-the-mill heist, as decided
+### The theme, and nobody being good or bad
 
-Five decisions (a bank; five people; twenty ties; five steps; a staged failure) force 31 things
-and narrow 4 more. Four stay open whatever is decided: the dialogue, the places, which obstacle
-changes before the job, and the names.
+The theme of the heist is the writer's: people take what they think they need to survive, then
+find they did not have to be that hard, feel it, and give back. Nobody in it is good or bad.
+They are all afflicted by existence: things happen to them, and they try to survive, literally
+and otherwise. The model already worked that way (what anyone does follows from what presses on
+them), and the theme gate now holds it to that:
+
+- **Everyone named has to be surviving something.** An entity with no pressure is reported as a
+  wall, not a person. The mark had none, so he was given one: head office is closing his branch,
+  and he too is taking to survive, with his own excuse.
+- **Nobody is scored against.** The audience is with everyone, so harm to anyone is bad news.
+- **Each excuse has to stop working,** and the excuse says what kind of event does it.
+- **"They did not need to be that hard" is computed.** Pressure is a need their standing does not
+  meet, and a group meets two needs by itself: enough trust meets belonging, and enough rating
+  meets esteem. So the report says who no longer needs what they came for.
+- **"They feel it" is the appraisal rule for shame:** bad for someone you are bonded to, and your
+  own doing. So someone outside the crew has to stand for the world they are taking from
+  (`world:`), and the crew has to have come to care about them before the harm lands.
+- **The twist is the turn itself.** The standard twist, a failure that was staged, is reported
+  as not serving the theme.
+
+## 7. The heist, as decided
+
+Six decisions (the theme; a bank; five people; their ties; five steps; the turn) force 45 things
+and narrow 5 more. Six stay open: how each excuse breaks, a moment in which three of them come to
+care about Dot, the dialogue, the places, which obstacle changes before the job, and the names.
 
 Things nobody wrote, that came out of the rules:
 
 - Nico, the face, whom nobody rates, is both what holds the crew together and who gets blamed.
 - The job cracks at the vault, where Ruth (a locksmith) has to rely on Ines (a contractor), so
   the quarrel in the corridor is skilled labour against tech.
-- If the trouble comes from outside instead, ranks close and the blame waits.
-- The twist asks the two people who rate each other least to carry it together. The report flags
-  that as a choice: either their contempt is the act, or the planner staked everything on it.
-- Afterwards Sam, the most cautious and the only one who had to be talked into it, is the one
-  kept in the dark, and trusts the planner at -2. The split is where he wavers.
+- By the time of the job the crew has already given Ruth and Nico what they came for (to be
+  rated; to belong). Giving it back costs them nothing they still need.
+- It costs Sam, Vera and Ines a great deal. Sam needs the money to live on; trust does not pay
+  rent. Vera still has no control over anything. Ines is still not rated by anyone.
+- Sam, who knows Dot, is the first to turn. Ruth, Nico and Ines have never met her, so the
+  report says their turn is not earned until a scene makes them care.
 
 ## 8. What is not built
 
@@ -114,6 +138,7 @@ Things nobody wrote, that came out of the rules:
 - **Ties do not change by rule in a scene.** "Deeds change rating" and "secrets change trust" are
   applied once each, by the report, at the fault line and after the twist.
 - **The viewer as someone who knows or does not** is a line in the report, not a record.
+- **Scenes still have `sympathy`,** which can set the audience against someone. A show whose theme says nobody is bad should refuse it; nothing checks that yet.
 - **Obstacles have no state** (set or not), and there is one stage, so no cutting between rooms.
 - **The strengths are untested.** Pressure thresholds, strain and the pecking order's weights were
   chosen once, for one crew. A second story is the test.

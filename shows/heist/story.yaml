@@ -2,17 +2,21 @@
 # consequences as far as they reach, and `s2s story --show shows/heist` says what is now forced, what is
 # narrowed to a few choices, and what is still open. Delete from the bottom up to widen it again.
 
+# Gate 0. What it is about (library/themes.yaml). Everything after has to serve it.
+theme: take-then-give
+
 # Gate 1. What they go after (library/locks.yaml).
 lock: bank
 
 # Gate 2. Who they are (their sheets are in entities/). Whoever has no craft is the planner.
 crew: [vera, sam, ruth, nico, ines]
 mark: hale
+world: dot          # someone outside the crew who stands for those they are taking from
 
 # Gate 3. How each sees each: [trust, rating], each -2 to +2. A pair not listed is neutral.
 ties:
-  vera: {sam: [1, -1], ruth: [1, 2], nico: [1, -1], ines: [0, 1]}
-  sam:  {vera: [-1, 1], ruth: [1, 1], nico: [1, -1], ines: [0, 0]}
+  vera: {sam: [1, -1], ruth: [1, 2], nico: [1, -1], ines: [0, 1], dot: [1, 0]}       # she managed Dot for eleven years
+  sam:  {vera: [-1, 1], ruth: [1, 1], nico: [1, -1], ines: [0, 0], dot: [2, 1]}        # she brings him tea on the night shift
   ruth: {vera: [1, 1], sam: [1, 0], nico: [1, -1], ines: [0, -1]}
   nico: {vera: [1, 1], sam: [1, 1], ruth: [1, 1], ines: [1, 1]}
   ines: {vera: [1, 1], sam: [0, 0], ruth: [0, -1], nico: [1, -1]}
@@ -27,4 +31,4 @@ plan:
   - {pin: paper, who: nico, relies_on: [vera]}
 
 # Gate 5. What the viewer is not told (library/twists.yaml).
-twist: staged-failure
+twist: the-turn

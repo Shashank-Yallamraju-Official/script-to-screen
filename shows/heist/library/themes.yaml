@@ -1,0 +1,9 @@
+# What a story is about. It is the first decision, because it says what everything after it has to do.
+take-then-give:
+  says: People take what they think they need to survive. Then they find they did not have to be that hard, feel it, and give back.
+  nobody_is_bad: true        # everyone is afflicted by existence: things happen to them, and they try to survive. Nobody is scored against.
+  turn: the job stops being about taking and becomes about protecting
+  endings:
+    - they put it back
+    - it goes to the people it was taken from
+    - what they learned getting in is used to protect the place
