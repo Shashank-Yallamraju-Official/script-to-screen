@@ -473,25 +473,31 @@ def seat(stage, states, bench):
     return states, seated, up
 
 
-def shot_in(stage, states, room, bench, up):
-    """An entity whose sheet says `shot: true` does not walk in. It is shot in like an arrow: out of the arch the light comes from
-    (nobody can see into the sun), foot first, growing as it nears, and sticks where it lands, quivering upright. On a bench it
-    lands on the bench. -> states."""
+def shot_in(stage, states, room, bench, up, t):
+    """An entity whose sheet says `shot: true` does not walk in. It is shot in like an arrow, foot first, and sticks where it lands,
+    quivering upright; on a bench it lands on the bench. If its turn says `through: <slot>` it comes through whatever hangs over
+    that window (see place.pierced) and is not seen until it does. Otherwise it comes out of the arch the light is in, growing as
+    it nears. -> states."""
     W = stage.W
+    went = place.pierced(stage, 1e9)                               # which window, if any (asked of the end of time, so it has always happened)
     for e, s in list(states.items()):
         if not stage.look.cast[e].get("shot") or s.get("arriving") is None:
             continue
-        u = s["arriving"]
-        v = min(1.0, u / FLIGHT) ** 1.25                          # the flight is the first part of the entrance; the rest is the quiver
-        from_slot, to_slot = float((room.get("light") or {}).get("at", s["to"] - 3)), s["to"]
-        high = place.FLOOR_UP + 250.0                             # the middle of an arch's opening
+        u, to_slot = s["arriving"], s["to"]
+        if went:
+            if u < place.HIDDEN:                                  # still outside: out of the picture altogether
+                states[e] = dict(s, slot=-60.0)
+                continue
+            v, from_slot, high, small = min(1.0, (u - place.HIDDEN) / (FLIGHT - place.HIDDEN)) ** 1.25, went[0], place.FLOOR_UP + 300.0, 0.85
+        else:
+            v, from_slot, high, small = min(1.0, u / FLIGHT) ** 1.25, float((room.get("light") or {}).get("at", to_slot - 3)), place.FLOOR_UP + 250.0, 0.3
         on_bench = bench and float(bench["from"]) <= to_slot <= float(bench["to"])
         low = place.bench_top(bench) if on_bench else 0.0
         angle = math.degrees(math.atan2(-(slot_x(to_slot, W) - slot_x(from_slot, W)), high - low))       # foot toward where it is going
-        w = max(0.0, (u - FLIGHT) / (1 - FLIGHT))
-        size = 0.3 + 0.7 * v
-        states = dict(states, **{e: dict(s, slot=from_slot + (to_slot - from_slot) * v, rise=high + (low - high) * v, sx=s["sx"] * size, sy=s["sy"] * size,
-                                         spin=angle if v < 1 else angle * math.exp(-6 * w) * math.cos(w * 20))})
+        w = max(0.0, (u - FLIGHT) / (1 - FLIGHT))                 # the flight is the first part of the entrance; the rest is the quiver
+        size = small + (1 - small) * v
+        states[e] = dict(s, slot=from_slot + (to_slot - from_slot) * v, rise=high + (low - high) * v, sx=s["sx"] * size, sy=s["sy"] * size,
+                         spin=angle if v < 1 else angle * math.exp(-6 * w) * math.cos(w * 20))
         if e not in up:
             up.append(e)                                          # it comes over everyone's heads
     return states
@@ -516,7 +522,8 @@ def light(c, stage, states, room, bench, seated, up, t):
         r, g, b = place.rgb(place.shade_of(room))
         c.saveLayer(skia.Rect.MakeLTRB(-W, ground(H) - 30, 2 * W, 1.4 * H), skia.Paint(Alphaf=place.SHADE * k,       # only the floor: a layer the size of the frame is slow
                                      ColorFilter=skia.ColorFilters.Blend(skia.Color(r, g, b), skia.BlendMode.kSrcIn)))
-        c.clipPath(place.sunlit(stage), True)                    # a shadow shows only where light would have fallen: the rest of the floor is already in the wall's shade
+        went = place.pierced(stage, t)
+        c.clipPath(place.sunlit(stage, went and went[0]), True)                    # a shadow shows only where light would have fallen: the rest of the floor is already in the wall's shade
         if bench:                                                # the bench's own, and everyone at it
             tall = place.bench_top(bench)
             x0, x1 = slot_x(float(bench["from"]), W) - 70, slot_x(float(bench["to"]), W) + 70
@@ -595,7 +602,7 @@ def draw_frame(c, stage, F, xray=False, slate=False):
     W, H, t, feel = stage.W, stage.H, F / stage.fps, stage.look.feel
     c.clear(col(PAPER))
     cam = view(stage, t)
-    housed = place.draw_behind(c, stage, cam)                    # the room, if the scene is somewhere
+    housed = place.draw_behind(c, stage, cam, t)                    # the room, if the scene is somewhere
     c.save()
     cam.apply(c)                                                 # from here to the restore, everything is on the stage and seen through the camera
     seen = music_shown(stage)                                    # how music is shown, if at all
@@ -611,7 +618,7 @@ def draw_frame(c, stage, F, xray=False, slate=False):
     room = (stage.look.place or {}) if housed else {}
     bench, edge = (stage.look.place or {}).get("bench"), room.get("ink")
     states, seated, up = seat(stage, states, bench)
-    states = shot_in(stage, states, room, bench, up)
+    states = shot_in(stage, dict(states), room, bench, up, t)
     if edge:
         states = {e: dict(s, ink=edge) for e, s in states.items()}
     states = light(c, stage, states, room, bench, seated, up, t)

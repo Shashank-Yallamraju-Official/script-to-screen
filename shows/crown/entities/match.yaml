@@ -2,6 +2,7 @@ kind: "a match of House Cinder. Each burns once"
 body: match          # drawn as this object: no face, and it moves the way the object can
 size: 0.95
 climbs: true         # it does not sit at a bench: it is up on it
+point: true          # this one's foot has been sharpened. Matches have flat feet; this one was made to go through something
 alight: true         # it is burning when it arrives
 shot: true           # it does not walk in: it is shot in through a window like an arrow, and sticks where it lands
 outfit: vest

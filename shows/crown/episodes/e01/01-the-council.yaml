@@ -46,7 +46,8 @@ turns:
   - id: 9
     bar: 27.68
     enter: {match: {slot: 5, orient: out}}
-    why: A lit match comes in through the arch the sun is in, shot like an arrow, and sticks in the bench beside the great seal. Nobody can see into the sun, so who shot it is not shown. It touches down on bar 28, and the moment it touches, it swells. Nobody has time to move.
+    through: 4
+    why: A lit match, its foot sharpened, is shot through the middle window, the one Signet's flag hangs over. It tears through the target on the flag and sticks in the bench beside the great seal. The flag hid whoever shot it. It touches down on bar 28, and the moment it touches, it swells. Nobody has time to move.
   - id: 10
     bar: 30
     sfx: [{at: 0, sound: blast, on: match}]

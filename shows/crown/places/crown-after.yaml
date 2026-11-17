@@ -2,6 +2,7 @@
 # that differ are the things that changed.
 #
 #   seven arches, seven sitting   the chamber is full now: two hammers, three seals, two locks
+#   a patch on Signet's flag      it is the same flag: mended, not replaced
 #   three flags                   who rules now. Each hangs on the arch behind one of its own, and each shuts out that arch's light
 #   three strong colours          where there was one. Colour is ownership, and ownership is split
 #   a pale sun on the other side  early, and cold
@@ -32,6 +33,7 @@ pieces:
   - {kind: banner, at: 4, wide: 0.9, color: "#c8324e"}
   - {kind: crownmark, at: 4, color: "#f4efe2"}
   - {kind: crest, at: 4, color: "#c8324e"}
+  - {kind: patch, at: 4, color: "#e3677c"}          # the old flag, mended where it was torn
   - {kind: banner, at: 6, wide: 0.9, color: "#3f6fd0"}
   - {kind: lockmark, at: 6, color: "#3f6fd0"}
   - {kind: pot, at: -0.45, color: "#9aa5cf"}

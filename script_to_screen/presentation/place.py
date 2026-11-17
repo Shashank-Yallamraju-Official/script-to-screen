@@ -32,20 +32,21 @@ each role looks like, so the same room can be drawn three ways (`style: {place: 
 
 Layers sit at different depths, so they slide against each other when the camera moves.
 """
+import math
 import skia
 
 from .view import ground, slot_x
 
 WALL_DEPTH, BACK_DEPTH, FRONT_DEPTH = 0.3, 0.15, -0.2
 FLOOR_UP = 46                                 # how far behind the entities' feet the wall meets the floor, in pixels
-ON_WALL = ("door", "window", "picture", "shelf", "thermostat", "vault", "sign", "page", "dome", "pegboard", "chain", "hooks", "ghost", "crest", "hammermark", "lockmark", "crownmark", "banner", "bookwall", "pen", "desklamp", "nails", "hasplate", "arch", "cornice", "vine")
+ON_WALL = ("door", "window", "picture", "shelf", "thermostat", "vault", "sign", "page", "dome", "pegboard", "chain", "hooks", "ghost", "crest", "hammermark", "lockmark", "crownmark", "banner", "bookwall", "pen", "desklamp", "nails", "hasplate", "arch", "cornice", "vine", "patch")
 ON_FLOOR = ("rug", "shards", "crumbs", "mark")
 COLORS = dict(door="#cdbb9d", window="#b9c2c4", picture="#b7a58c", sofa="#9fb0aa", lamp="#b9a98c", plant="#8fa58a", table="#b49f84",
               shelf="#b49f84", rug="#c9b6a6", counter="#b9b3a2", fridge="#c5cbcc", thermostat="#d8d2c4", pedestal="#c2b8a6", vase="#5b7fa6",
               shards="#5b7fa6", plate="#f4f1e8", vault="#9aa3a8", sign="#b9b3a2",
               rack="#a89784", inkpad="#4a4a52", page="#efe9dc", dome="#c7d3d6", post="#9aa3a8", pegboard="#b49f84", crate="#b49f84",
               chain="#8f969b", gate="#8f969b", hooks="#8f969b", bag="#9c5a48", ropes="#b7a58c", crumbs="#d9a3ae", ghost="#c9c5bb",
-              gantry="#a8906c", wallstub="#b9b3a2", mark="#8f969b", parts="#9fb0aa", crest="#7a2e3b", hammermark="#6b5a4a", lockmark="#7f868c", crownmark="#b7a58c", bench="#b49f84", banner="#7a2e3b", bookwall="#7b5a4c", pen="#2e3440", desklamp="#c9a45a", nails="#8f969b", hasplate="#8f969b", inkwell="#27303f", books="#7b5a4c", pot="#8a5f47", tree="#5d8a55", sapling="#7fb069", arch="#3a2a2e", cornice="#3a2a2e", vine="#6aa85c")
+              gantry="#a8906c", wallstub="#b9b3a2", mark="#8f969b", parts="#9fb0aa", crest="#7a2e3b", hammermark="#6b5a4a", lockmark="#7f868c", crownmark="#b7a58c", bench="#b49f84", banner="#7a2e3b", bookwall="#7b5a4c", pen="#2e3440", desklamp="#c9a45a", nails="#8f969b", hasplate="#8f969b", inkwell="#27303f", books="#7b5a4c", pot="#8a5f47", tree="#5d8a55", sapling="#7fb069", arch="#3a2a2e", patch="#e3677c", cornice="#3a2a2e", vine="#6aa85c")
 
 
 def rgb(h):
@@ -287,6 +288,10 @@ def shapes(kind, w):
     if kind == "banner":                                             # a flag hung from the top of the wall, for whoever rules
         w = w or 150
         return [("body", poly((-w / 2, -520), (w / 2, -520), (w / 2, -236), (0, -200), (-w / 2, -236))), ("dark", rect(-w / 2 - 8, -444, w + 16, 8, 3))]
+    if kind == "patch":                                              # a mend sewn over a hole in a flag: a square of newer cloth, and its stitches
+        stitches = [("line", poly((x, y), (x + dx, y + dy), (x, y))) for x, y, dx, dy in
+                    [(-19 + 8 * i, -322, 0, 6) for i in range(6)] + [(-19 + 8 * i, -284, 0, 6) for i in range(6)] + [(-24, -317 + 8 * i, 6, 0) for i in range(5)] + [(18, -317 + 8 * i, 6, 0) for i in range(5)]]
+        return [("body", poly((-20, -319), (19, -321), (21, -281), (-19, -279)))] + stitches
     if kind == "crownmark":                                          # the crown itself, over the chamber
         return [("body", poly((-34, -366), (-40, -398), (-18, -382), (0, -404), (18, -382), (40, -398), (34, -366)))]
     if kind == "bench":                                              # the council's bench
@@ -431,12 +436,41 @@ QUIET = ("arch", "cornice", "vine")            # the wall itself: in an inked pl
 SHADE = 0.5                                   # how dark a cast shadow is, at full light
 
 
-def sunlit(stage):
+HANGS = ("banner", "crest", "crownmark", "hammermark", "lockmark", "patch")       # a flag and what is on it: they swing together
+ROD = -444                                     # where a flag hangs from, above its foot
+
+
+def pierced(stage, t):
+    """Has something come in through a window (a turn's `through: <slot>`)? -> None, or (the slot, seconds since it came through).
+    It comes through a quarter of the way into its entrance: before that it is still outside."""
+    for at, name, *_ in stage.score.events:
+        if str(name).startswith("through:"):
+            age = t - at - HIDDEN * float(stage.look.feel["ease"])
+            return (float(name.split(":")[1]), age) if age >= 0 else None
+    return None
+
+
+HIDDEN = 0.24                                  # how much of its entrance a thing shot through a window spends still outside
+
+
+def swing(age):
+    """How far a flag has swung, in degrees, `age` seconds after something went through it: it kicks, sways, and settles."""
+    return 5.0 * math.exp(-1.5 * age) * math.sin(2 * math.pi * 1.2 * age)
+
+
+def hole(x, y):
+    """The hole torn in a flag by something going through it at (x, y): ragged, a little taller than wide."""
+    pts = [(x + (15 + 7 * ((i * 7) % 3 == 0)) * math.cos(i * math.pi / 5), y + (18 + 8 * ((i * 5) % 3 == 0)) * math.sin(i * math.pi / 5)) for i in range(10)]
+    return poly(*pts)
+
+
+def sunlit(stage, torn=None):
     """Where the sun (or moon) behind the room reaches the floor: the shape of each open arch, thrown across the floor the way
-    the room's shadows fall. A flag hung over an arch stops the light where it covers it. -> one path, in stage pixels."""
-    kept = getattr(stage, "_sunlit", None)
-    if kept is not None:
-        return kept
+    the room's shadows fall. A flag hung over an arch stops the light where it covers it; a hole torn in the flag (`torn`: the
+    slot of the window something came through) lets a spot of it back in. -> one path, in stage pixels."""
+    kept = getattr(stage, "_sunlit", None) or {}
+    if torn in kept:
+        return kept[torn]
     place = stage.look.place
     if getattr(stage, "_place", None) is None:
         stage._place = prepare(place, stage.W)
@@ -458,29 +492,35 @@ def sunlit(stage):
     for piece in stage._place["wall"]:
         if piece["kind"] == "banner":
             holes = skia.Op(holes, on_wall(piece, "body"), skia.PathOp.kDifference_PathOp)
+    if torn is not None:
+        opening = skia.Path()
+        hole(0, -300).offset(slot_x(torn, stage.W), base, opening)
+        holes = skia.Op(holes, opening, skia.PathOp.kUnion_PathOp)
     thrown = skia.Path()
     holes.transform(skia.Matrix().setAll(1, -lean, lean * base, 0, -cast, base * (1 + cast), 0, 0, 1), thrown)      # a point h up the wall lands cast*h out on the floor
-    stage._sunlit = thrown
+    stage._sunlit = {**kept, torn: thrown}
     return thrown
 
 
-def draw_behind(c, stage, cam):
+def draw_behind(c, stage, cam, t=0.0):
     """The room and everything in it that stands behind the entities. Nothing in a room moves, so while the camera holds still the
     room is painted once and kept as a picture; it is painted afresh only while the camera is moving."""
     place, style = stage.look.place, stage.look.style.get("place", "wash")
     if not place or style == "none":
         return False
-    key = (round(cam.zoom, 5), round(cam.cx, 3), round(cam.tilt, 5))
+    went = pierced(stage, t)                                                # the one thing in a room that can change: a flag torn, and swinging from it
+    tear = (went[0], round(swing(went[1]), 2)) if went else None
+    key = (round(cam.zoom, 5), round(cam.cx, 3), round(cam.tilt, 5), tear)
     kept = getattr(stage, "_room", None)
     if not kept or kept[0] != key:                                          # always by way of a picture, so a frame is the same whichever frame was drawn before it
         surf = skia.Surface(stage.W, stage.H)
-        _paint_behind(surf.getCanvas(), stage, cam)
+        _paint_behind(surf.getCanvas(), stage, cam, tear)
         kept = stage._room = (key, surf.makeImageSnapshot())
     c.drawImage(kept[1], 0, 0, skia.SamplingOptions(skia.FilterMode.kLinear))
     return True
 
 
-def _paint_behind(c, stage, cam):
+def _paint_behind(c, stage, cam, tear=None):
     place, style = stage.look.place, stage.look.style.get("place", "wash")
     if getattr(stage, "_place", None) is None:
         stage._place = prepare(place, stage.W)
@@ -494,11 +534,22 @@ def _paint_behind(c, stage, cam):
         for piece in layers[name]:
             c.save()
             c.translate(piece["_x"], (foot if name != "wall" else base) - float(piece.get("up", 0)))
+            hit = tear and piece["kind"] in HANGS and abs(piece["_x"] - slot_x(tear[0], stage.W)) < 1
+            if hit:
+                c.rotate(tear[1], 0, ROD)                                   # the flag that was gone through, swinging from its rod
             if name == "wall":
                 painter.light(c, dict(piece), 0) if piece["kind"] == "window" else None
             painter.piece(c, piece, on_floor=name == "floor")
             if piece["kind"] == "lamp":
                 painter.light(c, piece, 0)
+            c.restore()
+        if name == "wall" and tear:                                         # and the hole in it: the sky shows through
+            c.save()
+            c.translate(slot_x(tear[0], stage.W), base)
+            c.rotate(tear[1], 0, ROD)
+            gap = hole(0, -300)
+            c.drawPath(gap, paint(mix(*painter.sky, 0.7) if isinstance(painter.sky, list) else painter.sky))
+            c.drawPath(gap, pen(painter.line or "#3a332a", 2.5))
             c.restore()
         lamp = place.get("light")
         if lamp and name == "wall" and float(lamp.get("cast", 0)):          # the sun is behind the wall: the floor is in the wall's shade, but for what comes through the arches
@@ -509,12 +560,12 @@ def _paint_behind(c, stage, cam):
             if lamp.get("warm"):                                            # where the light lands it takes the light's colour: sun on a green floor is gold, not green
                 c.save()
                 c.clipRect(floor)
-                c.drawPath(sunlit(stage), paint(lamp.get("color", "#f6c26b"), 255 * float(lamp["warm"])))
+                c.drawPath(sunlit(stage, tear and tear[0]), paint(lamp.get("color", "#f6c26b"), 255 * float(lamp["warm"])))
                 c.restore()
             c.saveLayer(floor, skia.Paint(Alphaf=SHADE * float(lamp.get("strength", 0.7)),
                                          ColorFilter=skia.ColorFilters.Blend(skia.Color(r, g, b), skia.BlendMode.kSrcIn)))
             c.clipRect(floor)
-            c.drawPath(skia.Op(skia.Path().addRect(floor), sunlit(stage), skia.PathOp.kDifference_PathOp), paint("#000000"))
+            c.drawPath(skia.Op(skia.Path().addRect(floor), sunlit(stage, tear and tear[0]), skia.PathOp.kDifference_PathOp), paint("#000000"))
             for piece in layers[name]:                                      # and what stands against the wall throws its own shadow into that light
                 if piece["kind"] in ("pot", "tree", "sapling"):
                     c.save()

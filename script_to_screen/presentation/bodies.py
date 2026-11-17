@@ -222,7 +222,10 @@ def _match(c, k, o, t, f, ent):
         c.rotate(math.sin(going * math.pi * 6) * 5, 0, 0)                 # a quick shuffle on its end
     strike = 1.0 if ent.get("alight") else min(1.0, abs(lean))            # one that arrives already burning never has to strike
     c.rotate((1 if lean >= 0 else -1) * 24 * math.sin(strike * math.pi) * (1 - 0.5 * strike), 0, 0)   # it tips to strike, and comes back up
-    _rr(c, -5, -128, 10, 128, 3, k.fill(k.mid))                           # the stick
+    if ent.get("point"):                                                 # this one's foot has been sharpened
+        c.drawPath(_poly((-5, -128), (5, -128), (5, -24), (0, 0), (-5, -24)), k.fill(k.mid))
+    else:
+        _rr(c, -5, -128, 10, 128, 3, k.fill(k.mid))                       # the stick
     c.drawOval(skia.Rect.MakeXYWH(-10, -152, 20, 30), k.fill(k.color))    # the head
     if strike > 0.55:                                                    # alight
         grow = (strike - 0.55) / 0.45

@@ -84,3 +84,15 @@ def test_every_part_of_the_episode_is_a_whole_number_of_bars():
     plan, look, cfg = episode.parts(CROWN, "the-vote")
     bar = 60 / 84 * 2
     assert [round(p["frames"] / look.fps / bar, 1) for p in plan] == [32.0, 20.0, 4.0, 40.0, 20.0]
+
+
+def test_a_match_shot_through_the_flag_tears_it_and_lets_light_through():
+    from script_to_screen.presentation import place
+    plan, look, cfg = episode.parts(CROWN, "the-vote")
+    stage = plan[0]["stage"]
+    came = next(at for at, name, *_ in stage.score.events if str(name).startswith("through:"))
+    assert place.pierced(stage, came) is None                        # still outside
+    slot, age = place.pierced(stage, came + 1.0)
+    assert slot == 4 and age > 0                                     # through the middle window, where the flag hangs
+    whole, torn = place.sunlit(stage), place.sunlit(stage, 4.0)
+    assert torn.getBounds().width() >= whole.getBounds().width() and torn != whole      # the hole lets a spot of light onto the floor

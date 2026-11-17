@@ -7,7 +7,7 @@ import difflib
 
 KNOWN = dict(
     turn=("id", "who", "say", "sing", "tone", "enter", "exit", "side", "status", "sympathy", "do", "feel", "react", "sfx", "rhythm", "melody", "stress", "pause", "hold",
-          "relies_on", "why", "against", "bar", "camera", "clock", "deed", "event", "regard", "tie", "tune"),
+          "relies_on", "why", "against", "bar", "through", "camera", "clock", "deed", "event", "regard", "tie", "tune"),
     place=("name", "like", "land", "wall", "floor", "window", "sky", "sun", "light", "grade", "vignette", "ink", "shadow", "shade", "air", "bench", "pieces"),
     light=("at", "up", "color", "reach", "strength", "side", "cast", "warm"),
     bench=("from", "to", "rise", "front", "color"),
@@ -15,7 +15,7 @@ KNOWN = dict(
     land=("bars", "palette", "title_bar", "days_by_bar", "credit", "places", "history", "roads", "wall", "camera"),
     # an entity's sheet: who it is, and (for an object) what it is made of and how it carries itself
     sheet=("color", "voice", "timbre", "kind", "status", "profile", "tells", "bonds", "regards", "reflex", "sympathy", "arc", "body", "size", "pair", "wrapped", "sprung",
-           "swinging", "line", "claw", "outfit", "outfit_color", "trim", "plate", "upright", "climbs", "shot", "alight"),
+           "swinging", "line", "claw", "outfit", "outfit_color", "trim", "plate", "upright", "climbs", "shot", "alight", "point"),
 )
 
 
