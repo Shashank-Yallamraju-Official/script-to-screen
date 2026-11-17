@@ -169,7 +169,7 @@ class Session:
 
     # ---- the episode's other parts: its title sequence, its journeys over the land, its credits -----------
     CARD = dict(title=("anthem", "The title sequence: the anthem, whole."), travel=("anthem (low figure)", "A journey over the land, down to the next scene."),
-                credits=("anthem", "The credits."), caption=(None, "A caption."))
+                credits=("anthem", "The credits."), caption=(None, "A caption."), episode=(None, "The whole episode."))
     MUSIC = dict(music_at=(-16.0, 64.0, 0.0), music_vol=(0.0, 2.0, 1.0), music_in=(0.0, 32.0, 0.0), music_out=(0.0, 32.0, 0.0))      # a card's hand-set values: lowest, highest, and what it is when not set
 
     def plan(self):
@@ -179,18 +179,49 @@ class Session:
             self._plan, self._shots = (key, film.parts(self.root, self.seg["episode"])), {}
         return self._plan[1]
 
+    WHOLE = "*"                                                  # the name, among parts, of the whole episode as one timeline
+
     def part(self):
-        return next(p for p in self.plan()[0] if p["id"] == self.card)
+        plan, look, _ = self.plan()
+        if self.card != self.WHOLE:
+            return next(p for p in plan if p["id"] == self.card)
+        if getattr(self, "_whole", (None,))[0] is not plan:      # every part end to end: one picture, one soundtrack
+            ends = np.cumsum([p["frames"] for p in plan])
+
+            def draw(c, F):
+                k = min(int(np.searchsorted(ends, F, side="right")), len(plan) - 1)
+                plan[k]["draw"](c, F - (ends[k - 1] if k else 0))
+            self._whole = (plan, dict(id=self.seg["episode"], kind="episode", frames=int(ends[-1]), draw=draw, sound=lambda: film.soundtrack(plan, look.fps)))
+        return self._whole[1]
+
+    def whole(self, step):
+        """The whole episode laid out: where each part starts and how long it is, in steps, with every line and placed sound in its place."""
+        plan, look, _ = self.plan()
+        parts, lines, sounds, at = [], [], [], 0.0
+        for p in plan:
+            long = p["frames"] / look.fps / step
+            if self.sketch.get("length", (None,))[0] == p["id"]:
+                long = self.sketch["length"][1]
+            parts.append(dict(id=p["id"], kind=p["kind"], start=at, length=long))
+            if p["kind"] == "scene":
+                sc, cast = p["stage"].score, p["stage"].look.cast
+                for t in sc.turns:
+                    if t["line"]:
+                        lines.append(dict(at=at + t["start"] + t["say_at"], len=t["reveal"], text=t["line"]["text"], color=cast[t["who"]]["color"]))
+                    sounds += [dict(at=at + fx["start"] - (fx["len"] if fx["sound"] == "blast" and fx["len"] else 0), len=fx["len"] or 2, name=fx["sound"]) for fx in t["sfx"]]
+            at += long
+        return parts, lines, sounds
 
     def episode(self):
         """Every part of the episode, for the strip above the timeline: what it is, where it starts and how long it runs, in bars."""
-        plan, look, _ = self.plan()
+        (plan, look, _), show = self.plan(), load_yaml(self.root / "show.yaml")
         out, at = [], 0.0
+        bar = 60.0 / float(show["tempo"]) * int(show.get("beats_per_bar") or 0) or anthem.BAR
         for p in plan:
-            bars = p["frames"] / look.fps / anthem.BAR
+            bars = p["frames"] / look.fps / bar
             out.append(dict(id=p["id"], kind=p["kind"], at=round(at, 2), bars=round(bars, 2), here=p["id"] == (self.card or self.seg["id"])))
             at += bars
-        return out
+        return [dict(id=self.WHOLE, kind="episode", at=0, bars=round(at, 2), here=self.card == self.WHOLE)] + out
 
     def levels(self):
         """How loud each part of the episode is: its average level in decibels, leaving out its silences."""
@@ -207,6 +238,10 @@ class Session:
 
     def open_part(self, pid):
         """Open another part of the episode: a scene, or a card."""
+        if pid == self.WHOLE:
+            self.card, self.sketch = pid, {}
+            self.rev += 1
+            return
         sg = next(s for s in series(self.root).episode(self.seg["episode"])["segments"] if s["id"] == pid)
         if sg["kind"] == "scene":
             self.card, self.path = None, sg["path"]
@@ -222,12 +257,21 @@ class Session:
         step = 60.0 / float(show["tempo"]) / show["steps_per_beat"]
         bar = show["steps_per_beat"] * int(show.get("beats_per_bar") or 0)
         steps = part["frames"] / look.fps / step
+        done, undone = edit.stacks(self.root, by="hand")
+        if self.card == self.WHOLE:
+            parts, lines, sounds = self.whole(step)
+            turns = [dict(id=p["id"], index=k, start=p["start"], length=p["length"], why=f"{p['id']}: {p['kind']}", who=None, bar=None, sfx=[], pause=0, hold=p["length"], say=None,
+                          lanes={}, reacts=[], stretches=[], orphans=0) for k, p in enumerate(parts)]
+            steps = parts[-1]["start"] + parts[-1]["length"]
+            return dict(rev=self.rev, info_rev=self.info_rev, id=part["id"], can_undo=bool(done), can_redo=bool(undone), status="draft", fps=look.fps, step=step, tempo=float(show["tempo"]),
+                        spb=show["steps_per_beat"], scale=[], lead=self.lead, bar=bar, bars=None, width=look.W, height=look.H, total=part["frames"], steps=steps,
+                        title=f"{part['id']} (the whole episode)", file="series.yaml", index=self.i, count=len(self.paths), entities=[], emotions={}, turns=turns, problems=[],
+                        music=[], carried=[], offscreen=[], ledger={}, card=dict(id=self.WHOLE, kind="episode", music=None, lines=lines, sounds=sounds))
         sg = next(s for s in series(self.root).episode(self.seg["episode"])["segments"] if s["id"] == self.card)
         hand = {**(sg.get("tune") or {}), **self.sketch}
         name, why = self.CARD[part["kind"]]
         music = name and dict(name=name, at=float(hand.get("music_at", 0)), vol=float(hand.get("music_vol", 1)), fade_in=float(hand.get("music_in", 0)), fade_out=float(hand.get("music_out", 0)),
                               len=min(len(self.card_sound()) / sound.RATE / step, steps * 2))
-        done, undone = edit.stacks(self.root, by="hand")
         turn = dict(id=part["kind"], index=0, start=0, length=steps, why=why, who=None, bar=None, sfx=[], pause=0, hold=0, say=None, lanes={}, reacts=[], stretches=[], orphans=0)
         return dict(rev=self.rev, info_rev=self.info_rev, id=self.card, can_undo=bool(done), can_redo=bool(undone), status="draft", fps=look.fps, step=step, tempo=float(show["tempo"]),
                     spb=show["steps_per_beat"], scale=[], lead=self.lead, bar=bar, bars=None, width=look.W, height=look.H, total=part["frames"], steps=steps,
@@ -260,9 +304,40 @@ class Session:
             self._shots[(self.card, F, full)] = bytes(surface.makeImageSnapshot().encodeToData(skia.kJPEG, 90 if full else 82))
         return self._shots[(self.card, F, full)]
 
+    def length_patch(self, ops, commit):
+        """In the whole-episode view, a part's right edge dragged: only a part whose length is its own to set (the credits) can change."""
+        (plan, _, _), show = self.plan(), load_yaml(self.root / "show.yaml")
+        op = ops[-1]
+        if op["path"][0] != "turns" or op["path"][-1] != "hold":
+            raise ValueError("in the whole-episode view only a part's length can be dragged; double-click a part to open it and tune what is inside")
+        part = plan[int(op["path"][1])]
+        if part["kind"] != "credits":
+            raise ValueError(f"{part['id']} takes its length from " + ("its script: open it and change a hold or a bar" if part["kind"] == "scene" else "its camera's path over the land"))
+        per = show["steps_per_beat"] * int(show.get("beats_per_bar") or 1)
+        bars = max(2.0, round(float(op["value"]) / per * 2) / 2)                  # in half bars, and never shorter than two
+        self.sketch = {"length": (part["id"], bars * per)}
+        if not commit:
+            return None
+        file = self.root / "series.yaml"
+        before = file.read_text()
+        doc = edit.yaml().load(before)
+        sg = next(s for se in doc["seasons"] for ep in se["episodes"] for s in ep["segments"] if str(s["id"]) == part["id"])
+        was = (sg.get("tune") or {}).get("bars")
+        tune.put(sg, "bars", bars)
+        after = edit.dump(doc)
+        self.sketch = {}
+        if after != before:
+            edit.write(file, after)
+            edit.record(self.root, "nudge", None, file, [dict(address=f"{part['id']}.bars", field="bars", before=was, after=bars)], before, after, by="hand")
+        self.stamps = self.stamp()
+        self.rev += 1
+        return 0
+
     def card_patch(self, ops, commit):
         """A card's music moved or made louder or quieter. While dragging it only shows; on release it is written to series.yaml
         as a hand-set value on that segment, and journaled."""
+        if self.card == self.WHOLE:
+            return self.length_patch(ops, commit)
         for op in ops:
             if op["path"][0] != "card" or op["path"][1] not in self.MUSIC:
                 raise ValueError("a card's music can be moved, and made louder or quieter; nothing else of a card is editable here yet")
@@ -355,7 +430,7 @@ class Session:
         import wave as wav
         if self.card:
             (_, look, _), part = self.plan(), self.part()
-            W, H, fps, total, draw, name = look.W, look.H, look.fps, part["frames"], part["draw"], self.card
+            W, H, fps, total, draw, name = look.W, look.H, look.fps, part["frames"], part["draw"], part["id"]
         else:
             st = self.stage
             W, H, fps, total, draw, name = st.W, st.H, st.fps, st.total, (lambda c, F: draw_frame(c, st, F)), self.seg["id"]
@@ -387,11 +462,28 @@ class Session:
 
     def pins(self):
         """The writer's notes on the part that is open, each where it is now."""
+        if self.card == self.WHOLE:                               # every part's notes, each moved along to where its part starts
+            (plan, look, _), out, at = self.plan(), [], 0.0
+            step = self.card_state()["step"]
+            for p in plan:
+                out += [dict(n, now=n["now"] + at) for n in notes.placed(notes.read(self.root), p["id"], p["stage"].score.turns if p["kind"] == "scene" else ())]
+                at += p["frames"] / look.fps / step
+            return out
         return notes.placed(notes.read(self.root), self.card or self.seg["id"], () if self.card else self.scene.turns)
 
     def pin(self, F, text, nid=None):
         """Drop a note at frame F, or change one's words, or (with no words) take it away."""
-        if self.card:
+        if self.card == self.WHOLE:                               # the note belongs to whichever part is under the playhead
+            (plan, look, _), step = self.plan(), self.card_state()["step"]
+            for p in plan:
+                if F < p["frames"] or p is plan[-1]:
+                    steps = F / look.fps / step
+                    turns = p["stage"].score.turns if p["kind"] == "scene" else ()
+                    t = next((t for t in turns if t["start"] <= steps + 1e-6 < t["start"] + t["length"]), None)
+                    notes.put(self.root, p["id"], steps, text, turn=t and t["id"], into=t and steps - t["start"], nid=nid)
+                    break
+                F -= p["frames"]
+        elif self.card:
             st = self.card_state()
             notes.put(self.root, self.card, F / st["fps"] / st["step"], text, nid=nid)
         else:

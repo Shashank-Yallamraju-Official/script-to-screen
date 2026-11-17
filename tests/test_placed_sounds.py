@@ -73,7 +73,7 @@ def test_a_cards_music_can_be_moved_and_turned_down_and_the_film_follows(sess):
     series["seasons"][0]["episodes"][0]["segments"].append(dict(id="end", card="credits"))
     (sess.root / "series.yaml").write_text(yaml.safe_dump(series))
     sess.sync()
-    assert [(p["id"], p["kind"], p["here"]) for p in sess.episode()] == [("room", "scene", True), ("end", "credits", False)]
+    assert [(p["id"], p["kind"], p["here"]) for p in sess.episode()] == [("*", "episode", False), ("room", "scene", True), ("end", "credits", False)]
     plan, look, _ = parts(sess.root, "e")
     was = soundtrack(plan, look.fps)
     sess.open_part("end")
@@ -127,3 +127,27 @@ def test_a_sound_and_a_cards_music_can_fade(sess):
     plan, look, _ = parts(sess.root, "e")
     x, end = plan[-1]["sound"](), int(plan[-1]["frames"] / look.fps * sound.RATE)
     assert np.abs(x[end:]).max() == 0 and np.abs(x[end - 3 * sound.RATE:end - 2 * sound.RATE]).max() > 0  # silent by the card's end, sounding before it
+
+
+def test_the_whole_episode_is_one_timeline_and_the_credits_can_be_made_longer(sess):
+    series = yaml.safe_load((sess.root / "series.yaml").read_text())
+    series["seasons"][0]["episodes"][0]["segments"].append(dict(id="end", card="credits"))
+    (sess.root / "series.yaml").write_text(yaml.safe_dump(series))
+    sess.sync()
+    sess.pin(sess.frame_of(1) + 4, "in the scene")
+    sess.open_part(Session.WHOLE)
+    st = sess.state()
+    room, end = st["turns"]
+    assert (room["id"], end["id"]) == ("room", "end") and end["start"] == room["length"] and st["steps"] == room["length"] + end["length"]
+    assert st["card"]["lines"][0]["text"].startswith("Someone") and st["card"]["sounds"][0]["name"] == "blast" and st["notes"][0]["text"] == "in the scene"
+    assert len(sess.frame(0, False, False)) > 1000 and len(sess.frame(st["total"] - 1, False, False)) > 1000 and len(sess.audio()) > 100000
+    sess.pin(st["total"] - 5, "over the credits")
+    assert [(n["part"], n["text"]) for n in __import__("script_to_screen.commands.notes", fromlist=["x"]).read(sess.root)] == [("room", "in the scene"), ("end", "over the credits")]
+    with pytest.raises(ValueError, match="its script"):
+        sess.patch([dict(path=["turns", 0, "hold"], value=10)], commit=True)
+    bar = st["bar"]
+    sess.patch([dict(path=["turns", 1, "hold"], value=30 * bar)])                               # a drag shows at once
+    assert sess.state()["turns"][1]["length"] == 30 * bar
+    sess.patch([dict(path=["turns", 1, "hold"], value=30 * bar)], commit=True)
+    seg = yaml.safe_load((sess.root / "series.yaml").read_text())["seasons"][0]["episodes"][0]["segments"][-1]
+    assert seg["tune"] == {"bars": 30} and sess.state()["turns"][1]["length"] == pytest.approx(30 * bar, abs=0.5)

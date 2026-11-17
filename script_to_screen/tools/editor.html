@@ -83,6 +83,7 @@
   .beat.bar { background: #ffffff12; } .beat.phrase { background: #ffffff38; }
   .fx { position: absolute; height: 18px; margin-top: -9px; border-radius: 5px; cursor: ew-resize; overflow: hidden; z-index: 2; background: #c4871f55; border: 1px solid #c4871f; box-sizing: border-box; color: #f1d9ae; font: 500 10px/16px Inter, system-ui, sans-serif; padding: 0 6px; white-space: nowrap; }
   .fx .fd { position: absolute; top: 1px; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: #f1d9ae; cursor: ew-resize; z-index: 3; }
+  .ln { position: absolute; height: 18px; margin-top: -9px; border-radius: 5px; overflow: hidden; box-sizing: border-box; pointer-events: none; opacity: .75; color: #fff; font: 500 10px/18px Inter, system-ui, sans-serif; padding: 0 6px; white-space: nowrap; }
   .fx.sel { outline: 2px solid #fff; outline-offset: 1px; }
   .fx .grip.left { left: 0; right: auto; } .fx .grip.left::after { left: 2px; right: auto; }
   .felt { position: absolute; height: 14px; margin-top: -7px; border-radius: 4px; display: flex; align-items: center; padding-left: 5px; overflow: hidden; }
@@ -247,6 +248,7 @@ function build() {
     ['turns', ICON.turns, 'Turns: hover one to read why it happens. Drag its right edge to change how long it holds.', ROW],
     ...S.entities.map(e => [e.id, `<i style="background:${e.color}"></i>`, `${e.id}${e.kind ? ' (' + e.kind + ')' : ''}: what it feels. Filled pips show; hollow pips are held in. A diamond is a reaction in passing; an outlined box is a reaction that holds the scene.`, ROW]),
     ['say', ICON.say, S.bar ? 'Lines: drag one to move it to another bar (it snaps to eighths of a bar; hold Shift for finer). A line with no bar of its own drags its pause.' : 'Lines: drag one to change the pause before it starts. A gap marks where one bubble gives way to the next.', ROW],
+    ...(S.card && S.card.sounds && S.card.sounds.length ? [['sfx', ICON.sound, 'Every placed sound in the episode. Open its part to move it.', ROW]] : []),
     ...(S.card && S.card.music ? [['sfx', ICON.roll, 'This part\'s music. Drag it to change where it lands, by eighths of a bar (hold Shift for finer). \u2191 \u2193 make it louder or quieter.', ROW]] : []),
     ...(S.turns.some(t => t.sfx.length) ? [['sfx', ICON.sound, 'Sounds placed by hand. Drag one to change when it starts; drag its edge to change how long it lasts (for an explosion, how long it swells first). Click it, then Tab, to reach its level.', ROW]] : []),
     ['wave', ICON.wave, 'The sound, as the film will have it: tall where it is loud. Line a hit up against a bar by eye. The button beside Play chooses what is heard and drawn here: everything, or the voices, the sounds or the music alone.', WAVE],
@@ -256,7 +258,7 @@ function build() {
   const H = top + 8;
   $('gutter').innerHTML = lanes.map(l => `<div style="top:${y[l[0]] - l[3] / 2}px;height:${l[3]}px" title="${l[2]}">${l[1]}</div>`).join('');
   $('gutter').style.height = H + 'px';
-  track.querySelectorAll('.turn,.cut,.beat,.felt,.say,.note,.rx,.own,.cue,.fx,.pin').forEach(d => d.remove());
+  track.querySelectorAll('.turn,.cut,.beat,.felt,.say,.note,.rx,.own,.cue,.fx,.pin,.ln').forEach(d => d.remove());
   track.style.width = x(S.steps) + PAD + 'px'; track.style.height = H + 'px'; $('head').style.height = H + 'px';
   const all = S.turns.flatMap(t => t.say ? t.say.sylls.map(s => s.semi) : []);
   rollLo = Math.min(-3, ...all) - 2; rollHi = Math.max(9, ...all) + 2;
@@ -282,6 +284,7 @@ function build() {
     if (t.orphans) { b.classList.add('orph'); b.title += `\n\n${t.orphans} hand-tuned syllable value${t.orphans === 1 ? ' was' : 's were'} tuned for an earlier wording of this line and ${t.orphans === 1 ? 'is' : 'are'} not applied. Tune the new wording and ${t.orphans === 1 ? 'it is' : 'they are'} cleared.`; }
     const g = document.createElement('div'); g.className = 'grip'; g.title = `Hold: ${num(t.hold)} steps after the turn finishes. Drag to change; hold Shift for quarter steps.`; b.appendChild(g);
     mark(g, ['turns', t.index, 'hold'], 400, t.hold, '#6e79d6');
+    if (S.card && S.card.kind === 'episode') { b.title = `${t.why} \u00b7 ${num(t.length / (S.bar || 1))} bars, from bar ${num(t.start / (S.bar || 1))}\nDouble-click to open it.`; g.title = 'Drag the right edge of the credits to make them longer or shorter. Other parts take their length from their script or their camera.'; b.ondblclick = () => openPart(t.id); }
     if (t.start) el('cut', { left: x(t.start) - 1 + 'px', top: RULER + 'px', height: H - RULER + 'px' });
     for (const [e, segs] of Object.entries(t.lanes)) segs.forEach((s, j) => {
       if (!s.felt) return;
@@ -328,6 +331,10 @@ function build() {
         n._n = { ti: t.index, i }; n.dataset.note = t.index + ':' + i;
       });
     }
+  }
+  if (S.card && S.card.lines) {                            // the whole episode: every line and every placed sound, to look at
+    for (const l of S.card.lines) { const d = el('ln', { left: x(l.at) + 'px', top: y.say + 'px', width: Math.max(l.len * pps - 1, 4) + 'px', background: l.color }); d.textContent = l.text; }
+    for (const f of S.card.sounds) { const d = el('fx', { left: x(f.at) + 'px', top: y.sfx + 'px', width: Math.max(f.len * pps - 1, 12) + 'px', pointerEvents: 'none' }); d.textContent = f.name; }
   }
   if (S.card && S.card.music) {                            // a card's music: one block, from where it lands, as long as it plays
     const m = S.card.music, d = el('fx', { left: x(m.at * S.bar) + 'px', top: y.sfx + 'px', width: Math.max(m.len * pps - 1, 12) + 'px' },
@@ -646,8 +653,8 @@ $('render').onclick = async () => {
   $('spin').style.display = 'none'; $('render').disabled = false;
 };
 // ---- the episode: every part in order, each as wide as it is long. Click one to open it -------
-const PART = { scene: ICON.turns, title: ICON.roll, credits: ICON.roll, travel: '<svg viewBox="0 0 16 16"><path d="M2 12 6 5l3 4 2-3 3 6z"/></svg>', caption: ICON.say };
-const PART_SAYS = { scene: 'a scene', title: 'the title sequence', travel: 'a journey over the land', credits: 'the credits', caption: 'a caption' };
+const PART = { episode: '<svg viewBox="0 0 16 16"><rect x="1.5" y="4" width="13" height="8" rx="1"/><path d="M5 4v8M8.5 4v8M12 4v8"/></svg>', scene: ICON.turns, title: ICON.roll, credits: ICON.roll, travel: '<svg viewBox="0 0 16 16"><path d="M2 12 6 5l3 4 2-3 3 6z"/></svg>', caption: ICON.say };
+const PART_SAYS = { episode: 'the whole episode as one timeline', scene: 'a scene', title: 'the title sequence', travel: 'a journey over the land', credits: 'the credits', caption: 'a caption' };
 let epT = 0, epRev = -1, levels = null;
 async function measure() {
   $('spin').style.display = 'block';
@@ -661,16 +668,20 @@ async function showEpisode() {
   if (epRev === S.rev) return; epRev = S.rev;
   let parts; try { parts = await api('/episode'); } catch (e) { return; }
   levels = null;
-  $('ep').innerHTML = `<button id="meter" title="Measure how loud each part is. Each part then shows its average level in decibels (closer to 0 is louder); a part more than 3 dB from the episode's middle value turns amber. The numbers clear when anything changes.">${ICON.wave}</button>` + parts.map(p => `<button data-id="${p.id}" class="${p.here ? 'here' : ''}" style="flex-grow:${Math.max(p.bars, 1)}" title="${p.id}: ${PART_SAYS[p.kind] || p.kind}\nStarts on bar ${num(p.at)} of the episode and runs ${num(p.bars)} bars.${p.here ? '' : '\nClick to open it.'}">${PART[p.kind] || ''}<span>${p.id}</span></button>`).join('');
+  $('ep').innerHTML = `<button id="meter" title="Measure how loud each part is. Each part then shows its average level in decibels (closer to 0 is louder); a part more than 3 dB from the episode's middle value turns amber. The numbers clear when anything changes.">${ICON.wave}</button>` + parts.map(p => p.kind === 'episode' ? `<button data-id="${p.id}" class="${p.here ? 'here' : ''}" style="flex:0 0 auto" title="The whole episode as one timeline: ${num(p.bars)} bars. Play through the joins, check one part against the next, and drag the credits' length.">${PART.episode}</button>`
+    : `<button data-id="${p.id}" class="${p.here ? 'here' : ''}" style="flex-grow:${Math.max(p.bars, 1)}" title="${p.id}: ${PART_SAYS[p.kind] || p.kind}\nStarts on bar ${num(p.at)} of the episode and runs ${num(p.bars)} bars.${p.here ? '' : '\nClick to open it.'}">${PART[p.kind] || ''}<span>${p.id}</span></button>`).join('');
 }
 const showEpisodeSoon = () => { clearTimeout(epT); epT = setTimeout(showEpisode, 400); };
 $('ep').addEventListener('click', async e => {
   const b = e.target.closest('button'); if (!b || b.classList.contains('here')) return;
   if (b.id === 'meter') return measure();
-  pause();
-  try { S = (await api('/open', { part: b.dataset.id })).state; } catch (err) { return toast(err.message, true); }
-  dropFrames(0); selected = null; pick = picked = null; cands = []; marked = null; F = 0; fit(); build(); scroll.scrollLeft = 0;
+  openPart(b.dataset.id);
 });
+async function openPart(id) {
+  pause();
+  try { S = (await api('/open', { part: id })).state; } catch (err) { return toast(err.message, true); }
+  dropFrames(0); selected = null; pick = picked = null; cands = []; marked = null; F = 0; fit(); build(); scroll.scrollLeft = 0;
+}
 // ---- what is heard: everything, or one layer alone; and its shape under the timeline -------------
 const HEAR = [[null, 'everything'], ['voices', 'the voices alone'], ['sounds', 'the sounds alone'], ['music', 'the music alone']];
 let layer = null, wave = null, waveT = 0;

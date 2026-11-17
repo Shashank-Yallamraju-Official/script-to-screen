@@ -43,6 +43,7 @@ def parts(root, eid):
     look = Look.load(root, cast)
     sheets = {e: tuning.overlay(load_yaml(root / "entities" / f"{e}.yaml")) for e in cast}
     step = 60.0 / float(show.cfg["tempo"]) / show.cfg["steps_per_beat"]
+    bar = step * show.cfg["steps_per_beat"] * int(show.cfg.get("beats_per_bar") or 0) or anthem.BAR      # a bar of this show, in seconds: what hand-set card values count in
     out = []
     land_file = root / "land.yaml"
     model = None
@@ -82,7 +83,8 @@ def parts(root, eid):
                     if sg["card"] == "title" and land_file.exists()            # a show with a land gets its title sequence over it
                     else cards.Title(look, show.cfg, episode, cast, step, cfg["title_seconds"]) if sg["card"] == "title"
                     else cards.Caption(look, sg.get("text"), sg.get("seconds")) if sg["card"] == "caption"
-                    else cards.Credits(look, show.cfg, episode, cast, sheets, step, cfg["credits_seconds"]))
+                    else cards.Credits(look, show.cfg, episode, cast, sheets, step,          # as long as the show says, unless this one was set by hand (in bars)
+                                       float(sg["tune"]["bars"]) * bar if (sg.get("tune") or {}).get("bars") else cfg["credits_seconds"]))
             if sg["card"] == "title" and land_file.exists():           # between two scenes, the days from one to the other pass during it
                 around = [next((s for s in seq if s["kind"] == "scene" and s.get("day") is not None), None) for seq in (reversed(segs[:n]), segs[n + 1:])]
                 card.span = (int(around[0]["day"]), int(around[1]["day"])) if all(around) else None
@@ -90,8 +92,8 @@ def parts(root, eid):
                             sound=card.sound))
         if sg["kind"] == "card":                                         # a card's music can be set by hand: where it lands (in bars, later or earlier) and how loud it is
             hand = sg.get("tune") or {}
-            out[-1]["music_at"] = float(hand.get("music_at", 0)) * anthem.BAR
-            vol, fin, fout = float(hand.get("music_vol", 1)), float(hand.get("music_in", 0)) * anthem.BAR, float(hand.get("music_out", 0)) * anthem.BAR
+            out[-1]["music_at"] = float(hand.get("music_at", 0)) * bar
+            vol, fin, fout = float(hand.get("music_vol", 1)), float(hand.get("music_in", 0)) * bar, float(hand.get("music_out", 0)) * bar
             if vol != 1 or fin or fout:                              # louder or quieter; eased in; faded out by the time the card ends
                 out[-1]["sound"] = lambda made=out[-1]["sound"], vol=vol, fin=fin, fout=fout, end=int(out[-1]["frames"] / look.fps * sound.RATE): \
                     sound.faded(made(), fin, fout, end if fout else None) * vol
