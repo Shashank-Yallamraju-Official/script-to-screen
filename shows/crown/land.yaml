@@ -2,6 +2,8 @@
 # Hasp's. Positions are on a sheet 920 wide and 840 tall. `at_bar` is the bar of the anthem on which a place rises;
 # a place without one is not visited in this sequence, and stays dark.
 bars: 20
+# The model's colours: a pale sheet on a deep green table, with a blue-grey wall and gold cogs.
+palette: {table: "#1d3a34", sheet: "#f1e9d2", dark: "#b9b08f", iron: "#5f7f9a", brass: "#d2a23f", inked: "#5d6e52", pale: "#fbf6e6"}
 title_bar: 18
 credit: {role: Created by, name: Shashank Yallamraju, from: 14.5, to: 17}
 places:

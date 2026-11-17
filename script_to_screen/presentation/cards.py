@@ -116,6 +116,8 @@ class Land:
         self.look, self.show, self.episode, self.land, self.sheets = look, show, episode, land, sheets
         self.bar = anthem.BAR
         self.seconds = float(land.get("bars", anthem.BARS)) * self.bar
+        for name, colour in (land.get("palette") or {}).items():      # a show's own colours: table, sheet, dark, iron, brass, inked, pale
+            setattr(self, name.upper(), colour)
 
     def sound(self):
         return _theme(self.look, "theme.title", self.seconds, self.bar / 16)

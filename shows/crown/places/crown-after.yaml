@@ -1,40 +1,41 @@
-# The crown, rebuilt exactly as it was. Bare on purpose: the only things that differ are the things that changed.
+# The crown, rebuilt exactly as it was, in new stone. Bare on purpose: the only things that differ are the things that changed.
 #   the sky in the arches      the hour. A pale sun, low on the other side: early, and cold
-#   three flags                who rules now: Mallet, Signet and Hasp
+#   no vines                   the stone is new; nothing has had time to grow on it
 #   saplings in the planters   the trees were lost, and not long ago
+#   three flags                who rules now: Mallet, Signet and Hasp
 name: The crown, rebuilt
-wall: "#4f5661"
-floor: "#2b3037"
-sky: "#c3d0db"
-sun: "#f4f7fa"
-light: {at: 6.4, up: 250, color: "#dfe9f2", reach: 640, strength: 0.5, side: right}        # a pale early sun, through the arches on the right
-grade: {color: "#8ea3b8", amount: 0.22}
-vignette: 0.65
-bench: {from: 0.65, to: 7.35, rise: 58, front: 30, color: "#6f6058"}
+wall: "#dfe2dc"
+floor: "#b3bab0"
+sky: "#c6d5df"
+sun: "#ffffff"
+light: {at: 6.4, up: 250, color: "#eef4f9", reach: 640, strength: 0.4, side: right}       # a pale early sun, through the arches on the right
+grade: {color: "#a9b9c6", amount: 0.16}
+vignette: 0.32
+bench: {from: 0.65, to: 7.35, rise: 58, front: 30, color: "#a59684"}
 pieces:
-  - {kind: arch, at: 0.4, wide: 0.95}
-  - {kind: arch, at: 1.6, wide: 0.95}
-  - {kind: arch, at: 2.8, wide: 0.95}
-  - {kind: arch, at: 4.0, wide: 0.95}
-  - {kind: arch, at: 5.2, wide: 0.95}
-  - {kind: arch, at: 6.4, wide: 0.95, sun: 0.3}
-  - {kind: arch, at: 7.6, wide: 0.95}
-  - {kind: cornice, at: 4.0, wide: 14}
-  - {kind: arch, at: 0.4, wide: 0.5, up: 268}
-  - {kind: arch, at: 1.6, wide: 0.5, up: 268}
-  - {kind: arch, at: 2.8, wide: 0.5, up: 268}
-  - {kind: arch, at: 4.0, wide: 0.5, up: 268}
-  - {kind: arch, at: 5.2, wide: 0.5, up: 268}
-  - {kind: arch, at: 6.4, wide: 0.5, up: 268}
-  - {kind: arch, at: 7.6, wide: 0.5, up: 268}
-  - {kind: banner, at: 2.8, wide: 1.0, color: "#7c684f"}
-  - {kind: hammermark, at: 2.8, color: "#7c684f"}
-  - {kind: banner, at: 4.0, wide: 1.0, color: "#8a3443"}
-  - {kind: crownmark, at: 4.0, color: "#ece3d0"}
-  - {kind: crest, at: 4.0, color: "#8a3443"}
-  - {kind: banner, at: 5.2, wide: 1.0, color: "#7f8b96"}
-  - {kind: lockmark, at: 5.2, color: "#7f8b96"}
-  - {kind: pot, at: -0.45, color: "#7d6658"}
+  - {kind: arch, at: 0.4, wide: 0.95, color: "#bcc1bb"}
+  - {kind: arch, at: 1.6, wide: 0.95, color: "#bcc1bb"}
+  - {kind: arch, at: 2.8, wide: 0.95, color: "#bcc1bb"}
+  - {kind: arch, at: 4.0, wide: 0.95, color: "#bcc1bb"}
+  - {kind: arch, at: 5.2, wide: 0.95, color: "#bcc1bb"}
+  - {kind: arch, at: 6.4, wide: 0.95, color: "#bcc1bb", sun: 0.3}
+  - {kind: arch, at: 7.6, wide: 0.95, color: "#bcc1bb"}
+  - {kind: cornice, at: 4.0, wide: 14, color: "#bcc1bb"}
+  - {kind: arch, at: 0.4, wide: 0.5, up: 268, color: "#bcc1bb"}
+  - {kind: arch, at: 1.6, wide: 0.5, up: 268, color: "#bcc1bb"}
+  - {kind: arch, at: 2.8, wide: 0.5, up: 268, color: "#bcc1bb"}
+  - {kind: arch, at: 4.0, wide: 0.5, up: 268, color: "#bcc1bb"}
+  - {kind: arch, at: 5.2, wide: 0.5, up: 268, color: "#bcc1bb"}
+  - {kind: arch, at: 6.4, wide: 0.5, up: 268, color: "#bcc1bb"}
+  - {kind: arch, at: 7.6, wide: 0.5, up: 268, color: "#bcc1bb"}
+  - {kind: banner, at: 2.8, wide: 1.0, color: "#c98a3c"}
+  - {kind: hammermark, at: 2.8, color: "#c98a3c"}
+  - {kind: banner, at: 4.0, wide: 1.0, color: "#a23a4c"}
+  - {kind: crownmark, at: 4.0, color: "#f4efe2"}
+  - {kind: crest, at: 4.0, color: "#a23a4c"}
+  - {kind: banner, at: 5.2, wide: 1.0, color: "#5b86ad"}
+  - {kind: lockmark, at: 5.2, color: "#5b86ad"}
+  - {kind: pot, at: -0.45, color: "#b98a70"}
   - {kind: sapling, at: -0.45, color: "#86b36e"}
-  - {kind: pot, at: 8.45, color: "#7d6658"}
+  - {kind: pot, at: 8.45, color: "#b98a70"}
   - {kind: sapling, at: 8.45, color: "#86b36e"}

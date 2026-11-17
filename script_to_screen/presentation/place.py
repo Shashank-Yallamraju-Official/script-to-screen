@@ -38,14 +38,14 @@ from .view import ground, slot_x
 
 WALL_DEPTH, BACK_DEPTH, FRONT_DEPTH = 0.3, 0.15, -0.2
 FLOOR_UP = 46                                 # how far behind the entities' feet the wall meets the floor, in pixels
-ON_WALL = ("door", "window", "picture", "shelf", "thermostat", "vault", "sign", "page", "dome", "pegboard", "chain", "hooks", "ghost", "crest", "hammermark", "lockmark", "crownmark", "banner", "bookwall", "pen", "desklamp", "nails", "hasplate", "arch", "cornice")
+ON_WALL = ("door", "window", "picture", "shelf", "thermostat", "vault", "sign", "page", "dome", "pegboard", "chain", "hooks", "ghost", "crest", "hammermark", "lockmark", "crownmark", "banner", "bookwall", "pen", "desklamp", "nails", "hasplate", "arch", "cornice", "vine")
 ON_FLOOR = ("rug", "shards", "crumbs", "mark")
 COLORS = dict(door="#cdbb9d", window="#b9c2c4", picture="#b7a58c", sofa="#9fb0aa", lamp="#b9a98c", plant="#8fa58a", table="#b49f84",
               shelf="#b49f84", rug="#c9b6a6", counter="#b9b3a2", fridge="#c5cbcc", thermostat="#d8d2c4", pedestal="#c2b8a6", vase="#5b7fa6",
               shards="#5b7fa6", plate="#f4f1e8", vault="#9aa3a8", sign="#b9b3a2",
               rack="#a89784", inkpad="#4a4a52", page="#efe9dc", dome="#c7d3d6", post="#9aa3a8", pegboard="#b49f84", crate="#b49f84",
               chain="#8f969b", gate="#8f969b", hooks="#8f969b", bag="#9c5a48", ropes="#b7a58c", crumbs="#d9a3ae", ghost="#c9c5bb",
-              gantry="#a8906c", wallstub="#b9b3a2", mark="#8f969b", parts="#9fb0aa", crest="#7a2e3b", hammermark="#6b5a4a", lockmark="#7f868c", crownmark="#b7a58c", bench="#b49f84", banner="#7a2e3b", bookwall="#7b5a4c", pen="#2e3440", desklamp="#c9a45a", nails="#8f969b", hasplate="#8f969b", inkwell="#27303f", books="#7b5a4c", pot="#8a5f47", tree="#5d8a55", sapling="#7fb069", arch="#3a2a2e", cornice="#3a2a2e")
+              gantry="#a8906c", wallstub="#b9b3a2", mark="#8f969b", parts="#9fb0aa", crest="#7a2e3b", hammermark="#6b5a4a", lockmark="#7f868c", crownmark="#b7a58c", bench="#b49f84", banner="#7a2e3b", bookwall="#7b5a4c", pen="#2e3440", desklamp="#c9a45a", nails="#8f969b", hasplate="#8f969b", inkwell="#27303f", books="#7b5a4c", pot="#8a5f47", tree="#5d8a55", sapling="#7fb069", arch="#3a2a2e", cornice="#3a2a2e", vine="#6aa85c")
 
 
 def rgb(h):
@@ -254,6 +254,14 @@ def shapes(kind, w):
             p.close()
             return p
         return [("dark", opening(-w * 0.07)), ("light", opening(w * 0.05))]         # the thickness of the wall shows down one side
+    if kind == "vine":                                               # growth hanging over an arch: the building has been lived in a long time
+        w = w or 120
+        out = []
+        for i in range(5):
+            x, drop = -w / 2 + 8 + i * (w - 16) / 4, 54 + (i * 47) % 78
+            out.append(("dark", rect(x - 1.5, -382, 3, drop, 1)))
+            out += [("body", oval(x + (7 if j % 2 else -7), -376 + j * 17, 9, 5.5, 30 if j % 2 else -30)) for j in range(1, int(drop // 17) + 1)]
+        return out
     if kind == "cornice":                                            # the ledge between one tier of arches and the next
         w = w or 1200
         return [("dark", rect(-w / 2, -428, w, 12, 2))]
