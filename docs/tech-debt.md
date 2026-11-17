@@ -16,6 +16,9 @@ The test for an entry: *a small change needed edits in several places, or broke 
 | `episode.py` held assembly, rendering and four ways of looking | 500 lines; every new reading made it longer | The readings (`moments`, `listen`, `rhythm`, `shots`, `frames`) live in `presentation/readings.py` |
 | Frames were not repeatable | The map's cogs turned a different way each run | Fixed checksums; the kept frames depend on it |
 
+| A speed test failed on CI about one push in two | `test_the_knob_is_fast` allowed 180 ms; the shared machine took 231 | It allows more on CI, where the machine is slower and varies |
+| The kept-frames check averaged over the whole frame | It missed the hole in the flag and the patch: small, local changes | It now goes by the most-changed patch of each frame; proved against the frames from before the change |
+
 ## Still owed, most costly first
 
 1. **House colours are typed in three files.** Signet's red, Mallet's orange and Hasp's blue appear in the rebuilt chamber's flags, in the land's places and in the first chamber's flag. "Colour is ownership" is a rule of the show, so a house's colour should be said once (on the house) and read everywhere.
