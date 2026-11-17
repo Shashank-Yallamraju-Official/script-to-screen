@@ -410,6 +410,16 @@ def prepare(place, W):
     return layers
 
 
+def bench_top(bench):
+    """How high the top of a room's bench stands above the floor: where its sitters' plates are, and where a thing put on it stands."""
+    return float(bench.get("rise", 58)) + float(bench.get("front", 30)) + 9
+
+
+def cast_lean(lamp):
+    """How far sideways a cast shadow runs for each unit of height: away from the side the light is on, and further the longer the shadows."""
+    return (0.5 if lamp.get("side", "left") == "left" else -0.5) * float(lamp.get("cast", 0))
+
+
 def shade_of(place):
     """The colour of a cast shadow in this place: its own `shade:` if it gives one, else its cool shadow colour, darkened."""
     return place.get("shade") or mix(place.get("shadow") or "#120c14", "#120c14", 0.45)
@@ -432,7 +442,7 @@ def sunlit(stage):
         stage._place = prepare(place, stage.W)
     lamp, base = place.get("light") or {}, ground(stage.H) - FLOOR_UP
     cast = float(lamp.get("cast", 0))
-    lean = (0.5 if lamp.get("side", "left") == "left" else -0.5) * cast
+    lean = cast_lean(lamp)
 
     def on_wall(piece, role):                                              # a piece's shapes of one role, where they are on the wall
         out = skia.Path()
@@ -493,7 +503,7 @@ def _paint_behind(c, stage, cam):
         lamp = place.get("light")
         if lamp and name == "wall" and float(lamp.get("cast", 0)):          # the sun is behind the wall: the floor is in the wall's shade, but for what comes through the arches
             cast = float(lamp["cast"])
-            lean = (0.5 if lamp.get("side", "left") == "left" else -0.5) * cast
+            lean = cast_lean(lamp)
             r, g, b = rgb(shade_of(place))
             floor = skia.Rect.MakeLTRB(-stage.W, base, 2 * stage.W, 1.35 * stage.H)
             if lamp.get("warm"):                                            # where the light lands it takes the light's colour: sun on a green floor is gold, not green

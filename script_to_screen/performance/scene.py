@@ -11,6 +11,7 @@ import re
 from pathlib import Path
 
 from ..script import ScriptError, Show, find_root, load_yaml, place, scene_key, scene_paths, things, tuning
+from ..vocabulary import keys
 from ..world import World
 from . import appraisal, camera, crew, drama, placing, scoring, speech, tendencies
 from .expression import observe
@@ -91,6 +92,8 @@ class Scene:
             tid = raw.get("id", i + 1)
             if not str(raw.get("why") or "").strip():
                 self.flag("error", tid, "no `why`: every turn must say why it happens")
+            for k, near in keys.unknown(raw, "turn"):
+                self.flag("warning", tid, f"nothing reads `{k}`" + (f" (did you mean `{near}`?)" if near else ""))
             who, say = raw.get("who"), raw.get("say") or raw.get("sing")      # `sing:` is a line that is sung
             bubbles = []
             world.cause = tid

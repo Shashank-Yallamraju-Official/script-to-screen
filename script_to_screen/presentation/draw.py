@@ -463,7 +463,7 @@ def seat(stage, states, bench):
     for e, s in list(states.items()):
         if stage.look.cast[e].get("climbs"):
             near = min(s["slot"] - float(bench["from"]), float(bench["to"]) - s["slot"]) + 0.5
-            top = (float(bench.get("rise", 58)) + float(bench.get("front", 30)) + 9) * smooth(near)
+            top = place.bench_top(bench) * smooth(near)
             states[e] = dict(s, rise=top + 120 * s.get("travel", 0.0))
             if near > 0:
                 up.append(e)
@@ -477,7 +477,7 @@ def shot_in(stage, states, room, bench, up):
     """An entity whose sheet says `shot: true` does not walk in. It is shot in like an arrow: out of the arch the light comes from
     (nobody can see into the sun), foot first, growing as it nears, and sticks where it lands, quivering upright. On a bench it
     lands on the bench. -> states."""
-    W, H = stage.W, stage.H
+    W = stage.W
     for e, s in list(states.items()):
         if not stage.look.cast[e].get("shot") or s.get("arriving") is None:
             continue
@@ -486,7 +486,7 @@ def shot_in(stage, states, room, bench, up):
         from_slot, to_slot = float((room.get("light") or {}).get("at", s["to"] - 3)), s["to"]
         high = place.FLOOR_UP + 250.0                             # the middle of an arch's opening
         on_bench = bench and float(bench["from"]) <= to_slot <= float(bench["to"])
-        low = float(bench.get("rise", 58)) + float(bench.get("front", 30)) + 9 if on_bench else 0.0
+        low = place.bench_top(bench) if on_bench else 0.0
         angle = math.degrees(math.atan2(-(slot_x(to_slot, W) - slot_x(from_slot, W)), high - low))       # foot toward where it is going
         w = max(0.0, (u - FLIGHT) / (1 - FLIGHT))
         size = 0.3 + 0.7 * v
@@ -512,13 +512,13 @@ def light(c, stage, states, room, bench, seated, up, t):
     k = float(lamp.get("strength", 0.7))
     cast = float(lamp.get("cast", 0))
     if cast:
-        lean, y0 = -side * 0.5 * cast, ground(H) - place.FLOOR_UP + 46 * cast
+        lean, y0 = place.cast_lean(lamp), ground(H) - place.FLOOR_UP + 46 * cast
         r, g, b = place.rgb(place.shade_of(room))
         c.saveLayer(skia.Rect.MakeLTRB(-W, ground(H) - 30, 2 * W, 1.4 * H), skia.Paint(Alphaf=place.SHADE * k,       # only the floor: a layer the size of the frame is slow
                                      ColorFilter=skia.ColorFilters.Blend(skia.Color(r, g, b), skia.BlendMode.kSrcIn)))
         c.clipPath(place.sunlit(stage), True)                    # a shadow shows only where light would have fallen: the rest of the floor is already in the wall's shade
         if bench:                                                # the bench's own, and everyone at it
-            tall = float(bench.get("rise", 58)) + float(bench.get("front", 30)) + 9
+            tall = place.bench_top(bench)
             x0, x1 = slot_x(float(bench["from"]), W) - 70, slot_x(float(bench["to"]), W) + 70
             c.drawPath(skia.Path().addPoly([skia.Point(x0, y0 - 16), skia.Point(x1, y0 - 16), skia.Point(x1 + lean * tall, y0 + cast * tall), skia.Point(x0 + lean * tall, y0 + cast * tall)], True), fill("#000000"))
         for e, s in states.items():

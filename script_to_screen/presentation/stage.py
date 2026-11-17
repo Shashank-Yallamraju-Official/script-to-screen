@@ -5,6 +5,7 @@ the small motions, the place, each tone's lettering, each sound, each emotion's 
 entity's colour and voice. A change to the look never needs the scene worked out again.
 """
 from ..script import Show, load_yaml, place, tuning
+from ..vocabulary import keys
 
 
 class Look:
@@ -22,7 +23,7 @@ class Look:
         cast = {}
         for e in entities:
             sheet = tuning.overlay(load_yaml(root / "entities" / f"{e}.yaml"))
-            cast[e] = {k: sheet[k] for k in ("color", "voice", "timbre", "kind", "body", "size", "pair", "wrapped", "sprung", "swinging", "line", "claw", "outfit", "outfit_color", "trim", "plate", "upright", "climbs", "shot", "alight") if k in sheet}
+            cast[e] = {k: v for k, v in sheet.items() if k in keys.KNOWN["sheet"] and k not in ("tells", "bonds", "regards", "profile", "arc")}      # all of it but what only the performance reads
         return cls(cfg["width"], cfg["height"], cfg["fps"], show.feel, show.tones, show.sounds, show.emotions, cast, show.music, cfg.get("style"))
 
 

@@ -23,6 +23,11 @@ def back(k, amount):
     return 1 + (c + 1) * (k - 1) ** 3 + c * (k - 1) ** 2
 
 
+# An entity standing still, doing nothing: every number a body is drawn from. Anything that draws a body outside a scene (the land's
+# models, say) starts from this, so a new number added here reaches it too and nothing is ever missing.
+REST = dict(slot=4.0, facing=1.0, lx=0.0, ly=0.0, sx=1.0, sy=1.0, lean=0.0, alpha=1.0, going=1.0, travel=0.0, flip=0.0)
+
+
 def pose(stage, e, t):
     """What entity e looks like at time t, easing from its previous snapshot."""
     ks, feel = stage.score.pose[e], stage.look.feel

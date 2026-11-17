@@ -13,28 +13,33 @@ from . import anthem
 from .bodies import draw_body
 from .cards import _centred, _theme
 from .draw import col, fill, font, stroke
-from .motion import back, smooth
+from .motion import REST, back, smooth
 from .place import mix as place_mix, rgb as place_rgb
 
 
 def sky(card, c, t, strength):
     """The sun and the moon over the land, and its light on it. The sun rises in the east (the right) at a quarter of the way
     through a day and sets in the west; the moon has the other half. When days go by faster than a frame can show, both smear
-    into arcs and the light evens out, as in any time-lapse."""
+    into arcs and the light evens out, as in any time-lapse.
+
+    They belong to the land, not to the camera: their arc stands over the land's far (north) edge, from beyond its east side to
+    beyond its west, so as the camera travels they pass through the picture and out of it like anything else on the table."""
     W, H = card.look.W, card.look.H
+    where = card.where if hasattr(card, "where") else card.land.where     # the land's own projection, as last drawn
     now, was = card._clock(t), card._clock(t - 1 / card.look.fps)
     span = now - was
     span += (1 - span) * min(1.0, max(0.0, (span - 0.03) / 0.12)) if span < 1 else 0.0      # once days go by several a second, show the whole day at once: no flicker
     span = min(span, 1.0)
     n = 1 if span < 0.004 else 40
-    horizon, light, lean, bodies = H * 0.35, 0.0, 0.0, []
+    light, lean, bodies = 0.0, 0.0, []
     for i in range(n):
         f = (now - span + span * (i + 1) / n) % 1.0
         up = math.sin(2 * math.pi * (f - 0.25))                  # the sun's height: above the horizon from 0.25 to 0.75
         for body, h, ph in (("sun", up, (f - 0.25) % 1.0 * 2), ("moon", -up, (f - 0.75) % 1.0 * 2)):
-            if h <= -0.12:
+            if h <= 0:
                 continue
-            bodies.append((body, W * (0.86 - 0.72 * ph), horizon + 26 - h * H * 0.27, 255 * strength / n ** 0.6))
+            x, y, sc = where(920 * (1.08 - 1.16 * ph), -40, 380 * h)
+            bodies.append((body, x, y, sc, 255 * strength * smooth(h / 0.1) / n ** 0.6))
         day = smooth((up + 0.12) / 0.4)
         light += (0.34 + 0.66 * day) / n                           # full by day; a third of it by moonlight
         lean += (0.86 - 0.72 * ((f - 0.25) % 1.0 * 2 if up > 0 else (f - 0.75) % 1.0 * 2) - 0.5) / n      # which side the light is on
@@ -47,15 +52,12 @@ def sky(card, c, t, strength):
     dusk = 0.0 if n > 1 else max(0.0, 1 - abs(math.sin(2 * math.pi * (now % 1.0 - 0.25))) / 0.35)
     if dusk * strength > 0.004:                                   # and gold when the sun is on the horizon
         c.drawRect(skia.Rect.MakeWH(W, H), skia.Paint(BlendMode=skia.BlendMode.kMultiply, Color=col(place_mix("#ffffff", "#f2b25a", 0.45 * dusk * strength))))
-    c.save()
-    c.clipRect(skia.Rect.MakeWH(W, horizon))                      # they come up from behind the far edge of the land
-    for body, x, y, a in bodies:
+    for body, x, y, sc, a in bodies:                              # they come up from behind the far edge of the land
         if body == "sun":
-            c.drawCircle(x, y, 30, fill("#ffe9a0", a * 0.35))
-            c.drawCircle(x, y, 20, fill("#fff6d0", a))
+            c.drawCircle(x, y, 54 * sc, fill("#ffe9a0", a * 0.35))
+            c.drawCircle(x, y, 36 * sc, fill("#fff6d0", a))
         else:
-            c.drawCircle(x, y, 17, fill("#dfe6ff", a))
-    c.restore()
+            c.drawCircle(x, y, 30 * sc, fill("#dfe6ff", a))
 
 
 class Land:
@@ -147,6 +149,7 @@ class Land:
             sc = F / den * zoom
             return W / 2 + (x - cx) * sc, H0 + (y - cy) * TILT * sc - z * sc * stand, sc
 
+        self.where = proj
         at = {k: p["at"] for k, p in land["places"].items()}
         when = lambda p: float(p["at_bar"]) * self.bar if "at_bar" in p else None
         c.clear(col(self.TABLE))
@@ -261,8 +264,8 @@ class Land:
                 c.save()
                 c.translate(tx, ty)
                 c.scale(sc, sc * stand)
-                draw_body(c, sheet, dict(slot=x / 100.0, facing=float(p.get("facing", 1)), lx=0.0, ly=0.0, sx=1.0, sy=grow, lean=0.0, alpha=min(1.0, rise * 3), going=1.0,
-                                         travel=0.0, flip=0.0, lit=(-1, 0.7, "#f6c26b")), t, 0, 0, min(5.0, abs(y - cy) / 110))
+                draw_body(c, sheet, dict(REST, slot=x / 100.0, facing=float(p.get("facing", 1)), sy=grow, alpha=min(1.0, rise * 3),
+                                         lit=(-1, 0.7, "#f6c26b")), t, 0, 0, min(5.0, abs(y - cy) / 110))
                 c.restore()
                 if p.get("crown") and ruin < 0.5:
                     top = ty - (156 * sheet["size"] * sc + 10 * sc) * stand

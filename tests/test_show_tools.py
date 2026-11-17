@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import skia
 
-from script_to_screen.presentation import bodies, episode
+from script_to_screen.presentation import bodies, episode, readings
 from script_to_screen.script import load_yaml
 
 CROWN = Path(__file__).resolve().parent.parent / "shows" / "crown"
@@ -31,19 +31,19 @@ def test_an_inked_canvas_draws_a_line_round_a_solid_shape_and_not_round_a_shine(
 
 def test_the_days_between_two_scenes_pass_during_the_title_sequence():
     plan, look, cfg = episode.parts(CROWN, "the-vote")
-    title = next(p for p in plan if p["kind"] == "title")["draw"].__defaults__[0]
+    title = next(p for p in plan if p["kind"] == "title")["card"]
     assert title.span == (1, 120)
     first, last = title._clock(0.0), title._clock(title.seconds)
     assert int(first) == 1 and 0.5 < first % 1 < 1.0                # the evening of day 1
     assert int(last) == 120 and 0.25 < last % 1 < 0.5               # the morning of day 120
     assert all(title._clock(t + 0.1) >= title._clock(t) for t in np.arange(0, title.seconds, 0.1))      # time never runs backwards
-    travel = next(p for p in plan if p["kind"] == "travel")["draw"].__defaults__[0]
+    travel = next(p for p in plan if p["kind"] == "travel")["card"]
     assert travel.days == 0                                          # so the travel card after it only comes down
 
 
 def test_the_land_changes_as_its_history_says():
     plan, look, cfg = episode.parts(CROWN, "the-vote")
-    land = next(p for p in plan if p["kind"] == "title")["draw"].__defaults__[0]
+    land = next(p for p in plan if p["kind"] == "title")["card"]
     early, mid, late = (land.places(d)["signet"] for d in (5, 60, 118))
     assert early.get("smoke") and early["ruin"] == 1 and not early.get("flags")
     assert not mid.get("smoke") and 0 < mid["ruin"] < 1              # being rebuilt
@@ -53,7 +53,7 @@ def test_the_land_changes_as_its_history_says():
 
 
 def test_the_council_scene_is_one_held_wide_shot():
-    shots = [s for s in episode.shots(CROWN, "the-vote") if s["part"] == "the-council"]
+    shots = [s for s in readings.shots(CROWN, "the-vote") if s["part"] == "the-council"]
     assert len(shots) == 1 and shots[0]["zoom"] == 1.0
 
 

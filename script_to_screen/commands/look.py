@@ -48,12 +48,12 @@ def sheet(a):
           A("--part", "a segment's id: look at just that part"), A("--cols", "frames per row", type=int, default=4)],
          "s2s moments the-vote --part months-later --every 1", group="look")
 def moments(a):
-    from ..presentation import episode
+    from ..presentation import readings
     root = address.show_root(a.show)
     if not a.times and not a.every:
         raise Refused("no moments named", hint="give times in seconds, or --every <seconds>")
     try:
-        png = episode.sheet(root, a.episode, a.times, a.every, a.part, a.cols)
+        png = readings.sheet(root, a.episode, a.times, a.every, a.part, a.cols)
     except ValueError as e:
         raise Refused(str(e))
     return dict(file=str(png), text=str(png))
@@ -62,9 +62,9 @@ def moments(a):
 @command("listen", "Look at an episode's sound without hearing it: a picture of its loudness, and a list of what is wrong (stops dead, silences, a jump at a join).",
          [A("episode", "an episode's id")], "s2s listen the-vote", group="look")
 def listen(a):
-    from ..presentation import episode
+    from ..presentation import readings
     root = address.show_root(a.show)
-    png, found, levels = episode.listen(root, a.episode)
+    png, found, levels = readings.listen(root, a.episode)
     lines = [f"  {p['at']:>6}s  {p['level']:>4} dB  {p['part']}" for p in levels] + ([f"  ! {f['at']:>6}s  {f['what']}: {f['detail']}" for f in found] or ["  nothing wrong found"])
     return dict(file=str(png), findings=found, levels=levels, text="\n".join(lines + [str(png)]))
 
@@ -72,18 +72,30 @@ def listen(a):
 @command("rhythm", "An episode read as a song: each part's length in bars, the rise and fall of sound and movement bar by bar, and where it goes flat.",
          [A("episode", "an episode's id")], "s2s rhythm the-vote", group="look")
 def rhythm(a):
-    from ..presentation import episode
-    png, made, flats, curve = episode.rhythm(address.show_root(a.show), a.episode)
+    from ..presentation import readings
+    png, made, flats, curve = readings.rhythm(address.show_root(a.show), a.episode)
     lines = [f"  one bar is {curve['bar']}s; a phrase is 8 bars; the episode is {curve['bars']:g} bars"]
     lines += [f"  bar {p['starts']:>6g}  {p['bars']:>6g} bars  {p['part']}" + ("" if p["on_grid"] else "   ! off the grid") for p in made]
     lines += [f"  ! flat: {f['bars']} bars from bar {f['starts']} with no rise or fall" for f in flats] or ["  no flat stretches"]
     return dict(file=str(png), parts=made, flats=flats, curve=curve, text="\n".join(lines + [str(png)]))
 
 
+@command("frames", "Has the episode's picture changed since its frames were last kept? Lists the moments that look different. --accept keeps how it looks now.",
+         [A("episode", "an episode's id"), A("--accept", "the change was meant: keep how it looks now", action="store_true")], "s2s frames the-vote", group="look")
+def frames(a):
+    from ..presentation import readings
+    changed, png = readings.frames(address.show_root(a.show), a.episode, a.accept)
+    if a.accept:
+        return dict(ok=True, text="kept: this is now how the episode is expected to look")
+    lines = [f"  ! {label}: differs by {by}" for label, by in changed] or ["  the picture is as it was kept"]
+    return dict(ok=not changed, changed=changed, file=str(png) if png else None, text="\n".join(lines + ([f"  before (above) and now (below): {png}", "  if the change was meant: s2s frames <episode> --accept"] if changed else [])),
+                exit=FAILED if changed else 0)
+
+
 @command("shots", "Every camera shot in an episode, in order: when, how close, on whom, and why.", [A("episode", "an episode's id")], "s2s shots the-vote", group="look")
 def shots(a):
-    from ..presentation import episode
-    made = episode.shots(address.show_root(a.show), a.episode)
+    from ..presentation import readings
+    made = readings.shots(address.show_root(a.show), a.episode)
     return dict(shots=made, text="\n".join(f"  {s['at']:>6}s  {s['part']:<20} {'x' + str(s['zoom']) if s['zoom'] else '':<6} {', '.join(s['on']) or 'everyone':<12} {s['why']}" for s in made))
 
 

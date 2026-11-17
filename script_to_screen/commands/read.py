@@ -6,7 +6,7 @@ from pathlib import Path
 from ..performance import Scene
 from ..readers import inplay, ledger, parity
 from ..script import ScriptError, Show, find_root, load_yaml, series
-from ..vocabulary import CHANNELS, PARAMS, params
+from ..vocabulary import CHANNELS, PARAMS, keys, params
 from . import A, COMMANDS, FAILED, Refused, address, command, describe, edit
 
 
@@ -311,6 +311,21 @@ def drama_(a):
     return dict(scene=sc.id, events=events, cues=cues, text="\n".join(text))
 
 
+def _stray_keys(root):
+    """Keys in the show's place, land and entity files that nothing reads: nearly always a typo."""
+    out = []
+    for f in sorted((root / "places").glob("*.yaml")):
+        doc = load_yaml(f) or {}
+        out += keys.problems(doc, "place", f"places/{f.name}") + keys.problems(doc.get("light"), "light", f"places/{f.name}, light") + keys.problems(doc.get("bench"), "bench", f"places/{f.name}, bench")
+        for n, piece in enumerate(doc.get("pieces") or []):
+            out += keys.problems(piece, "piece", f"places/{f.name}, piece {n + 1}")
+    if (root / "land.yaml").exists():
+        out += keys.problems(load_yaml(root / "land.yaml"), "land", "land.yaml")
+    for f in sorted((root / "entities").glob("*.yaml")):
+        out += keys.problems(load_yaml(f), "sheet", f"entities/{f.name}")
+    return out
+
+
 @command("check", "Every problem in the show, or in one scene. Exit code 3 if there are errors.",
          [A("scene", "limit to one scene", nargs="?")], "s2s check thermostat")
 def check(a):
@@ -323,6 +338,7 @@ def check(a):
     problems = [p for p in problems if only is None or p["scene"] == only]
     if only is None:                                             # the show's own files, against the declarations
         problems += [dict(level=lv, scene="(show)", turn=None, msg=msg) for lv, msg in params.check_library(Show(root).feel)]
+        problems += [dict(level="warning", scene="(show)", turn=None, msg=msg) for msg in _stray_keys(root)]
     nerr = sum(p["level"] == "error" for p in problems)
     text = [f"{p['level']:5} {p['scene']}" + (f":{p['turn']}" if p.get("turn") is not None else "") + f"  {p['msg']}" for p in problems]
     return dict(ok=nerr == 0, errors=nerr, warnings=len(problems) - nerr, problems=problems,

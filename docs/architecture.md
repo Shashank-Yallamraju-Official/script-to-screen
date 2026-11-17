@@ -291,6 +291,7 @@ A show whose cast are objects (seals, matches, padlocks) with no faces, held in 
 | The land: the title sequence over it, and travel between scenes by way of it | `presentation/land.py` (`Land`, `Travel`) | `land.yaml` (`places`, `history`, `camera`), each scene's `day:` in series.yaml, each place's `land:`. A title sequence between two scenes plays the days between them: the land changes as `history` says (`ruin`, `ring`, `reach`, `flags`, each gradual with `over:`), under a sun and moon; the travel card after it only comes down |
 | The anthem and the bed that plays under travel | `presentation/anthem.py` | `library/music.yaml: theme: anthem` |
 | Rendering an episode part by part | `presentation/episode.py` | see below |
+| Looking at an episode without rendering it | `presentation/readings.py` | `s2s moments`, `shots`, `listen`, `rhythm`, `frames` |
 
 **How an episode is rendered.** Each part (a scene or a card) becomes a film of its own, as many at once as the machine has
 processors, and the parts are joined without encoding again. A part is stamped with everything it is made from (the engine, the
@@ -304,6 +305,10 @@ bars first; `swell` is the come-up alone). Cards are whole bars too, so every pa
 
 **Looking without rendering.** `s2s moments` (a contact sheet at chosen seconds), `s2s shots` (every camera shot and why),
 `s2s listen` (a picture of the sound, and what is wrong with it), `s2s rhythm` (the episode as a song: bars, rise and fall), `s2s render --draft` and `--only`.
+
+**Keys are declared once.** `vocabulary/keys.py` lists every key a show's files may use; the engine reads nothing else, and
+`s2s check` warns about anything else. **The look is kept.** `s2s frames` compares an episode with its kept frames
+(`frames/<episode>.png`); see `docs/tech-debt.md` for what is still owed.
 
 **Frames are repeatable.** The same frame is the same pixels on every run and in every process; nothing depends on the order
 frames are drawn in or on anything random per run. Tests and the part stamps rely on this.
