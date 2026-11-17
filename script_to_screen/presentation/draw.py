@@ -467,9 +467,16 @@ def draw_frame(c, stage, F, xray=False, slate=False):
     states = {e: s for e in stage.score.pose if (s := pose(stage, e, t)) is not None}
     bench = (stage.look.place or {}).get("bench")                # a raised bench: whoever stands along it sits up behind it
     seated = []
+    up = []                                                      # whoever is up on the bench, not behind it
     if bench:
         for e, s in states.items():
-            if float(bench["from"]) <= s["slot"] <= float(bench["to"]):
+            if stage.look.cast[e].get("climbs"):                 # one that does not sit at a bench: it jumps up onto it, from either end
+                near = min(s["slot"] - float(bench["from"]), float(bench["to"]) - s["slot"]) + 0.5
+                top = (float(bench.get("rise", 58)) + float(bench.get("front", 30)) + 9) * smooth(near)
+                states[e] = dict(s, rise=top + 120 * s.get("travel", 0.0))
+                if near > 0:
+                    up.append(e)
+            elif float(bench["from"]) <= s["slot"] <= float(bench["to"]):
                 states[e] = dict(s, rise=float(bench.get("rise", 58)))
                 seated.append(e)
     lamp = (stage.look.place or {}).get("light") if housed else None
@@ -493,7 +500,7 @@ def draw_frame(c, stage, F, xray=False, slate=False):
         grow, shake = 1 + 1.5 * k ** 1.4, 1 + 0.035 * k * math.sin(t * 70)
         s = states[coming[1]]
         states[coming[1]] = dict(s, sx=s["sx"] * grow * shake, sy=s["sy"] * grow / shake)
-        gx, gy, gr = slot_x(s["slot"], W), ground(H) - 110 * grow, 60 + 330 * k
+        gx, gy, gr = slot_x(s["slot"], W), ground(H) - s.get("rise", 0.0) - 110 * grow, 60 + 330 * k
         c.drawCircle(gx, gy, gr, skia.Paint(AntiAlias=True, Shader=skia.GradientShader.MakeRadial(
             skia.Point(gx, gy), gr, [col("#fff3c4", 200 * k), col("#f2a33a", 110 * k), col("#f2a33a", 0)], [0.0, 0.45, 1.0])))
         c.translate(5 * k * k * math.sin(t * 83), 4 * k * k * math.cos(t * 71))
@@ -509,9 +516,13 @@ def draw_frame(c, stage, F, xray=False, slate=False):
             focal = who
             dim = float(feel["focus_dim"]) * smooth((t - a0 + lead / 2) / lead) * (1 - smooth((t - a1 + lead / 2) / lead))
     soft = min(1.0, max(0.0, (cam.zoom - 1.9) / 0.8)) if cam.on else 0.0     # in a close shot, whoever it is not a shot of goes out of focus
-    for e in sorted(states, key=lambda e: (e in cam.on, bool(line and line["who"] == e))):
+    def token(e):
         o = states[e] if e == focal or not dim else dict(states[e], alpha=states[e]["alpha"] * (1 - dim))
         draw_token(c, stage.look.cast[e], o, W, H, feel, 0.0 if e in cam.on else 2.2 * soft, t)
+
+    for e in sorted(states, key=lambda e: (e in cam.on, bool(line and line["who"] == e))):
+        if e not in up:
+            token(e)
     if bench:                                                    # the bench's front, between the council and us, with a plate at each seat
         rise, front = float(bench.get("rise", 58)), float(bench.get("front", 30))
         x0, x1, y0 = slot_x(float(bench["from"]), W) - 62, slot_x(float(bench["to"]), W) + 62, ground(H) - rise - front
@@ -530,8 +541,10 @@ def draw_frame(c, stage, F, xray=False, slate=False):
                 c.drawString(str(ent["plate"]), px - f.measureText(str(ent["plate"])) / 2, y0 + 35, f, fill(INK, 230 * states[e]["alpha"]))
             else:                                                # no name yet: the plate carries the house's colour
                 c.drawCircle(px, y0 + 29, 7, fill(ent["color"], 255 * states[e]["alpha"]))
+    for e in up:                                                 # on the bench: in front of it, and of everyone sat behind it
+        token(e)
     if burst and burst[1] in states:                             # the fireball, from where it started, out past the edges of the frame
-        bx, by, r = slot_x(states[burst[1]]["slot"], W), ground(H) - 200, 230 + 2300 * (t - burst[0])
+        bx, by, r = slot_x(states[burst[1]]["slot"], W), ground(H) - 200 - states[burst[1]].get("rise", 0.0), 230 + 2300 * (t - burst[0])
         ball = skia.Paint(AntiAlias=True, Shader=skia.GradientShader.MakeRadial(
             skia.Point(bx, by), r, [col("#fffdf6"), col("#fffdf6"), col("#fbe6a2"), col("#f2a33a"), col("#f2a33a", 0)], [0.0, 0.5, 0.72, 0.9, 1.0]))
         c.drawCircle(bx, by, r, ball)

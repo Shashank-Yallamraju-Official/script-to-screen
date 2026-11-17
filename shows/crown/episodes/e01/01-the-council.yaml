@@ -50,15 +50,19 @@ turns:
     why: The nearest seal sees it. The question is the mystery, and it is not finished.
     hold: 0
   - id: 11
+    do: {match: {slot: 5}}
+    why: It jumps up onto the bench, between the great seal and the seal on its left hand. It is among them now.
+    hold: 6
+  - id: 12
     do: {match: {posture: lean_in}}
     camera: {"on": match, zoom: 2.4}       # the one close shot in the scene
     why: It tips, strikes its head, and is alight.
     hold: 7
-  - id: 12
+  - id: 13
     camera: wide
     why: Back to the whole room. It swells, slowly, and nobody moves.
     hold: 22
-  - id: 13
+  - id: 14
     sfx: [{at: 0, sound: blast, on: match}]
     why: It goes off. The frame is thrown, fills with light, and the light is all that is left.
     hold: 12
