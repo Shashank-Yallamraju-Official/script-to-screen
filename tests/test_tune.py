@@ -97,7 +97,8 @@ def test_every_declared_scope_can_be_reached(s2s):
         assert code == 0 and out["after"]["by"] == "hand", addr
     assert {r["address"] for r in s2s("tune", "list")[1]["tunes"]} == {"feel.overshoot", "sounds.thud.vol", "~angry.rate", "@b.reflex",
                                                                          "show.settle", "show.bubble_break"}
-    reached = {"turn.pause", "turn.hold", "reaction.beat", "syllable.length", "syllable.breath", "syllable.pitch", "syllable.stress"}
+    reached = {"turn.pause", "turn.hold", "reaction.beat", "syllable.length", "syllable.breath", "syllable.pitch", "syllable.stress",
+               "turn.bar", "sfx.at", "sfx.len", "sfx.vol"}             # these four are reached in test_placed_sounds.py
     assert all(p.scope in ("feel", "sound", "tone", "entity", "show") or p.key in reached for p in PARAMS.values())
 
 

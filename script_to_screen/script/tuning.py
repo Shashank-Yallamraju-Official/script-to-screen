@@ -38,6 +38,30 @@ def turn_value(raw, scene_doc, key, default):
     return float(default)
 
 
+SFX = ("at", "len", "vol")                           # what can be set by hand on one placed sound, keyed by its number in the turn (from 1)
+SFX_LEN = {"swell": 16, "blast": 16}                # how long a placed sound lasts, in steps, unless it says: two bars of come-up
+
+
+def bar_of(raw):
+    """The bar a turn asks to land on: its hand-set one, else its written one, else none."""
+    v = (raw.get("tune") or {}).get("bar", raw.get("bar"))
+    return float(v) if v is not None else None
+
+
+def sounds_of(raw):
+    """A turn's placed sounds as they will play: [{n, sound, on, at, len, vol}], hand-set values laid over written ones."""
+    tune, out = raw.get("tune") or {}, []
+    for n, fx in enumerate(raw.get("sfx") or [], 1):
+        sound = str(fx["sound"])
+        hand = lambda k: (tune.get("sfx_" + k) or {}).get(n)
+        length = hand("len") if hand("len") is not None else fx.get("len", SFX_LEN.get(sound))
+        out.append(dict(n=n, sound=sound, on=fx.get("on", fx.get(True)),      # YAML reads a bare `on:` as true
+                        at=float(hand("at") if hand("at") is not None else fx.get("at", 0)),
+                        len=float(length) if length is not None else None,
+                        vol=float(hand("vol") if hand("vol") is not None else fx.get("vol", 1))))
+    return out
+
+
 def line_text(say):
     """A line's words as one string, however it was written."""
     return " ".join(str(x) for x in say) if isinstance(say, (list, tuple)) else str(say)

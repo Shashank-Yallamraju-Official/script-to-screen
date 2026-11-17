@@ -34,6 +34,15 @@ def in_play(score, steps, window=4.0):
     for s in turn["stretches"]:                                  # 1. whose time is it
         if s["address"] and s["start"] <= steps < s["start"] + s["length"]:
             add(s["address"], s["label"], (s["start"], s["start"] + s["length"]))
+    for other in score.turns:                                    # 1b. a sound placed by hand near here: when it starts, how long, how loud
+        for fx in other.get("sfx") or []:
+            long = fx["len"] or 4.0
+            lead = long if fx["sound"] == "blast" else 0.0       # an explosion's length is the swell before it
+            if fx["start"] - lead - window <= steps <= fx["start"] + (long - lead) + window:
+                for name in ("at", "len", "vol"):
+                    add(f"{score.id}:{other['id']}.x{fx['n']}.{name}", f"the {fx['sound']}", (fx["start"] - lead, fx["start"] + max(long - lead, 4.0)))
+    if turn.get("bar") is not None:                              # 1c. the bar this turn lands on
+        add(f"{here}.bar", f"turn {turn['id']} lands on bar {turn['bar']:g}", (turn["start"], turn["start"] + turn["length"]))
     say = turn["start"] + turn["say_at"]
     line = (say, say + turn["reveal"]) if turn["line"] else None
     if line and line[0] <= steps < line[1]:                      # 2. the syllable being spoken
@@ -63,6 +72,7 @@ def in_play(score, steps, window=4.0):
             for p in PARAMS.values():                            # its level, the room it sits in, how it ducks under speech, its warmth
                 if p.scope == "feel" and "cue" in p.exercised_by:
                     add(p.key, f"music marks this moment ({c['kind']})", (at, at + 8))
+    add("sounds.air.vol", "the room's own sound, under everything", (max(0.0, steps - 8), steps + 8))      # the air of the place, if it has one
     if line and line[0] - window <= steps < line[1] + window:    # 4. the tone of the line, and its speaker
         who, tone = turn["who"], turn["line"]["tone"]
         for name in ("rate", "pitch", "vol", "range", "stretch"):
@@ -86,6 +96,8 @@ def _matches(p, address):
         return p.key == "show." + name
     if "." in address and address.split(".")[0] == "feel":
         return p.key == address
+    if ".x" in address and address.rsplit(".", 2)[-2][:1] == "x" and address.rsplit(".", 2)[-2][1:].isdigit():
+        return p.scope == "sfx" and p.name == name
     return p.name == name and p.scope in ("turn", "syllable", "reaction")
 
 
@@ -94,4 +106,4 @@ def _group(p):
     if p.owns_time:
         return "time"
     return {"syllable.pitch": "pitch", "syllable.stress": "stress"}.get(p.key) or \
-           {"feel": "sound" if p.rebuild == "sound" else "motion", "sound": "sound", "tone": "tone", "entity": "entity"}.get(p.scope, "time")
+           {"feel": "sound" if p.rebuild == "sound" else "motion", "sound": "sound", "sfx": "sound", "tone": "tone", "entity": "entity"}.get(p.scope, "time")

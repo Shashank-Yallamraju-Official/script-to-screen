@@ -127,14 +127,14 @@ class Target:
     def address(self):
         w = self.where
         return {"turn": lambda: f"{w['scene']}:{w['turn']}.{self.name}", "syllable": lambda: f"{w['scene']}:{w['turn']}.s{w['n']}.{self.name}",
-                "reaction": lambda: f"{w['scene']}:{w['turn']}.r{w['n']}.{self.name}", "scene": lambda: f"{w['scene']}.{self.name}",
+                "reaction": lambda: f"{w['scene']}:{w['turn']}.r{w['n']}.{self.name}", "sfx": lambda: f"{w['scene']}:{w['turn']}.x{w['n']}.{self.name}", "scene": lambda: f"{w['scene']}.{self.name}",
                 "show": lambda: f"show.{self.name}" + (f".{w['mark']}" if "mark" in w else ""), "feel": lambda: f"feel.{self.name}", "sound": lambda: f"sounds.{w['sound']}.{self.name}",
                 "tone": lambda: f"~{w['tone']}.{self.name}", "entity": lambda: f"@{w['entity']}.{self.name}"}[self.scope]()
 
     def holder(self, doc):
         """The mapping in `doc` that owns this value's tune block."""
         w = self.where
-        if self.scope in ("turn", "syllable", "reaction"):
+        if self.scope in ("turn", "syllable", "reaction", "sfx"):
             return edit.find_turn(doc, w["turn"])[1]
         if self.scope == "sound":
             return doc[w["sound"]]
@@ -196,7 +196,7 @@ def parse(ref, show=None):
         return Target(root, "syllable.breath", "show", root / "show.yaml", mark=mark)
     if ref.startswith("show."):
         return Target(root, _param("show", ref[5:]), "show", root / "show.yaml")
-    m = re.fullmatch(r"(.+):([^:.]+)\.(?:([sr])(\d+)\.)?([a-z_]+)", ref)
+    m = re.fullmatch(r"(.+):([^:.]+)\.(?:([srx])(\d+)\.)?([a-z_]+)", ref)
     if m:
         _, path = address.scene(m.group(1), show)
         sid, kind, name = address.of(root, path), m.group(3), m.group(5)
@@ -210,6 +210,11 @@ def parse(ref, show=None):
                 raise Refused(f"turn {tid} has no syllable {m.group(4)}", hint=(f"its line has {count}: " + " | ".join(
                     f"{k + 1} {s['text'].strip()}" for k, s in enumerate(sc.turns[i]["sylls"]))) if count else "this turn has no line")
             return Target(root, _param("syllable", name), "syllable", path, scene=sid, turn=tid, n=int(m.group(4)))
+        if kind == "x":
+            placed = turn.get("sfx") or []
+            if not 1 <= int(m.group(4)) <= len(placed):
+                raise Refused(f"turn {tid} has no placed sound {m.group(4)}", hint=f"it has {len(placed)}" if placed else "this turn places no sound (`sfx:`)")
+            return Target(root, _param("sfx", name), "sfx", path, scene=sid, turn=tid, n=int(m.group(4)))
         if kind == "r":
             reacts = turn.get("react") or []
             if not 1 <= int(m.group(4)) <= len(reacts) or "beat" not in reacts[int(m.group(4)) - 1]:
@@ -269,6 +274,12 @@ def chain(t, doc=None):
         base = scene_of(t.file).turns[i]["sylls"][w["n"] - 1]["base"][name]
         written = turn.get({"length": "rhythm", "pitch": "melody", "stress": "stress"}[name])
         add("syllable", "written" if written is not None else "worked out", base)
+    elif t.scope == "sfx":
+        turn = edit.find_turn(doc, w["turn"])[1]
+        item = turn["sfx"][w["n"] - 1]
+        add("sfx", "hand", ((turn.get("tune") or {}).get("sfx_" + name) or {}).get(w["n"]))
+        default = {"at": 0, "vol": 1, "len": tuning.SFX_LEN.get(str(item["sound"]))}[name]
+        add("sfx", "written" if item.get(name) is not None else "default", item.get(name, default))
     elif t.scope == "reaction":
         turn = edit.find_turn(doc, w["turn"])[1]
         add("reaction", "hand", ((turn.get("tune") or {}).get("beat") or {}).get(w["n"]))
@@ -299,16 +310,21 @@ def inherited(t, doc=None):
 def set_in(doc, t, value):
     """Set a hand-set value in a loaded document. -> hand-set values this discards (tunes for an earlier wording)."""
     gone = anchor(t.holder(doc)) if t.scope == "syllable" else []
-    put(t.holder(doc), t.name, value, t.n)
+    put(t.holder(doc), _block(t), value, t.n)
     return gone
 
 
+def _block(t):
+    """The name a value is kept under in a `tune:` block: a placed sound's are marked as such."""
+    return "sfx_" + t.name if t.scope == "sfx" else t.name
+
+
 def reset_in(doc, t):
-    return drop(t.holder(doc), t.name, t.n)
+    return drop(t.holder(doc), _block(t), t.n)
 
 
 def locked(t):
-    if t.scope in ("turn", "syllable", "reaction", "scene"):
+    if t.scope in ("turn", "syllable", "reaction", "sfx", "scene"):
         seg = series(t.root).by_id[t.where["scene"]]
         if seg["status"] == "locked":
             raise Refused(f"{seg['id']} is locked", hint=f"unlock it first: s2s set-status {seg['id']} tuned")

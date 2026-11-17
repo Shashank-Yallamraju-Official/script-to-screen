@@ -58,6 +58,8 @@ PARAMS = {p.key: p for p in [
       "timing", fine=0.25, owns_time=True, words=("pause", "wait", "gap before", "beat before")),
     _("turn.hold", "Hold", "Steps the scene rests after a turn has played.", "steps", 0, 400, 1, "a turn's `hold:`, else show.yaml timing.hold",
       "timing", fine=0.25, owns_time=True, words=("hold", "silence after", "linger", "breathing room")),
+    _("turn.bar", "Bar", "The bar this turn lands on: a line starts on it, anything else begins on it. Whatever comes before waits for it.", "bars", 0, 400, 0.125,
+      "a turn's `bar:`", "timing", fine=0.03125, exercised_by=("bubble",), words=("bar", "lands", "slide", "earlier", "later", "on the beat", "off the beat")),
     _("show.settle", "Settle", "Steps a turn with no line takes before its hold.", "steps", 0, 64, 1, "show.yaml timing.settle",
       "timing", fine=0.25, owns_time=True, words=("settle", "wordless turn")),
     _("show.bubble_break", "Bubble break", "A pause of at least this many steps starts a new bubble.", "steps", 0.5, 8, 0.5, "show.yaml timing.bubble_break",
@@ -131,6 +133,13 @@ PARAMS = {p.key: p for p in [
       "library/feel.yaml duck", "sound", exercised_by=("cue",), words=("duck", "music under dialogue", "music too loud over speech", "sidechain")),
     _("feel.warmth", "Warmth", "How far the music is pushed into soft saturation: rounder and fuller, with its peaks smoothed off.", "amount", 0, 1, 0.05,
       "library/feel.yaml warmth", "sound", exercised_by=("cue",), words=("warm", "saturation", "round", "thin", "harsh", "fuller", "soft")),
+    # ---- one sound placed by hand in a turn (`sfx:`): this one, as against every sound of its kind ----------
+    _("sfx.at", "Starts", "Steps into its turn at which this sound starts.", "steps", -64, 400, 1, "a turn's `sfx:` item, `at:`",
+      "timing", fine=0.25, exercised_by=("sfx",), words=("sound earlier", "sound later", "sync", "hit", "when the sound starts")),
+    _("sfx.len", "Lasts", "Steps this sound lasts. For an explosion, how long it swells before it goes off.", "steps", 1, 96, 1, "a turn's `sfx:` item, `len:`",
+      "timing", fine=0.25, exercised_by=("sfx",), words=("shorter", "longer", "tail", "swell", "build", "come-up")),
+    _("sfx.vol", "Level", "How loud this one sound is, against others of its kind. 1 is as its kind is set.", "times", 0, 2, 0.05, "a turn's `sfx:` item, `vol:`",
+      "timing", fine=0.01, exercised_by=("sfx",), words=("louder", "quieter", "this one")),
     # ---- a sound: library/sounds.yaml -------------------------------------------------------------------
     _("sound.vol", "Volume", "Volume (0 is off).", "level", 0, 1, 0.01, "library/sounds.yaml <sound>.vol", "sound", words=("louder", "quieter", "mute")),
     _("sound.freq", "Pitch", "Starting pitch in Hz.", "Hz", 40, 2000, 5, "library/sounds.yaml <sound>.freq", "sound", words=("higher", "lower", "thud", "ping")),

@@ -554,10 +554,13 @@ def swell(c, stage, states, t):
     """Whatever is about to go off (a `blast` on it, within two bars) swells first: slowly, glowing, and shaking harder as it
     fills, until the frame shakes with it. -> states, with that one grown."""
     W, H = stage.W, stage.H
-    long = SWELL_STEPS * stage.score.step
-    coming = next(((at, who) for at, name, who, _ in stage.score.events if name == "blast" and t < at <= t + long and who in states), None)
+    step = stage.score.step
+    own = {round(fx["start"] * step, 4): fx["len"] for turn in stage.score.turns for fx in turn.get("sfx") or [] if fx["sound"] == "blast" and fx["len"]}     # a blast can say how long it swells
+    coming = next(((at, who, (own.get(round(at, 4)) or SWELL_STEPS) * step) for at, name, who, _ in stage.score.events if name == "blast" and who in states
+                   and t < at <= t + (own.get(round(at, 4)) or SWELL_STEPS) * step), None)
     if not coming:
         return states
+    long = coming[2]
     k = 1 - (coming[0] - t) / long
     grow, shake = 1 + 1.5 * k ** 1.4, 1 + 0.035 * k * math.sin(t * 70)
     s = states[coming[1]]

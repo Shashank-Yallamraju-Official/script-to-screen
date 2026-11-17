@@ -337,7 +337,7 @@ class Scene:
             # before waits the difference, so beats fall where the music's would. A speaking turn's line starts on its bar.
             turns_raw, waited = self.script.get("turns") or [], 0.0
             nxt = turns_raw[i + 1] if i + 1 < len(turns_raw) else None
-            asked = nxt.get("bar") if nxt else self.script.get("bars")
+            asked = tuning.bar_of(nxt) if nxt else self.script.get("bars")
             if asked is not None:
                 lead = float(tuning.turn_value(nxt, self.script, "pause", T["pause"])) if nxt and (nxt.get("say") or nxt.get("sing")) else 0.0
                 wait = float(asked) * self.bar - lead - (t0 + length)
@@ -367,12 +367,14 @@ class Scene:
                         bub["end"] = (t0 + min(r["at"] for r in reacts if r["beat"])) * sec
                     self.lines.append(bub)
                     self.events.append((bub["start"], "bubble", who))
-            for fx in raw.get("sfx") or []:          # explicit sounds: [{at: steps, sound: name}], and `on: <entity>` to say whose it is
-                self.events.append(((t0 + float(fx.get("at", 0))) * sec, str(fx["sound"]), fx.get("on", fx.get(True))))        # YAML reads a bare `on:` as true
+            placed = tuning.sounds_of(raw)           # explicit sounds: [{at: steps, sound: name}], and `on: <entity>` to say whose it is
+            for fx in placed:
+                self.events.append(((t0 + fx["at"]) * sec, fx["sound"], fx["on"]))
             if raw.get("through") is not None:       # whoever enters on this turn comes in through the window at that slot (and whatever hangs over it)
                 for e in raw.get("enter") or {}:
                     self.events.append((t0 * sec, f"through:{raw['through']}", e))
-            self.turns.append(dict(id=tid, index=i, start=t0, length=length, waited=waited, who=who, why=str(raw.get("why") or ""),
+            self.turns.append(dict(id=tid, index=i, start=t0, length=length, waited=waited, bar=tuning.bar_of(raw), sfx=[dict(fx, start=t0 + fx["at"]) for fx in placed],
+                                   who=who, why=str(raw.get("why") or ""),
                                    pause=pause, hold=hold, latency=a[who]["latency"] if say else 0, say_at=say_at,
                                    reveal=reveal, react=react if late else 0, line=line, sylls=sylls,
                                    rhythm=raw.get("rhythm"), melody=raw.get("melody"), stress=raw.get("stress"),

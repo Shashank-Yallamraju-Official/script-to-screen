@@ -29,7 +29,7 @@ def test_the_demo_library_matches_the_declarations():
 
 
 def test_the_editors_timing_limits_come_from_the_declarations():
-    assert editor.NUMBERS == {"pause": 200, "hold": 400}
+    assert editor.NUMBERS == {"pause": 200, "hold": 400, "bar": 400}
 
 
 def test_a_tell_cannot_name_an_entity_but_an_action_can():
@@ -57,6 +57,6 @@ def test_an_action_that_names_an_unknown_entity_is_an_error(show):
 def test_the_command_line_lists_the_vocabulary(capsys):
     import json
     assert commands.run(["params", "--json", "--scope", "turn"]) == 0
-    assert [p["key"] for p in json.loads(capsys.readouterr().out)["params"]] == ["turn.pause", "turn.hold"]
+    assert [p["key"] for p in json.loads(capsys.readouterr().out)["params"]] == ["turn.pause", "turn.hold", "turn.bar"]
     assert commands.run(["channels", "--json"]) == 0
     assert {c["key"] for c in json.loads(capsys.readouterr().out)["channels"]} == set(CHANNELS)

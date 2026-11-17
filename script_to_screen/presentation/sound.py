@@ -58,6 +58,9 @@ def blast():
     return np.tanh(x * 1.2) * 1.6 * np.clip((4.2 - t) / 1.2, 0, 1) ** 2          # it dies away to nothing: it is never cut off
 
 
+UNITY = 0.8          # the level in library/sounds.yaml at which a built-in sound (blast, swell, air) plays as it was made
+
+
 def swell(seconds):
     """What comes before an explosion: a low hum that rises and tightens, and stops dead as it goes off."""
     t = np.arange(int(seconds * RATE)) / RATE
@@ -124,21 +127,26 @@ def mix(stage):
             add(voices, s["start"], note(hz, min(s["voiced"], 0.6), tone.get("vol", 0.5) * LOUD[s["stress"]], ent.get("timbre", "sine"),
                                          float(feel["voice_attack"]), float(feel["voice_ring"])))
     aside = float(feel["aside_volume"])                          # a reaction in passing is quieter
+    step = stage.score.step
+    placed = {(round(fx["start"] * step, 4), fx["sound"]): fx for t in stage.score.turns for fx in t.get("sfx") or []}      # sounds a turn placed by hand, with their own length and level
+    kind_level = lambda name: float((stage.look.sounds.get(name) or {}).get("vol", UNITY)) / UNITY      # every sound of a kind: library/sounds.yaml <kind>.vol
     for at, name, _, quiet in stage.score.events:
+        fx = placed.get((round(at, 4), name)) or {}
+        level, long = kind_level(name) * float(fx.get("vol", 1)), float(fx.get("len") or 16) * step
         if name == "blast":                                      # an explosion: not one of the small sounds, and never quiet
-            add(effects, at, blast())
-            lead = min(16 * stage.score.step, at)                # the come-up: two bars of rising hum
-            add(effects, at - lead, swell(lead))
+            add(effects, at, blast() * level)
+            lead = min(long, at)                                 # the come-up: a rising hum, two bars unless it says
+            add(effects, at - lead, swell(lead) * level)
             continue
-        if name == "swell":                                      # the come-up alone: it rises for two bars and stops dead, with nothing after it
-            add(effects, at, swell(16 * stage.score.step))
+        if name == "swell":                                      # the come-up alone: it rises and stops dead, with nothing after it
+            add(effects, at, swell(long) * level)
             continue
         p = sound_for(stage.look.sounds, name)
         if p and float(p.get("vol", 0)) > 0:
             add(effects, at, effect(p) * (aside if quiet else 1.0))
     kind = (stage.look.place or {}).get("air")                   # the room is never dead quiet: the air of the place, under everything
     if kind:
-        effects += air(n, kind)
+        effects += air(n, kind) * kind_level("air")
     settings, vol = stage.look.music, float(feel.get("music_volume", 0.6))
     cues = stage.score.music if vol > 0 else []                  # the score names the cue; the look says what it sounds like
     tune = music.render(cues, stage.score.step, n, settings) * vol

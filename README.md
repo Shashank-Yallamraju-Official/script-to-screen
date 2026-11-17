@@ -584,6 +584,9 @@ let go, that one value is written to the file (comments and layout kept) and rec
 journal. The editor follows the files, so a change made elsewhere, by the assistant or in a
 text editor, appears within half a second and is never overwritten.
 
+In a show with bars (`beats_per_bar` in show.yaml) the ruler counts bars, with a stronger line every
+eight. If a nudge pushes a line off the bar it was asked to land on, the editor says so, and Undo takes it back.
+
 **Whose time is it?** The top strip of the timeline divides the scene into stretches, and
 every stretch belongs to exactly one value: a pause, a syllable, a breath (hatched), a held
 reaction, a hold. Click a stretch and the **knob** appears on that value.
@@ -606,7 +609,11 @@ reaction, a hold. Click a stretch and the **knob** appears on that value.
 | Hover the dots beside the value | See every scope's say. One dot per scope, narrowest first; the filled one is where the value comes from, and it is coloured if set by hand |
 | Click or drag the ruler; Left and Right (Shift for a whole step) | Move through the scene |
 | Drag a turn's right edge | Change its hold |
-| Drag a line | Change the pause before it starts |
+| Drag a line | Change the pause before it starts. In a show with bars, a line that has a `bar:` moves to another bar instead (it snaps to eighths of a bar; Shift for finer), and what comes before it waits |
+| Drag a sound in the sounds lane | Change when it starts. Drag its edge to change how long it lasts (for an explosion, how long it swells first) |
+| Click a sound, then Tab | Put the knob on its start, its length, then its level. `/` then "louder" finds the level of every sound of that kind |
+| Click a part in the strip above the timeline | Open another part of the episode: a scene, the title sequence, a journey over the land, the credits |
+| On a card: drag its music; Up, Down | Change where the music lands, by eighths of a bar; make it louder or quieter. Written to that segment in series.yaml as `tune: {music_at, music_vol}` |
 | Drag the right edge of an outlined box in an entity's lane | Change how long a featured reaction holds the scene |
 | Drag a note up or down | Change a syllable's pitch (Alt for notes outside the scale) |
 | Drag a note's right edge | Change a syllable's length |

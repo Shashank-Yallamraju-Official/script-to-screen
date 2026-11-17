@@ -23,3 +23,10 @@ Status: **open** (still hurts), **eased** (a workaround exists), **fixed** (gone
 | 14 | 2026-11-16 | The map's cogs turned a different way on each run (Python's per-run string hashing) | Frames were not repeatable; parts rendered in separate processes could disagree | **fixed**: a fixed checksum decides |
 | 15 | 2026-11-16 | Scenes have no sound at all between spoken lines: complete digital silence, found by `s2s listen` | Each scene may feel dead between lines against the music before and after | **fixed**: a place can have `air: warm | cold`, a quiet bed under the scene |
 | 16 | 2026-11-16 | Nothing said whether an episode had a rhythm: scenes and music ran on different tempos and nothing landed on a beat | The second council was 40 bars with no rise or fall and nobody could see it | **fixed**: one tempo; `bar:` on a turn and `bars:` on a scene place beats on the grid (and `s2s check` refuses a beat that cannot land); `s2s rhythm` draws the episode as a song |
+
+## 17. Small timings could only be changed by asking (2026-11-17)
+
+Moving a sound a few steps, shortening a swell, or sliding a line to another bar meant a request and a render.
+Now the editor has them as handles: placed sounds are blocks (start, length, level), a line with a `bar:` drags
+to another bar, every sound kind has one level in library/sounds.yaml, and the title, the journey and the credits
+open in the same editor with their music as a block. Not done: a card's own length, and the camera path over the land.

@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from script_to_screen import commands
-from script_to_screen.performance import Scene, drama, scoring
+from script_to_screen.performance import Scene, scoring
 from script_to_screen.presentation import sound
 from script_to_screen.presentation.stage import Look, Stage
 from script_to_screen.script import load_yaml, series

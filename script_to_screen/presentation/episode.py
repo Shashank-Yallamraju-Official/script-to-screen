@@ -22,7 +22,7 @@ import skia
 
 from ..performance.scene import Scene
 from ..script import Show, load_yaml, series, tuning
-from . import cards, land, sound
+from . import anthem, cards, land, sound
 from .draw import PAPER, col, draw_frame
 from .stage import Look, Stage
 
@@ -88,6 +88,11 @@ def parts(root, eid):
                 card.span = (int(around[0]["day"]), int(around[1]["day"])) if all(around) else None
             out.append(dict(id=sg["id"], kind=sg["card"], card=card, frames=round(card.seconds * look.fps), draw=lambda c, F, card=card: card.draw(c, F / look.fps),
                             sound=card.sound))
+        if sg["kind"] == "card":                                         # a card's music can be set by hand: where it lands (in bars, later or earlier) and how loud it is
+            hand = sg.get("tune") or {}
+            out[-1]["music_at"] = float(hand.get("music_at", 0)) * anthem.BAR
+            if float(hand.get("music_vol", 1)) != 1:
+                out[-1]["sound"] = lambda made=out[-1]["sound"], vol=float(hand["music_vol"]): made() * vol
         out[-1]["into"] = sg.get("into") or ("cut" if sg["kind"] == "scene" and n and segs[n - 1].get("card") == "travel" else cfg["transition"])
     return out, look, cfg
 
@@ -97,7 +102,9 @@ def soundtrack(plan, fps):
     total = sum(p["frames"] for p in plan)
     track, at = np.zeros(int((total / fps + 2.0) * sound.RATE)), 0
     for part in plan:
-        x, i = part["sound"](), int(at / fps * sound.RATE)
+        x, i = part["sound"](), int((at / fps + part.get("music_at", 0.0)) * sound.RATE)
+        if i < 0:                                                    # music asked to land before the film starts: it comes in already going
+            x, i = x[-i:], 0
         track[i:i + len(x)] += x[: len(track) - i]
         at += part["frames"]
     return np.tanh(track / 0.89) * 0.89

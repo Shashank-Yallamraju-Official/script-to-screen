@@ -21,7 +21,11 @@ from urllib.parse import parse_qs, urlparse
 
 from ..commands import Refused, address, edit, tune
 from ..performance import Scene, carry_into
-from ..presentation import sound
+import numpy as np
+import skia
+
+from ..presentation import anthem, sound
+from ..presentation import episode as film
 from ..presentation.draw import hits
 from ..presentation.framecache import FrameCache
 from ..presentation.render import out_path
@@ -71,6 +75,9 @@ def apply_ops(root, path, sid, doc, score, ops):
             n = int(where[3]) + 1
             was = next(r["beat"] for r in played["reacts"] if r["index"] == n - 1)
             hand(doc, tune.Target(root, "reaction.beat", "reaction", path, scene=sid, turn=tid, n=n), max(float(value), 0.25), changes, tune.tidy(was))
+        elif len(where) == 5 and where[2] == "sfx" and where[4] in tuning.SFX:      # one placed sound: when it starts, how long it lasts, how loud it is
+            n = int(where[3])
+            hand(doc, tune.Target(root, "sfx." + where[4], "sfx", path, scene=sid, turn=tid, n=n), value, changes, tune.tidy(played["sfx"][n - 1][where[4]]))
         elif len(where) == 3 and where[2] in NUMBERS:
             hand(doc, tune.Target(root, "turn." + where[2], "turn", path, scene=sid, turn=tid), value, changes, tune.tidy(played[where[2]]))
         elif len(where) == 3 and where[2] in LISTS and value is not None:
@@ -102,14 +109,15 @@ class Session:
         self.path = Path(path).resolve()
         self.lock = threading.Lock()
         self.rev = self.info_rev = 0
+        self.card, self.sketch, self._plan, self._shots = None, {}, None, {}     # the card that is open, if one is; a value of its being dragged; the episode's parts; card frames already drawn
         self.load()
         tune.played = lambda p: self.clean[1] if p == self.path and self.clean[0] == p.read_text() else None   # spare the tune commands a rebuild
 
     # ---- reading the files ---------------------------------------------------------------------
     def files(self):
         """Everything this scene's picture and sound depend on."""
-        return [self.root / "show.yaml", self.root / "series.yaml", *sorted((self.root / "library").glob("*.yaml")),
-                *sorted((self.root / "entities").glob("*.yaml")), *scene_paths(self.root)]
+        return [self.root / "show.yaml", self.root / "series.yaml", self.root / "land.yaml", *sorted((self.root / "library").glob("*.yaml")),
+                *sorted((self.root / "entities").glob("*.yaml")), *sorted((self.root / "places").glob("*.yaml")), *scene_paths(self.root)]
 
     def stamp(self):
         return {str(p): p.stat().st_mtime_ns for p in self.files() if p.exists()}
@@ -159,7 +167,121 @@ class Session:
             self.inform()
         return dict(rev=self.rev, info_rev=self.info_rev, changed=changed)
 
+    # ---- the episode's other parts: its title sequence, its journeys over the land, its credits -----------
+    CARD = dict(title=("anthem", "The title sequence: the anthem, whole."), travel=("anthem (low figure)", "A journey over the land, down to the next scene."),
+                credits=("anthem", "The credits."), caption=(None, "A caption."))
+    MUSIC = dict(music_at=(-16.0, 64.0, 0.0), music_vol=(0.0, 2.0, 1.0))      # a card's hand-set values: lowest, highest, and what it is when not set
+
+    def plan(self):
+        """The episode this scene is in, as its parts in order. Worked out when first asked for, and again when a file has changed."""
+        key = tuple(sorted(self.stamp().items()))
+        if self._plan is None or self._plan[0] != key:
+            self._plan, self._shots = (key, film.parts(self.root, self.seg["episode"])), {}
+        return self._plan[1]
+
+    def part(self):
+        return next(p for p in self.plan()[0] if p["id"] == self.card)
+
+    def episode(self):
+        """Every part of the episode, for the strip above the timeline: what it is, where it starts and how long it runs, in bars."""
+        plan, look, _ = self.plan()
+        out, at = [], 0.0
+        for p in plan:
+            bars = p["frames"] / look.fps / anthem.BAR
+            out.append(dict(id=p["id"], kind=p["kind"], at=round(at, 2), bars=round(bars, 2), here=p["id"] == (self.card or self.seg["id"])))
+            at += bars
+        return out
+
+    def open_part(self, pid):
+        """Open another part of the episode: a scene, or a card."""
+        sg = next(s for s in series(self.root).episode(self.seg["episode"])["segments"] if s["id"] == pid)
+        if sg["kind"] == "scene":
+            self.card, self.path = None, sg["path"]
+            self.load()
+        else:
+            self.card, self.sketch = pid, {}
+            self.rev += 1
+
+    def card_state(self):
+        """A card, in the shape the timeline expects of a scene: one turn as long as the card, and its music as a placed sound."""
+        (_, look, _), part = self.plan(), self.part()
+        show = load_yaml(self.root / "show.yaml")
+        step = 60.0 / float(show["tempo"]) / show["steps_per_beat"]
+        bar = show["steps_per_beat"] * int(show.get("beats_per_bar") or 0)
+        steps = part["frames"] / look.fps / step
+        sg = next(s for s in series(self.root).episode(self.seg["episode"])["segments"] if s["id"] == self.card)
+        hand = {**(sg.get("tune") or {}), **self.sketch}
+        name, why = self.CARD[part["kind"]]
+        music = name and dict(name=name, at=float(hand.get("music_at", 0)), vol=float(hand.get("music_vol", 1)),
+                              len=min(len(self.card_sound()) / sound.RATE / step, steps * 2))
+        done, undone = edit.stacks(self.root, by="hand")
+        turn = dict(id=part["kind"], index=0, start=0, length=steps, why=why, who=None, bar=None, sfx=[], pause=0, hold=0, say=None, lanes={}, reacts=[], stretches=[], orphans=0)
+        return dict(rev=self.rev, info_rev=self.info_rev, id=self.card, can_undo=bool(done), can_redo=bool(undone), status="draft", fps=look.fps, step=step, tempo=float(show["tempo"]),
+                    spb=show["steps_per_beat"], scale=[], lead=self.lead, bar=bar, bars=None, width=look.W, height=look.H, total=part["frames"], steps=steps,
+                    title=f"{self.card} ({part['kind']})", file="series.yaml", index=self.i, count=len(self.paths), entities=[], emotions={}, turns=[turn], problems=[],
+                    music=[], carried=[], offscreen=[], ledger={}, card=dict(id=self.card, kind=part["kind"], music=music))
+
+    def card_sound(self):
+        part = self.part()
+        if "heard" not in part:
+            part["heard"] = part["sound"]()
+        return part["heard"]
+
+    def card_audio(self):
+        """The card's sound as the film will have it: its music where it has been asked to land."""
+        x, i = self.card_sound(), int(self.part().get("music_at", 0.0) * sound.RATE)
+        x = x[-i:] if i < 0 else np.concatenate([np.zeros(i), x])
+        return sound.wav_bytes(np.tanh(x / 0.89) * 0.89)
+
+    def card_frame(self, F, full):
+        (_, look, _), part = self.plan(), self.part()
+        F = min(max(F, 0), part["frames"] - 1)
+        if (self.card, F, full) not in self._shots:
+            scale = 1.0 if full else 0.5
+            surface = skia.Surface(int(look.W * scale), int(look.H * scale))
+            c = surface.getCanvas()
+            c.scale(scale, scale)
+            part["draw"](c, F)
+            if len(self._shots) > 6000:
+                self._shots.clear()
+            self._shots[(self.card, F, full)] = bytes(surface.makeImageSnapshot().encodeToData(skia.kJPEG, 90 if full else 82))
+        return self._shots[(self.card, F, full)]
+
+    def card_patch(self, ops, commit):
+        """A card's music moved or made louder or quieter. While dragging it only shows; on release it is written to series.yaml
+        as a hand-set value on that segment, and journaled."""
+        for op in ops:
+            if op["path"][0] != "card" or op["path"][1] not in self.MUSIC:
+                raise ValueError("a card's music can be moved, and made louder or quieter; nothing else of a card is editable here yet")
+            lo, hi, _ = self.MUSIC[op["path"][1]]
+            self.sketch[op["path"][1]] = tune.tidy(min(max(float(op["value"]), lo), hi))
+        if not commit:
+            return None
+        file = self.root / "series.yaml"
+        before = file.read_text()
+        doc = edit.yaml().load(before)
+        sg = next(s for se in doc["seasons"] for ep in se["episodes"] for s in ep["segments"] if str(s["id"]) == self.card)
+        changes = []
+        for key, value in self.sketch.items():
+            was = (sg.get("tune") or {}).get(key, self.MUSIC[key][2])
+            if value == self.MUSIC[key][2]:
+                tune.drop(sg, key)
+            else:
+                tune.put(sg, key, value)
+            if value != was:
+                changes.append(dict(address=f"{self.card}.{key}", field=key, before=was, after=value))
+        after = edit.dump(doc)
+        self.sketch = {}
+        if after != before:
+            edit.write(file, after)
+            edit.record(self.root, "nudge", None, file, changes, before, after, by="hand")
+        self.stamps = self.stamp()
+        self.rev += 1
+        return None
+
     def state(self):
+        if self.card:
+            return self.card_state()
         sc, look, stage = self.scene, self.stage.look, self.stage
         turns = []
         for t in sc.turns:
@@ -181,13 +303,15 @@ class Session:
                            rhythm=list(t["rhythm"]) if t["rhythm"] is not None else None,
                            melody=list(t["melody"]) if t["melody"] is not None else None,
                            stress=list(t["stress"]) if t["stress"] is not None else None)
-            turns.append(dict(id=t["id"], index=t["index"], start=t["start"], length=t["length"], why=t["why"], who=t["who"],
+            turns.append(dict(id=t["id"], index=t["index"], start=t["start"], length=t["length"], why=t["why"], who=t["who"], bar=t["bar"], sfx=t["sfx"],
                               pause=t["pause"], hold=t["hold"], say=say, lanes=lanes, reacts=t["reacts"], stretches=t["stretches"],
                               orphans=sum(len(v) for v in tuning.syllable_tunes(self.doc["turns"][t["index"]])[1].values())))
         mine = [p for p in self.problems if p["scene"] == sc.id]
         done, undone = edit.stacks(self.root, by="hand")
-        return dict(rev=self.rev, info_rev=self.info_rev, can_undo=bool(done), can_redo=bool(undone), status=self.seg["status"], fps=stage.fps, step=sc.step, tempo=sc.tempo,
+        return dict(rev=self.rev, info_rev=self.info_rev, id=sc.id, can_undo=bool(done), can_redo=bool(undone), status=self.seg["status"], fps=stage.fps, step=sc.step, tempo=sc.tempo,
                     spb=sc.grid["steps_per_beat"], scale=list(sc.grid["scale"]), lead=self.lead,
+                    bar=sc.grid["steps_per_beat"] * int(load_yaml(self.root / "show.yaml").get("beats_per_bar") or 0),       # steps in a bar, or 0 if the show has no bars
+                    bars=self.doc.get("bars"),
                     width=stage.W, height=stage.H, total=stage.total, steps=sc.steps,
                     title=sc.title, file=str(self.path.relative_to(self.root)), index=self.i, count=len(self.paths),
                     entities=[dict(id=e, color=ent["color"], kind=str(ent.get("kind", ""))) for e, ent in look.cast.items()],
@@ -209,6 +333,8 @@ class Session:
     def patch(self, ops, commit=False):
         """A timeline edit. While dragging it is a preview in memory; on release (`commit`) it is
         applied on top of the file as it now stands, written as hand-set values, and journaled."""
+        if self.card:
+            return self.card_patch(ops, commit)
         self._locked()
         if not commit:
             first, _ = apply_ops(self.root, self.path, self.seg["id"], self.doc, self.scene, ops)
@@ -246,6 +372,8 @@ class Session:
 
     def in_play(self, F):
         """The values at work at frame F, most likely first, each with what it is now."""
+        if self.card:
+            return []
         steps = F / self.stage.fps / self.scene.step
         out = []
         marked = self.stage.look.style.get("indicator", "fill") in ("dot", "trace")
@@ -264,6 +392,8 @@ class Session:
         """A click on the picture at (x, y) in frame pixels -> the address of the value to put on the knob, or None.
         A syllable in the bubble gives its length; the bubble gives the line's tone; a token gives whatever
         that entity is doing at this moment, else its own settings."""
+        if self.card:
+            return None
         sid, turn = self.seg["id"], self.scene.turn_at(F / self.stage.fps)
         for h in hits(self.stage, F):
             bx, by, bw, bh = h["box"]
@@ -284,7 +414,7 @@ class Session:
         """Values in this scene that a writer might mean by `words` ("bouncy", "the gap", "louder"), the
         best match first and, among equals, the one nearest the playhead."""
         want = [w for w in words.lower().split() if w]
-        if not want:
+        if not want or self.card:
             return dict(found=[], unseen=[])
 
         def fit(p):                                              # how well a parameter answers to the words
@@ -350,6 +480,7 @@ class Session:
         self.load()
 
     def open(self, step):
+        self.card = None
         self.path = self.paths[(self.i + int(step)) % len(self.paths)]
         self.load()
 
@@ -361,6 +492,8 @@ class Session:
     def frame(self, F, full, xray, before=False):
         """A frame of the scene now, or as it stood when the knob picked a value. Frames are kept by what
         they show, so anything seen before (an undo, the other side of a comparison) is not drawn again."""
+        if self.card:
+            return self.card_frame(F, full)
         stage = self.before[0] if before else self.stage
         F = min(max(F, 0), stage.total - 1)
         return FRAMES.get(stage, F, 1.0 if full else 0.5, 90 if full else 82, xray)
@@ -403,6 +536,10 @@ def make_handler(sess):
                         return self.send(sess.poll())
                     if url.path == "/frame":                 # build=A is the scene as it stood when the knob was put on a value
                         return self.send(sess.frame(int(q["f"][0]), flag("full"), flag("xray"), q.get("build") == ["A"]), "image/jpeg")
+                    if url.path == "/episode":               # every part of the episode this scene is in
+                        return self.send(sess.episode())
+                    if url.path == "/audio" and sess.card:
+                        return self.send(sess.card_audio(), "audio/wav")
                     if url.path == "/audio":
                         return self.send(sound.mix(sess.before[0] if q.get("build") == ["A"] else sess.stage), "audio/wav")
                     if url.path == "/video":
@@ -447,6 +584,8 @@ def make_handler(sess):
                     elif self.path in ("/undo", "/redo"):
                         sess.step(self.path[1:])
                         out["dirty_from"] = 0
+                    elif self.path == "/open" and body.get("part"):      # open a part of the episode by name: a scene, or a card
+                        sess.open_part(body["part"])
                     elif self.path == "/open":                # step to the previous or next scene
                         sess.open(body.get("step", 1))
                     else:
