@@ -1,5 +1,6 @@
 # How the music sounds. The engine decides WHEN there is a cue and of what kind (`s2s drama <scene>`);
 # this file decides the harmony. Everything here is optional: the engine has these values built in.
+theme: anthem         # the title sequence and the end credits both play the anthem (presentation/anthem.py)
 key: 220              # the pitch of the root, in Hz (220 is the A below middle C)
 
 # Which mode a cue is voiced in: the first entry whose strength the cue reaches. The modes run from

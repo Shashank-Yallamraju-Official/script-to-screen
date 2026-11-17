@@ -1,6 +1,8 @@
 kind: "House Signet's head: the great seal, its crest worn nearly smooth"
 body: seal          # drawn as this object: no face, and it moves the way the object can
 size: 1.25
+outfit: robe
+trim: "#c9a227"        # the chair wears gold
 color: "#7a2e3b"
 voice: 147
 timbre: square

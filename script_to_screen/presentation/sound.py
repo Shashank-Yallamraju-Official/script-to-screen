@@ -44,6 +44,20 @@ def effect(p):
     return x * np.minimum(1, t / 0.003) * np.exp(-t / (dur / 3)) * float(p.get("vol", 0.3)) * 0.5
 
 
+def blast():
+    """An explosion (`sfx: [{sound: blast, on: <entity>}]`): the crack, the body of it, and a long low roll dying away."""
+    n = int(2.6 * RATE)
+    t = np.arange(n) / RATE
+    rng = np.random.default_rng(11)
+    noise = rng.standard_normal(n)
+    crack = noise * np.exp(-t / 0.035)
+    body = np.convolve(noise, np.ones(40) / 40, "same") * 6 * np.exp(-t / 0.32)
+    roll = np.convolve(noise, np.ones(400) / 400, "same") * 22 * np.exp(-t / 0.9) * np.minimum(1, t / 0.05)
+    thud = np.sin(2 * np.pi * np.cumsum(34 + 70 * np.exp(-t / 0.09)) / RATE) * np.exp(-t / 0.55)
+    x = 0.9 * crack + 0.8 * body + 0.7 * roll + 1.2 * thud
+    return np.tanh(x * 1.2) * 1.6
+
+
 def wav_bytes(samples):
     buf = io.BytesIO()
     with wave.open(buf, "wb") as wv:
@@ -84,6 +98,9 @@ def mix(stage):
                                          float(feel["voice_attack"]), float(feel["voice_ring"])))
     aside = float(feel["aside_volume"])                          # a reaction in passing is quieter
     for at, name, _, quiet in stage.score.events:
+        if name == "blast":                                      # an explosion: not one of the small sounds, and never quiet
+            add(effects, at, blast())
+            continue
         p = sound_for(stage.look.sounds, name)
         if p and float(p.get("vol", 0)) > 0:
             add(effects, at, effect(p) * (aside if quiet else 1.0))

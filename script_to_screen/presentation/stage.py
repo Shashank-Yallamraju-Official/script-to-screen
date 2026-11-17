@@ -22,7 +22,7 @@ class Look:
         cast = {}
         for e in entities:
             sheet = tuning.overlay(load_yaml(root / "entities" / f"{e}.yaml"))
-            cast[e] = {k: sheet[k] for k in ("color", "voice", "timbre", "kind", "body", "size", "pair", "wrapped", "sprung", "swinging", "line", "claw") if k in sheet}
+            cast[e] = {k: sheet[k] for k in ("color", "voice", "timbre", "kind", "body", "size", "pair", "wrapped", "sprung", "swinging", "line", "claw", "outfit", "outfit_color", "trim", "plate", "upright") if k in sheet}
         return cls(cfg["width"], cfg["height"], cfg["fps"], show.feel, show.tones, show.sounds, show.emotions, cast, show.music, cfg.get("style"))
 
 

@@ -1,6 +1,7 @@
 kind: "a padlock of House Hasp, sent to the council"
 body: padlock          # drawn as this object: no face, and it moves the way the object can
 size: 0.95
+outfit: robe
 color: "#7f868c"
 voice: 147
 timbre: square

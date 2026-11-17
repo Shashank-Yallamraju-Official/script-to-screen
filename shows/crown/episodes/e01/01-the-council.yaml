@@ -1,12 +1,12 @@
 # The opening. A council of seals is about to vote. What the vote is on is never said: every line has to work
-# without naming it. As the vote is called, one match is in the room. Nobody saw it come in. It strikes.
+# without naming it. As the vote is called, one match is in the room. Nobody saw it come in. It strikes, and it goes off.
 # (Signet: set phrases, the same ones each time, in order of rank.)
 scene: The council
 place: crown
 turns:
   - id: 1
     enter: {great-seal: {slot: 4, orient: out}, seal: {slot: 1, orient: great-seal}, seal-two: {slot: 2, orient: great-seal}, seal-three: {slot: 6, orient: great-seal}, seal-four: {slot: 7, orient: great-seal}}
-    why: Five seals in council, under one emblem. Everything is in its place.
+    why: Five seals in council, up behind their bench, under one flag. Everything is in its place.
     hold: 13
   - id: 2
     who: great-seal
@@ -52,5 +52,9 @@ turns:
   - id: 11
     do: {match: {posture: lean_in}}
     camera: {"on": match, zoom: 2.4}       # the one close shot in the scene
-    why: It tips, strikes its head, and is alight. The scene ends on the flame.
-    hold: 18
+    why: It tips, strikes its head, and is alight.
+    hold: 7
+  - id: 12
+    sfx: [{at: 0, sound: blast, on: match}]
+    why: It goes off. The frame is thrown, fills with light, and the light is all that is left.
+    hold: 12

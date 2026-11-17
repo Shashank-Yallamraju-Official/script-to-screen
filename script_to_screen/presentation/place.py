@@ -5,7 +5,10 @@ standing along the same line of slots the entities use. A piece is a kind (door,
 lamp, plant, picture, table, shelf, rug, counter, fridge, thermostat, pedestal, vase, shards,
 plate, and the pieces of the houses' homes: rack, inkpad, page, dome, post, pegboard, crate, chain, gate, hooks,
 bag, ropes, crumbs, ghost, gantry, wallstub, mark, parts, and the council chamber's: crest, hammermark, lockmark,
-crownmark, bench), where it stands (`at`, a slot), and optionally how wide it is (`wide`, in slots), how
+crownmark, bench, banner).
+
+A place can also have a raised `bench: {from, to, rise, front, color}`: whoever stands between those slots sits up behind
+it, with a plate at their seat (an entity's `plate:` is what the plate says), where it stands (`at`, a slot), and optionally how wide it is (`wide`, in slots), how
 far `up` it sits (pixels: a plate on a table), a `color`, and `depth: front` to stand it between
 the entities and the camera. A piece given a `color` keeps it in every style, so the thing a
 scene is about stands out from the room. A place can start `like:` another and change only what
@@ -27,14 +30,14 @@ from .view import ground, slot_x
 
 WALL_DEPTH, BACK_DEPTH, FRONT_DEPTH = 0.3, 0.15, -0.2
 FLOOR_UP = 46                                 # how far behind the entities' feet the wall meets the floor, in pixels
-ON_WALL = ("door", "window", "picture", "shelf", "thermostat", "vault", "sign", "page", "dome", "pegboard", "chain", "hooks", "ghost", "crest", "hammermark", "lockmark", "crownmark")
+ON_WALL = ("door", "window", "picture", "shelf", "thermostat", "vault", "sign", "page", "dome", "pegboard", "chain", "hooks", "ghost", "crest", "hammermark", "lockmark", "crownmark", "banner")
 ON_FLOOR = ("rug", "shards", "crumbs", "mark")
 COLORS = dict(door="#cdbb9d", window="#b9c2c4", picture="#b7a58c", sofa="#9fb0aa", lamp="#b9a98c", plant="#8fa58a", table="#b49f84",
               shelf="#b49f84", rug="#c9b6a6", counter="#b9b3a2", fridge="#c5cbcc", thermostat="#d8d2c4", pedestal="#c2b8a6", vase="#5b7fa6",
               shards="#5b7fa6", plate="#f4f1e8", vault="#9aa3a8", sign="#b9b3a2",
               rack="#a89784", inkpad="#4a4a52", page="#efe9dc", dome="#c7d3d6", post="#9aa3a8", pegboard="#b49f84", crate="#b49f84",
               chain="#8f969b", gate="#8f969b", hooks="#8f969b", bag="#9c5a48", ropes="#b7a58c", crumbs="#d9a3ae", ghost="#c9c5bb",
-              gantry="#a8906c", wallstub="#b9b3a2", mark="#8f969b", parts="#9fb0aa", crest="#7a2e3b", hammermark="#6b5a4a", lockmark="#7f868c", crownmark="#b7a58c", bench="#b49f84")
+              gantry="#a8906c", wallstub="#b9b3a2", mark="#8f969b", parts="#9fb0aa", crest="#7a2e3b", hammermark="#6b5a4a", lockmark="#7f868c", crownmark="#b7a58c", bench="#b49f84", banner="#7a2e3b")
 
 
 def rgb(h):
@@ -218,6 +221,9 @@ def shapes(kind, w):
         arc = skia.Path()
         arc.addRoundRect(skia.Rect.MakeLTRB(-13, -330, 13, -292), 13, 13)
         return [("body", oval(0, -300, 46, 46)), ("light", oval(0, -300, 38, 38)), ("body", arc), ("light", rect(-6, -322, 12, 24, 6)), ("body", rect(-20, -304, 40, 28, 4))]
+    if kind == "banner":                                             # a flag hung from the top of the wall, for whoever rules
+        w = w or 150
+        return [("body", poly((-w / 2, -520), (w / 2, -520), (w / 2, -236), (0, -200), (-w / 2, -236))), ("dark", rect(-w / 2 - 8, -444, w + 16, 8, 3))]
     if kind == "crownmark":                                          # the crown itself, over the chamber
         return [("body", poly((-34, -366), (-40, -398), (-18, -382), (0, -404), (18, -382), (40, -398), (34, -366)))]
     if kind == "bench":                                              # the council's bench

@@ -5,8 +5,8 @@ scene: The council, again
 place: crown-after
 turns:
   - id: 1
-    enter: {hammer: {slot: 0, orient: great-seal}, hammer-two: {slot: 1, orient: great-seal}, seal: {slot: 3, orient: great-seal}, great-seal: {slot: 4, orient: out}, seal-two: {slot: 5, orient: great-seal}, lock: {slot: 7, orient: great-seal}, lock-two: {slot: 8, orient: great-seal}}
-    why: The same room. Three emblems where there was one, and hammers and locks on the bench beside the seals.
+    enter: {hammer: {slot: 1, orient: great-seal}, hammer-two: {slot: 2, orient: great-seal}, seal: {slot: 3, orient: great-seal}, great-seal: {slot: 4, orient: out}, seal-two: {slot: 5, orient: great-seal}, lock: {slot: 6, orient: great-seal}, lock-two: {slot: 7, orient: great-seal}}
+    why: The same room. Three flags where there was one, and hammers and locks on the bench beside the seals.
     hold: 19
   - id: 2
     who: great-seal

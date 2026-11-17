@@ -42,7 +42,7 @@ def font(size=28, mono=False):
 
 def draw_token(c, ent, o, W, H, feel, blur=0.0, t=0.0):
     if ent.get("body"):                                          # a thing, drawn as that thing: no face, and its own way of moving
-        draw_body(c, ent, o, t, slot_x(o["slot"], W), ground(H), blur)
+        draw_body(c, ent, o, t, slot_x(o["slot"], W), ground(H) - o.get("rise", 0.0), blur)
         return
     a = 255 * o["alpha"]
     if a < 1:
@@ -50,7 +50,7 @@ def draw_token(c, ent, o, W, H, feel, blur=0.0, t=0.0):
     stretch = o["travel"] * float(feel["squash"])
     thin = 1 - 0.9 * float(feel["flip"]) * o["flip"]
     c.save()
-    c.translate(slot_x(o["slot"], W), ground(H))
+    c.translate(slot_x(o["slot"], W), ground(H) - o.get("rise", 0.0))
     c.skew(-math.tan(math.radians(9 * o["lean"])), 0)            # lean pivots at the base
     c.scale(o["sx"] * (1 + stretch) * thin, o["sy"] * (1 - stretch))
     f = o["facing"]
@@ -182,7 +182,7 @@ def bubble_box(stage, line, o, cam):
     lane = lift + 2 * rad * WEIGHT[2] + 4 if marked else 8       # room under each row, for the styles that draw something there
     lh = size + 6 + lane
     w, h = max(150, tw + 2 * pad), len(rows) * lh + 2 * pad - 14
-    hx, top = cam.point(slot_x(o["slot"], W), ground(H) - BODY_H * o["sy"])
+    hx, top = cam.point(slot_x(o["slot"], W), ground(H) - o.get("rise", 0.0) - BODY_H * o["sy"])
     off = hx < -20 or hx > W + 20                                # the speaker is out of frame: the line comes in from that edge
     hx, top = min(max(hx, 64), W - 64), min(max(top - 24, h + 60), H * 0.72) if not off else H * 0.46
     bx = min(max(hx - w / 2, 24), W - w - 40)
@@ -442,6 +442,17 @@ def draw_frame(c, stage, F, xray=False, slate=False):
     if "rings" in seen:
         rings(c, stage, t, marks)
     states = {e: s for e in stage.score.pose if (s := pose(stage, e, t)) is not None}
+    bench = (stage.look.place or {}).get("bench")                # a raised bench: whoever stands along it sits up behind it
+    seated = []
+    if bench:
+        for e, s in states.items():
+            if float(bench["from"]) <= s["slot"] <= float(bench["to"]):
+                states[e] = dict(s, rise=float(bench.get("rise", 58)))
+                seated.append(e)
+    burst = next(((at, who) for at, name, who, _ in stage.score.events if name == "blast" and at <= t), None)     # an explosion, once it has gone off
+    if burst:
+        age = t - burst[0]
+        c.translate(22 * math.exp(-age / 0.12) * math.sin(age * 95), 16 * math.exp(-age / 0.12) * math.cos(age * 81))    # the frame is thrown
     if xray:
         draw_xray(c, stage, states)
     line = stage.score.line_at(t)
@@ -454,6 +465,26 @@ def draw_frame(c, stage, F, xray=False, slate=False):
     for e in sorted(states, key=lambda e: (e in cam.on, bool(line and line["who"] == e))):
         o = states[e] if e == focal or not dim else dict(states[e], alpha=states[e]["alpha"] * (1 - dim))
         draw_token(c, stage.look.cast[e], o, W, H, feel, 0.0 if e in cam.on else 2.2 * soft, t)
+    if bench:                                                    # the bench's front, between the council and us, with a plate at each seat
+        rise, front = float(bench.get("rise", 58)), float(bench.get("front", 30))
+        x0, x1, y0 = slot_x(float(bench["from"]), W) - 62, slot_x(float(bench["to"]), W) + 62, ground(H) - rise - front
+        wood = bench.get("color", "#a08a70")
+        c.drawRect(skia.Rect.MakeLTRB(x0, y0, x1, ground(H) + 8), fill(wood))
+        c.drawRect(skia.Rect.MakeLTRB(x0 - 8, y0 - 9, x1 + 8, y0 + 3), fill(place.mix(wood, "#2e2a24", 0.3)))
+        c.drawRect(skia.Rect.MakeLTRB(x0 - 16, ground(H) - 6, x1 + 16, ground(H) + 10), fill(place.mix(wood, "#2e2a24", 0.18)))
+        for e in seated:
+            px, ent = slot_x(round(states[e]["slot"]), W), stage.look.cast[e]
+            c.drawRoundRect(skia.Rect.MakeXYWH(px - 30, y0 + 16, 60, 26), 4, 4, fill("#f1e9dc", 255 * states[e]["alpha"]))
+            if ent.get("plate"):
+                f = font(15)
+                c.drawString(str(ent["plate"]), px - f.measureText(str(ent["plate"])) / 2, y0 + 35, f, fill(INK, 230 * states[e]["alpha"]))
+            else:                                                # no name yet: the plate carries the house's colour
+                c.drawCircle(px, y0 + 29, 7, fill(ent["color"], 255 * states[e]["alpha"]))
+    if burst and burst[1] in states:                             # the fireball, from where it started, out past the edges of the frame
+        bx, by, r = slot_x(states[burst[1]]["slot"], W), ground(H) - 140, 40 + 2300 * (t - burst[0])
+        ball = skia.Paint(AntiAlias=True, Shader=skia.GradientShader.MakeRadial(
+            skia.Point(bx, by), r, [col("#fffdf6"), col("#fffdf6"), col("#fbe6a2"), col("#f2a33a"), col("#f2a33a", 0)], [0.0, 0.5, 0.72, 0.9, 1.0]))
+        c.drawCircle(bx, by, r, ball)
     c.restore()
     if housed:
         place.draw_in_front(c, stage, cam)
@@ -462,6 +493,9 @@ def draw_frame(c, stage, F, xray=False, slate=False):
             draw_bubble(c, stage, said, t, states[said["who"]], stage.look.cast[said["who"]], cam, there)
     if "frame" in seen:
         frame_bars(c, stage, t, marks)
+    if burst:                                                    # then nothing but light, settling to bare paper
+        age = t - burst[0]
+        c.drawRect(skia.Rect.MakeWH(W, H), fill(place.mix("#fffdf6", PAPER, smooth((age - 0.5) / 0.8)), 255 * smooth((age - 0.2) / 0.3)))
     if slate:
         turn = stage.score.turn_at(t)
         c.drawString(f"T{turn['id']} · {t / stage.score.step - turn['start']:.2f}", 20, 32, font(16, mono=True), fill(INK, 150))

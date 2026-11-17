@@ -1,8 +1,10 @@
-# The crown: the council chamber where Signet sits. One emblem on the wall, under the crown.
+# The crown: the council chamber. The council sits up behind a bench, each at its own seat. The flag on the wall is the
+# ruler's: Signet's, under the crown.
 name: The crown
 wall: "#e6ddd6"
 floor: "#cdbfb6"
+bench: {from: 0.65, to: 7.35, rise: 58, front: 30, color: "#a08a70"}
 pieces:
-  - {kind: crownmark, at: 4.0}
-  - {kind: crest, at: 4.0}
-  - {kind: bench, at: 4.0, wide: 7.6}
+  - {kind: banner, at: 4.0, wide: 1.5, color: "#7a2e3b"}
+  - {kind: crownmark, at: 4.0, color: "#e9dcc8"}
+  - {kind: crest, at: 4.0, color: "#7a2e3b"}

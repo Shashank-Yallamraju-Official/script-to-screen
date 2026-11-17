@@ -1,0 +1,9 @@
+kind: "House Whirl's head: the heaviest top, which spins longest"
+body: top          # drawn as this object: no face, and it moves the way the object can
+size: 1.1
+color: "#d1a23a"
+voice: 311
+timbre: triangle
+status: 1
+reflex: 0
+tells: {}          # an object shows what it feels by how it moves, not by a list of tells

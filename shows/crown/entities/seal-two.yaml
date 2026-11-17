@@ -1,6 +1,7 @@
 kind: "a seal of House Signet, on the council"
 body: seal          # drawn as this object: no face, and it moves the way the object can
 size: 0.95
+outfit: robe
 color: "#7a2e3b"
 voice: 208
 timbre: square

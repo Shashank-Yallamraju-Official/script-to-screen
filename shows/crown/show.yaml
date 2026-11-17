@@ -1,6 +1,6 @@
 # Settings for the whole show.
 schema: 2           # the file format; the engine refuses a show written for a different one
-title: The Empty Crown     # a working title; change it here
+title: The Iron Mind
 
 # How an episode is put together (`s2s render --episode <id>`). A segment in series.yaml can ask for its
 # own way in with `into: cut | dip | fade`.
@@ -8,7 +8,7 @@ episode:
   transition: dip            # between parts: dip (through the paper), fade (one into the next) or cut
   transition_seconds: 0.8
   title_seconds: 5
-  credits_seconds: 17
+  credits_seconds: 28.6       # the anthem, whole
 
 # The credits, top to bottom. `cast` is everyone in the episode, worked out from its scenes.
 credits:

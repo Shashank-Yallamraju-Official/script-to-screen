@@ -12,16 +12,27 @@ motion. Each body has one way of getting about, and it is the only way that obje
     bob       hangs from its own tripod, and swings when the tripod steps
     hammer    rests head down, and flips head over handle
     glass     stands on its handle and rolls on its rim
+    cup       slides, and tips a little the way it is going, as if to pour
+    top       spins where it stands, and leans into a move
     match     stands on its end and shuffles; told to lean in, it tips over, strikes its head on the ground, and is alight
+
+A sheet may also give the object an `outfit:` (robe, vest), with `outfit_color:` and `trim:`. A robe is cut to the body
+it is on, so the object under it can still be told for what it is: a full robe on a seal, a mantle on a hammer's
+handle or a padlock's shoulders. A vest is a short garment round the middle.
+
+No two of the same object are quite alike. Each entity is varied a little, the same way every time, from its own
+name: a touch wider or taller, a shade lighter or darker, one small mark of its own, and its own cut of collar,
+hem and buttons. Nothing has to be written for this; it is how two seals on one bench are told apart.
 
 A sheet's `size:` scales it (a head of house is bigger, a stub is smaller). Shapes stand on (0, 0), up is
 negative y, and fill roughly the same box as a token, so the camera and the speech bubbles need no changes.
 """
 import math
+import zlib
 
 import skia
 
-BODIES = ("seal", "needle", "glove", "eraser", "padlock", "bob", "hammer", "glass", "match")
+BODIES = ("seal", "needle", "glove", "eraser", "padlock", "bob", "hammer", "glass", "match", "cup", "top")
 PAPER = "#f5f3ee"
 
 
@@ -180,6 +191,11 @@ def _hammer(c, k, o, t, f, ent):
     going = o["going"]
     if going < 1:
         c.rotate(f * going * 360, 0, -76)                                # head over handle
+    if ent.get("upright"):                                               # at attention: standing on its handle, head up
+        _rr(c, -8, -116, 16, 116, 6, k.fill(k.mid))
+        _rr(c, -40, -152, 80, 44, 6, k.fill(k.color))
+        _rr(c, -40, -152, 80, 12, 4, k.fill(k.dark, 0.6))
+        return
     _rr(c, -8, -152, 16, 116, 6, k.fill(k.mid))                          # the handle
     _rr(c, -40, -44, 80, 44, 6, k.fill(k.color))                         # the head, resting on the ground
     _rr(c, -40, -12, 80, 12, 4, k.fill(k.dark, 0.6))
@@ -219,7 +235,92 @@ def _match(c, k, o, t, f, ent):
         c.restore()
 
 
-DRAW = dict(match=_match, seal=_seal, needle=_needle, glove=_glove, eraser=_eraser, padlock=_padlock, bob=_bob, hammer=_hammer, glass=_glass)
+def _cup(c, k, o, t, f, ent):
+    going = o["going"]
+    if going < 1:
+        c.rotate(f * 16 * math.sin(going * math.pi), 0, 0)               # tips the way it is going, as if to pour
+    c.drawPath(_poly((-36, -92), (36, -92), (25, 0), (-25, 0)), k.fill(k.color))
+    c.drawOval(skia.Rect.MakeXYWH(-36, -101, 72, 18), k.fill(k.dark))    # the mouth
+    c.drawOval(skia.Rect.MakeXYWH(-29, -98, 58, 12), k.fill(k.light, 0.8))    # what is in it
+    c.drawLine(-22, -70, -17, -16, k.line(k.light, 4, 0.5))
+
+
+def _top(c, k, o, t, f, ent):
+    going = o["going"]
+    c.rotate(math.sin(t * 3.1 + o["slot"]) * 5 + (f * 14 * math.sin(going * math.pi) if going < 1 else 0), 0, 0)     # it wobbles as it spins
+    _rr(c, -4, -150, 8, 44, 3, k.fill(k.dark))                           # the stem
+    c.drawOval(skia.Rect.MakeXYWH(-40, -120, 80, 44), k.fill(k.color))   # the shoulder
+    c.drawPath(_poly((-40, -98), (40, -98), (0, 0)), k.fill(k.color))    # down to the point it stands on
+    turn = (t * 2.2) % 1.0                                               # a stripe going round says it is spinning
+    x = -40 + 80 * turn
+    c.save()
+    c.clipPath(_poly((-40, -98), (40, -98), (0, 0)), True)
+    c.drawRect(skia.Rect.MakeXYWH(x - 8, -100, 16, 100), k.fill(k.light, 0.75 * math.sin(turn * math.pi)))
+    c.restore()
+
+
+DRAW = dict(match=_match, cup=_cup, top=_top, seal=_seal, needle=_needle, glove=_glove, eraser=_eraser, padlock=_padlock, bob=_bob, hammer=_hammer, glass=_glass)
+
+
+ROBE = "#3d3542"
+# Where a garment hangs on each body: (top, half-width at the top, hem, half-width at the hem).
+CUT = dict(seal=(-96, 17, -2, 46), hammer=(-116, 11, -50, 30), padlock=(-94, 45, -60, 49), match=(-104, 9, -46, 13), glass=(-60, 12, -2, 30),
+           needle=(-74, 12, -22, 9), eraser=(-48, 46, -30, 50), bob=(-70, 12, -30, 20), glove=(-56, 28, -2, 34), cup=(-92, 37, -60, 34), top=(-98, 40, -62, 26))
+
+
+def traits(ent):
+    """The small ways this one differs from others of its kind: six numbers from 0 to 1, always the same for the same name."""
+    h = zlib.crc32(str(ent.get("id") or ent.get("kind") or "").encode())
+    return [((h >> (5 * i)) & 31) / 31 for i in range(6)]
+
+
+def _mark(c, k, body, v, ent):
+    """One small mark of its own, on the object itself."""
+    if body == "seal":
+        y = -62 - 22 * v[3]
+        _rr(c, -13 - 2 * v[4], y, 26 + 4 * v[4], 5, 2, k.fill(k.light if v[5] > 0.5 else k.dark, 0.8))        # a ring round the neck, high or low
+    elif body == "hammer":
+        _rr(c, -9, (-128 if ent.get("upright") else -70) - 14 * v[3], 18, 6, 2, k.fill(k.dark, 0.7))                 # a band on the handle
+    elif body == "padlock":
+        for i in range(2 + int(v[3] * 2.99)):                                                                   # rivets along the foot
+            c.drawCircle(-30 + i * (60 / (1 + int(v[3] * 2.99))), -9, 3, k.fill(k.dark, 0.7))
+    elif body == "match":
+        c.drawLine(-3, -70 - 30 * v[3], 3, -64 - 30 * v[3], k.line(k.dark, 2, 0.5))                             # a nick in the stick
+
+
+def _outfit(c, k, ent, body, v):
+    kind = ent.get("outfit")
+    if kind not in ("robe", "vest") or body not in CUT:
+        return
+    top, ht, hem, hh = (-106, 11, -2, 36) if body == "hammer" and ent.get("upright") else CUT[body]
+    cloth = _mix(ent.get("outfit_color") or ROBE, PAPER if v[0] > 0.5 else "#1d1d1f", 0.10 * abs(v[0] - 0.5) * 2)
+    trim = ent.get("trim") or k.light
+    dark = _mix(cloth, "#1d1d1f", 0.35)
+    if kind == "vest":                                                   # short, open at the front, buttoned
+        hem = hem - 6 * v[1]
+        c.drawPath(_poly((-ht - 2, top), (ht + 2, top), (hh, hem), (-hh, hem)), k.fill(cloth))
+        c.drawPath(_poly((-5, top), (5, top), (0, top + 20 + 10 * v[2])), k.fill(k.mid))        # the V of the neck
+        for i in range(2 + int(v[3] * 1.99)):
+            c.drawCircle(0, top + 34 + 10 * v[2] + i * 9, 1.8, k.fill(trim))
+        c.drawLine(-hh, hem, hh, hem, k.line(trim, 2.5))
+        return
+    hem = hem + (0 if hem > -10 else 8 * v[1])                           # a robe, cut to the body it is on
+    c.drawPath(_poly((-ht, top), (ht, top), (hh, hem), (-hh, hem)), k.fill(cloth))
+    c.drawLine(0, top + 6, 0, hem, k.line(dark, 2.5))                    # where it closes
+    band = 6 + 3 * v[2]
+    c.drawPath(_poly((-hh + band * (hh - ht) / (hem - top), hem - band), (hh - band * (hh - ht) / (hem - top), hem - band), (hh, hem), (-hh, hem)), k.fill(trim))
+    if v[4] > 0.6:                                                       # some have a second band
+        y = hem - band - 7
+        w = hh - (hem - y) * (hh - ht) / (hem - top)
+        c.drawLine(-w, y, w, y, k.line(trim, 2))
+    cut = int(v[5] * 2.99)                                               # the collar: round, pointed, or a stole
+    if cut == 0:
+        c.drawOval(skia.Rect.MakeXYWH(-ht - 3, top - 5, 2 * ht + 6, 13), k.fill(trim))
+    elif cut == 1:
+        c.drawPath(_poly((-ht - 2, top - 2), (ht + 2, top - 2), (0, top + 18)), k.fill(trim))
+    else:
+        for side in (-1, 1):
+            c.drawPath(_poly((side * 3, top), (side * (ht * 0.9), top), (side * (ht * 0.9 + (hh - ht) * 0.45), top + (hem - top) * 0.5), (side * 6, top + (hem - top) * 0.5)), k.fill(trim))
 
 
 def draw_body(c, ent, o, t, x, y, blur=0.0):
@@ -234,6 +335,10 @@ def draw_body(c, ent, o, t, x, y, blur=0.0):
     f = 1 if o["facing"] >= 0 else -1
     c.save()
     c.translate(x, y)
-    c.scale(o["sx"] * size, o["sy"] * size)
-    DRAW[body](c, Ink(ent["color"], a, blur), dict(o, going=o.get("going", 1.0)), t, f, ent)
+    v = traits(ent)
+    c.scale(o["sx"] * size * (0.95 + 0.10 * v[0]), o["sy"] * size * (0.96 + 0.08 * v[1]))          # a touch wider or taller than the next one
+    k = Ink(_mix(ent["color"], PAPER if v[2] > 0.5 else "#1d1d1f", 0.16 * abs(v[2] - 0.5) * 2), a, blur)    # a shade lighter or darker
+    DRAW[body](c, k, dict(o, going=o.get("going", 1.0)), t, f, ent)
+    _mark(c, k, body, v, ent)
+    _outfit(c, k, ent, body, v)
     c.restore()

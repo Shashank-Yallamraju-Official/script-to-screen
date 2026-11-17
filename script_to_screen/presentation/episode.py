@@ -49,7 +49,11 @@ def parts(root, eid):
             out.append(dict(id=sg["id"], kind="scene", frames=st.total, draw=lambda c, F, st=st: draw_frame(c, st, F),
                             sound=lambda st=st: _samples(sound.mix(st))))
         else:
-            card = (cards.Title(look, show.cfg, episode, cast, step, cfg["title_seconds"]) if sg["card"] == "title"
+            land = root / "land.yaml"
+            card = (cards.Land(look, show.cfg, episode, load_yaml(land), {p["entity"]: tuning.overlay(load_yaml(root / "entities" / f"{p['entity']}.yaml"))
+                                                                         for p in load_yaml(land)["places"].values()})
+                    if sg["card"] == "title" and land.exists()            # a show with a land gets its title sequence over it
+                    else cards.Title(look, show.cfg, episode, cast, step, cfg["title_seconds"]) if sg["card"] == "title"
                     else cards.Caption(look, sg.get("text"), sg.get("seconds")) if sg["card"] == "caption"
                     else cards.Credits(look, show.cfg, episode, cast, sheets, step, cfg["credits_seconds"]))
             out.append(dict(id=sg["id"], kind=sg["card"], frames=round(card.seconds * look.fps), draw=lambda c, F, card=card: card.draw(c, F / look.fps),

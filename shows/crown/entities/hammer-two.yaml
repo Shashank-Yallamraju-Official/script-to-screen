@@ -1,6 +1,8 @@
 kind: "a hammer of House Mallet, sent to the council"
 body: hammer          # drawn as this object: no face, and it moves the way the object can
 size: 0.95
+outfit: robe
+upright: true        # on the council it stands on its handle, head up
 color: "#6b5a4a"
 voice: 165
 timbre: triangle
