@@ -18,3 +18,4 @@ Status: **open** (still hurts), **eased** (a workaround exists), **fixed** (gone
 | 9 | 2026-11-16 | Close from above, a house's object stands upright on the map instead of being seen from the top | The arrival reads as a card being raised, not a camera coming down | open |
 | 10 | 2026-11-16 | Bodies get only a silhouette outline; the room's pieces get inner lines too | Objects look thinner-lined than the room around them | open |
 | 11 | 2026-11-16 | CI results on GitHub have not been looked at since the first push | A broken build could go unnoticed | open |
+| 12 | 2026-11-16 | `s2s moments` swallowed a drawing error and printed only its last line, leaving the old sheet in place | I read a stale picture as the new one before noticing | open |

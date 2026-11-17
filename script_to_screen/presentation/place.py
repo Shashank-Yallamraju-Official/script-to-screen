@@ -434,6 +434,23 @@ def draw_behind(c, stage, cam):
                 painter.light(c, piece, 0)
             c.restore()
         lamp = place.get("light")
+        if lamp and name == "wall" and float(lamp.get("cast", 0)):          # what stands against the wall throws its shadow across the floor too
+            cast = float(lamp["cast"])
+            lean = (0.5 if lamp.get("side", "left") == "left" else -0.5) * cast
+            r, g, b = rgb(mix(place.get("shadow") or "#120c14", "#120c14", 0.45))
+            c.saveLayer(None, skia.Paint(Alphaf=0.56 * float(lamp.get("strength", 0.7)), ImageFilter=skia.ImageFilters.Blur(2.5, 2.5),
+                                         ColorFilter=skia.ColorFilters.Blend(skia.Color(r, g, b), skia.BlendMode.kSrcIn)))
+            c.clipRect(skia.Rect.MakeLTRB(-stage.W, base, 2 * stage.W, 1.35 * stage.H))
+            for piece in layers[name]:
+                if piece["kind"] in ("pot", "tree", "sapling"):
+                    c.save()
+                    c.translate(piece["_x"], base)
+                    c.concat(skia.Matrix().setAll(1, -lean, 0, 0, -cast, 0, 0, 0, 1))
+                    for role, path in shapes(piece["kind"], piece.get("_w")):
+                        if role != "line":
+                            c.drawPath(path, paint("#000000"))
+                    c.restore()
+            c.restore()
         if lamp and name in ("wall", "floor"):                              # the room's one light: a pool on the wall, and a longer one on the floor
             r, g, b = rgb(lamp.get("color", "#f6c26b"))
             x, reach, k = slot_x(float(lamp.get("at", 4)), stage.W), float(lamp.get("reach", 520)), float(lamp.get("strength", 0.7))

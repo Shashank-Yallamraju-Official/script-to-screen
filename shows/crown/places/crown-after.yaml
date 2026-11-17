@@ -9,7 +9,7 @@ wall: "#b9c6ea"
 floor: "#8294c9"
 sky: ["#8f9fd6", "#dfe6f6"]
 sun: "#ffffff"
-light: {at: 6.4, up: 250, color: "#eef4f9", reach: 640, strength: 0.4, side: right}       # a pale early sun, through the arches on the right
+light: {at: 6.4, up: 250, color: "#eef4f9", reach: 640, strength: 0.4, side: right, cast: 0.8}       # a pale early sun, through the arches on the right
 ink: "#17194d"                 # drawn outlines on everything, as in a comic
 shadow: "#6f7fd0"              # the side away from the sun goes to this
 vignette: 0.32

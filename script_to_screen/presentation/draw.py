@@ -486,8 +486,29 @@ def draw_frame(c, stage, F, xray=False, slate=False):
     if lamp:                                                     # one light: everything gets a lit side, and throws a shadow away from it
         side = -1 if lamp.get("side", "left") == "left" else 1
         k = float(lamp.get("strength", 0.7))
+        cast = float(lamp.get("cast", 0))                         # the sun or the moon is behind the room: shadows fall across the floor toward us, this long
+        if cast:
+            lean, y0 = -side * 0.5 * cast, ground(H) + 10
+            r, g, b = place.rgb(place.mix(cool, "#120c14", 0.45) if cool else "#120c14")
+            c.saveLayer(None, skia.Paint(Alphaf=0.56 * k, ImageFilter=skia.ImageFilters.Blur(2.5, 2.5),
+                                         ColorFilter=skia.ColorFilters.Blend(skia.Color(r, g, b), skia.BlendMode.kSrcIn)))
+            if bench:                                            # the bench's own, and everyone at it
+                tall = float(bench.get("rise", 58)) + float(bench.get("front", 30)) + 9
+                x0, x1 = slot_x(float(bench["from"]), W) - 70, slot_x(float(bench["to"]), W) + 70
+                c.drawPath(skia.Path().addPoly([skia.Point(x0, y0 - 16), skia.Point(x1, y0 - 16), skia.Point(x1 + lean * tall, y0 + cast * tall), skia.Point(x0 + lean * tall, y0 + cast * tall)], True), fill("#000000"))
+            for e, s in states.items():
+                high = s.get("rise", 0.0)
+                on_floor = not bench or e not in seated and e not in up
+                c.save()
+                c.translate(slot_x(s["slot"], W) + lean * high, (ground(H) if on_floor else y0) + cast * high)
+                c.concat(skia.Matrix().setAll(1, -lean, 0, 0, -cast, 0, 0, 0, 1))
+                draw_body(c, stage.look.cast[e], {k2: v for k2, v in s.items() if k2 not in ("ink", "lit")}, t, 0, 0)
+                c.restore()
+            c.restore()
         for e, s in states.items():
             states[e] = dict(s, lit=(side, k, lamp.get("color", "#f6c26b"), cool))
+            if cast:
+                continue
             x, y = slot_x(s["slot"], W), ground(H) - s.get("rise", 0.0)
             soft = skia.Paint(AntiAlias=True, Color=col(place.mix(cool, "#120c14", 0.35) if cool else "#120c14", 95 * k * s["alpha"]), MaskFilter=skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 10))
             c.drawOval(skia.Rect.MakeXYWH(x - side * 26 - 44, y - 150, 88, 150), soft)            # on the wall behind it
