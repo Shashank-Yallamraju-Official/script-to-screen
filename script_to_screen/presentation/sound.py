@@ -46,7 +46,7 @@ def effect(p):
 
 def blast():
     """An explosion (`sfx: [{sound: blast, on: <entity>}]`): the crack, the body of it, and a long low roll dying away."""
-    n = int(2.6 * RATE)
+    n = int(4.2 * RATE)
     t = np.arange(n) / RATE
     rng = np.random.default_rng(11)
     noise = rng.standard_normal(n)
@@ -55,7 +55,7 @@ def blast():
     roll = np.convolve(noise, np.ones(400) / 400, "same") * 22 * np.exp(-t / 0.9) * np.minimum(1, t / 0.05)
     thud = np.sin(2 * np.pi * np.cumsum(34 + 70 * np.exp(-t / 0.09)) / RATE) * np.exp(-t / 0.55)
     x = 0.9 * crack + 0.8 * body + 0.7 * roll + 1.2 * thud
-    return np.tanh(x * 1.2) * 1.6
+    return np.tanh(x * 1.2) * 1.6 * np.clip((4.2 - t) / 1.2, 0, 1) ** 2          # it dies away to nothing: it is never cut off
 
 
 def swell(seconds):

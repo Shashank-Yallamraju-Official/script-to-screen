@@ -22,6 +22,13 @@ _Loader = getattr(yaml, "CSafeLoader", yaml.SafeLoader)    # the C parser where 
 _read = {}                                                  # path -> (what the file was when read, its parsed content)
 
 
+def _words(x):
+    """YAML reads a bare `on:` or `off:` key as true or false. Nothing here is ever keyed by a truth value, so they are put back."""
+    if isinstance(x, dict):
+        return {("on" if k is True else "off" if k is False else k): _words(v) for k, v in x.items()}
+    return [_words(v) for v in x] if isinstance(x, list) else x
+
+
 def load_yaml(p):
     """A file's content. A file that has not changed since it was last read is not parsed again;
     each caller gets its own copy, so nobody's changes leak into anyone else's."""
@@ -30,7 +37,7 @@ def load_yaml(p):
     key, stamp = str(p), (st.st_mtime_ns, st.st_size)
     if _read.get(key, (None,))[0] != stamp:
         with open(p) as fh:
-            _read[key] = (stamp, yaml.load(fh, Loader=_Loader))
+            _read[key] = (stamp, _words(yaml.load(fh, Loader=_Loader)))
     return copy.deepcopy(_read[key][1])
 
 

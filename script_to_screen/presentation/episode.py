@@ -89,12 +89,105 @@ def parts(root, eid):
     return out, look, cfg
 
 
+def soundtrack(plan, fps):
+    """The episode's whole sound: each part's starts where its picture does, and tails ring into what follows."""
+    total = sum(p["frames"] for p in plan)
+    track, at = np.zeros(int((total / fps + 2.0) * sound.RATE)), 0
+    for part in plan:
+        x, i = part["sound"](), int(at / fps * sound.RATE)
+        track[i:i + len(x)] += x[: len(track) - i]
+        at += part["frames"]
+    return np.tanh(track / 0.89) * 0.89
+
+
+def listen(root, eid):
+    """Look at an episode's sound, for a maker who cannot hear it: how loud it is over time (a picture), and what is wrong with
+    it in words. -> (png, [findings]). It looks for: sound that stops dead, long silences, clipping, and a jump in level where
+    two parts join."""
+    from .draw import INK, fill, font, stroke
+    plan, look, cfg = parts(root, eid)
+    fps, rate = look.fps, sound.RATE
+    x = soundtrack(plan, fps)
+    win = rate // 20                                                 # twentieths of a second
+    n = len(x) // win
+    db = 20 * np.log10(np.sqrt(np.mean(x[: n * win].reshape(n, win) ** 2, axis=1)) + 1e-6)
+    sec = lambda i: i / 20
+    found, at, joins = [], 0, []
+    for p in plan:
+        a, b = int(at / fps * 20), min(n, int((at + p["frames"]) / fps * 20))
+        joins.append((sec(a), p["id"], float(np.mean(db[a:b])) if b > a else -120.0))
+        at += p["frames"]
+    end = sum(p["frames"] for p in plan) / fps
+    for i in range(2, n - 2):                                        # sound that stops dead: loud, then nothing, within a tenth of a second
+        held = i >= 60 and float(np.min(db[i - 60:i - 1])) > -45        # it had been sounding for three seconds: a spoken line ending is not this
+        if held and db[i - 1] > -34 and db[i + 1] < db[i - 1] - 30 and sec(i) < end - 0.6:
+            if not found or found[-1][0] != "stops dead" or sec(i) - found[-1][1] > 0.5:
+                found.append(("stops dead", sec(i), f"{db[i - 1]:.0f} dB to {db[i + 1]:.0f} dB"))
+    quiet, start = db < -55, None
+    for i in range(n + 1):                                           # silence of more than two seconds
+        if i < n and quiet[i] and sec(i) < end:
+            start = i if start is None else start
+        elif start is not None:
+            if sec(i - start) > 3.0:
+                found.append(("silent", sec(start), f"for {sec(i - start):.1f}s"))
+            start = None
+    if np.max(np.abs(x)) > 0.885:
+        found.append(("at the limit", float(np.argmax(np.abs(x))) / rate, "the loudest moment is pressed flat"))
+    for (t0, a, la), (t1, b, lb) in zip(joins, joins[1:]):           # the level across a join: a second either side
+        i = int(t1 * 20)
+        before, after = float(np.mean(db[max(0, i - 20):i])), float(np.mean(db[i:i + 20]))
+        if abs(before - after) > 18:
+            found.append(("jump at a join", t1, f"{a} ends at {before:.0f} dB, {b} starts at {after:.0f} dB"))
+    W, H, pad = 1600, 420, 50
+    surf = skia.Surface(W, H)
+    c = surf.getCanvas()
+    c.clear(col(PAPER))
+    X, Y = (lambda s: pad + (W - 2 * pad) * s / max(end, 1e-6)), (lambda d: 40 + (H - 110) * (min(0, max(-70, d)) / -70))
+    for d in (0, -20, -40, -60):
+        c.drawLine(pad, Y(d), W - pad, Y(d), stroke("#d8d2c4", 1))
+        c.drawString(f"{d}", 12, Y(d) + 4, font(12, mono=True), fill(INK, 150))
+    path = skia.Path()
+    for i in range(n):
+        if sec(i) > end:
+            break
+        (path.moveTo if i == 0 else path.lineTo)(X(sec(i)), Y(db[i]))
+    c.drawPath(path, stroke("#3f6fd0", 1.6))
+    for t0, name, level in joins:
+        c.drawLine(X(t0), 30, X(t0), H - 60, stroke(INK, 1, 120))
+        c.drawString(f"{name}  {level:.0f} dB", X(t0) + 4, H - 44, font(12, mono=True), fill(INK))
+        c.drawString(f"{t0:.0f}s", X(t0) + 4, H - 26, font(12, mono=True), fill(INK, 150))
+    for kind, t, _ in found:
+        c.drawCircle(X(t), 24, 6, fill("#c8324e"))
+    png = root / "out" / f"{eid}_sound.png"
+    png.parent.mkdir(parents=True, exist_ok=True)
+    surf.makeImageSnapshot().save(str(png), skia.kPNG)
+    return png, [dict(what=k, at=round(t, 1), detail=d) for k, t, d in found], [dict(part=nm, at=round(t0, 1), level=round(lv)) for t0, nm, lv in joins]
+
+
+def shots(root, eid):
+    """Every camera shot in an episode, in order: when, on whom, how close, and why. The way to catch a cut or a push-in nobody asked for."""
+    plan, look, cfg = parts(root, eid)
+    eps = series(root).episode(eid)
+    out, at = [], 0.0
+    for sg, p in zip(eps["segments"], plan):
+        if sg["kind"] == "scene":
+            for s in Stage.of(Scene(sg["path"])).score.camera:
+                out.append(dict(at=round(at + s["t"], 1), part=p["id"], zoom=round(s["zoom"], 2), on=s["on"], why=s["why"]))
+        else:
+            out.append(dict(at=round(at, 1), part=p["id"], zoom=None, on=[], why=f"a {p['kind']} card"))
+        at += p["frames"] / look.fps
+    return out
+
+
 def sheet(root, eid, times=None, every=None, part=None, cols=4, wide=480):
     """A contact sheet of an episode: one small labelled frame for each of `times` (seconds), or one every `every` seconds.
     With `part` (a segment's id) the times are counted from that part's start, and `every` covers just that part.
     -> the PNG's path. The quick way to look at chosen moments without rendering the film."""
     from . import bodies
     from .draw import INK, fill, font
+    png = root / "out" / f"{eid}_moments.png"
+    png.parent.mkdir(parents=True, exist_ok=True)
+    png.unlink(missing_ok=True)                                      # so a sheet that fails to draw never leaves the last one looking like the new one
     plan, look, cfg = parts(root, eid)
     fps, starts, at = look.fps, {}, 0
     for p in plan:
@@ -117,8 +210,6 @@ def sheet(root, eid, times=None, every=None, part=None, cols=4, wide=480):
         c, x, y = out.getCanvas(), (i % cols) * w, (i // cols) * (h + 22)
         c.drawImageRect(one.makeImageSnapshot(), skia.Rect.MakeXYWH(x, y, w, h), skia.SamplingOptions(skia.FilterMode.kLinear))
         c.drawString(f"{G / fps:.1f}s  {p['id']} +{(G - starts[p['id']]) / fps:.1f}s", x + 6, y + h + 16, font(13, mono=True), fill(INK))
-    png = root / "out" / f"{eid}_moments.png"
-    png.parent.mkdir(parents=True, exist_ok=True)
     out.makeImageSnapshot().save(str(png), skia.kPNG)
     return png
 
@@ -168,12 +259,7 @@ def render(root, eid, only=None, draft=False):
     ff.stdin.close()
     if ff.wait() != 0:
         sys.exit("ffmpeg failed")
-    track, at = np.zeros(int((total / fps + 2.0) * sound.RATE)), 0     # each part's sound starts where its picture does; tails ring into what follows
-    for part in plan:
-        x, i = part["sound"](), int(at / fps * sound.RATE)
-        track[i:i + len(x)] += x[: len(track) - i]
-        at += part["frames"]
-    track = np.tanh(track / 0.89) * 0.89
+    track = soundtrack(plan, fps)
     end = np.linspace(1, 0, int(0.5 * sound.RATE))
     a, b = int(lo / fps * sound.RATE), int(hi / fps * sound.RATE)
     track = track[a:b].copy()

@@ -152,6 +152,7 @@ class Land:
         look, land = self.look, dict(self.land, places=self.places(day))
         W, H = look.W, look.H
         F, K, TILT, H0 = 760.0, 0.85 * view, 1.0 - 0.4 * view, H * (0.5 + 0.1 * view)
+        stand = min(1.0, 0.06 + view)                                # how much of a thing's height shows: from straight above, almost none
         cx, cy, zoom = cam or self._camera(t)
         ahead = cam or self._camera(t + 0.25)
         roll = max(-3.5, min(3.5, (ahead[0] - cx) * 0.03))           # it banks into a turn
@@ -159,7 +160,7 @@ class Land:
         def proj(x, y, z=0.0):
             den = max(140.0, F - K * (y - cy))
             sc = F / den * zoom
-            return W / 2 + (x - cx) * sc, H0 + (y - cy) * TILT * sc - z * sc, sc
+            return W / 2 + (x - cx) * sc, H0 + (y - cy) * TILT * sc - z * sc * stand, sc
 
         at = {k: p["at"] for k, p in land["places"].items()}
         when = lambda p: float(p["at_bar"]) * self.bar if "at_bar" in p else None
@@ -246,12 +247,12 @@ class Land:
                 sheet["size"] = float(sheet.get("size", 1.0)) * float(p.get("size", 0.42))
                 c.save()
                 c.translate(tx, ty)
-                c.scale(sc, sc)
+                c.scale(sc, sc * stand)
                 draw_body(c, sheet, dict(slot=x / 100.0, facing=float(p.get("facing", 1)), lx=0.0, ly=0.0, sx=1.0, sy=grow, lean=0.0, alpha=min(1.0, rise * 3), going=1.0,
                                          travel=0.0, flip=0.0, lit=(-1, 0.7, "#f6c26b")), t, 0, 0, min(5.0, abs(y - cy) / 110))
                 c.restore()
                 if p.get("crown"):
-                    top = ty - 156 * sheet["size"] * sc - 10 * sc
+                    top = ty - (156 * sheet["size"] * sc + 10 * sc) * stand
                     c.drawPath(skia.Path().moveTo(tx - 15 * sc, top).lineTo(tx - 18 * sc, top - 17 * sc).lineTo(tx - 8 * sc, top - 9 * sc).lineTo(tx, top - 22 * sc)
                                .lineTo(tx + 8 * sc, top - 9 * sc).lineTo(tx + 18 * sc, top - 17 * sc).lineTo(tx + 15 * sc, top).close(), stroke(self.PALE, 3 * sc, 255 * min(1.0, rise)))
             flags = p.get("flags")

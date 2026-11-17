@@ -59,6 +59,23 @@ def moments(a):
     return dict(file=str(png), text=str(png))
 
 
+@command("listen", "Look at an episode's sound without hearing it: a picture of its loudness, and a list of what is wrong (stops dead, silences, a jump at a join).",
+         [A("episode", "an episode's id")], "s2s listen the-vote", group="look")
+def listen(a):
+    from ..presentation import episode
+    root = address.show_root(a.show)
+    png, found, levels = episode.listen(root, a.episode)
+    lines = [f"  {p['at']:>6}s  {p['level']:>4} dB  {p['part']}" for p in levels] + ([f"  ! {f['at']:>6}s  {f['what']}: {f['detail']}" for f in found] or ["  nothing wrong found"])
+    return dict(file=str(png), findings=found, levels=levels, text="\n".join(lines + [str(png)]))
+
+
+@command("shots", "Every camera shot in an episode, in order: when, how close, on whom, and why.", [A("episode", "an episode's id")], "s2s shots the-vote", group="look")
+def shots(a):
+    from ..presentation import episode
+    made = episode.shots(address.show_root(a.show), a.episode)
+    return dict(shots=made, text="\n".join(f"  {s['at']:>6}s  {s['part']:<20} {'x' + str(s['zoom']) if s['zoom'] else '':<6} {', '.join(s['on']) or 'everyone':<12} {s['why']}" for s in made))
+
+
 @command("render", "Render to video: one scene, an episode (its scenes, title card and credits as one film), or everything. Refuses while the show has errors.",
          [A("scene", "a scene", nargs="?"), A("--episode", "an episode's id, e.g. s01e01: render it as one film"), A("--all", "every scene", action="store_true"),
           XRAY, A("--slate", "label every frame with its turn and step", action="store_true"),

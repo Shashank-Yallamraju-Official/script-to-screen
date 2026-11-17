@@ -323,6 +323,37 @@ def _outfit(c, k, ent, body, v):
             c.drawPath(_poly((side * 3, top), (side * (ht * 0.9), top), (side * (ht * 0.9 + (hh - ht) * 0.45), top + (hem - top) * 0.5), (side * 6, top + (hem - top) * 0.5)), k.fill(trim))
 
 
+class Inked:
+    """A canvas that draws a line round every solid shape put on it, as it is put there: so a body has its inner lines as well as
+    its outline, and what overlaps what stays right. A see-through shape (a shine, a glow) and one out of focus get no line."""
+
+    def __init__(self, c, color, width=2.4):
+        self._c, self._w = c, width
+        self._rgb = _rgb(color)
+
+    def __getattr__(self, name):
+        return getattr(self._c, name)
+
+    def _edge(self, paint):
+        if paint.getStyle() != skia.Paint.kFill_Style or paint.getAlpha() < 230 or paint.getMaskFilter() is not None:
+            return None
+        return skia.Paint(AntiAlias=True, Color=skia.Color(*self._rgb, paint.getAlpha()), Style=skia.Paint.kStroke_Style, StrokeWidth=self._w, StrokeJoin=skia.Paint.kRound_Join)
+
+
+
+def _both(name):
+    def draw(self, *args):
+        getattr(self._c, name)(*args)
+        edge = self._edge(args[-1])
+        if edge:
+            getattr(self._c, name)(*args[:-1], edge)
+    return draw
+
+
+for _n in ("drawPath", "drawCircle", "drawOval", "drawRect", "drawRoundRect"):
+    setattr(Inked, _n, _both(_n))
+
+
 OUTLINES = True                                                  # a draft render turns the drawn outline on bodies off: it is the slowest thing in a frame
 
 
@@ -340,19 +371,16 @@ def draw_body(c, ent, o, t, x, y, blur=0.0):
     c.translate(x, y)
     lit = o.get("lit")                                                   # (side the light comes from, how strong, its colour)
     edge = o.get("ink") if OUTLINES else None                                                  # an inked show: the whole body gets a drawn outline
-    if lit or edge:
-        outline = None
-        if edge:
-            grown = skia.ImageFilters.ColorFilter(skia.ColorFilters.Blend(skia.Color(*_rgb(edge)), skia.BlendMode.kSrcIn), skia.ImageFilters.Dilate(3, 3, None))
-            outline = skia.Paint(ImageFilter=skia.ImageFilters.Merge([grown, None]))
+    if lit:
         g = size * max(1.0, o["sx"], o["sy"])                              # room for one that has swollen
-        c.saveLayer(skia.Rect.MakeLTRB(-180 * g, -340 * g, 180 * g, 40), outline)
+        c.saveLayer(skia.Rect.MakeLTRB(-180 * g, -340 * g, 180 * g, 40), None)
     v = traits(ent)
     c.scale(o["sx"] * size * (0.95 + 0.10 * v[0]), o["sy"] * size * (0.96 + 0.08 * v[1]))          # a touch wider or taller than the next one
     k = Ink(_mix(ent["color"], PAPER if v[2] > 0.5 else "#1d1d1f", 0.16 * abs(v[2] - 0.5) * 2), a, blur)    # a shade lighter or darker
-    DRAW[body](c, k, dict(o, going=o.get("going", 1.0)), t, f, ent)
-    _mark(c, k, body, v, ent)
-    _outfit(c, k, ent, body, v)
+    pen = Inked(c, edge) if edge else c
+    DRAW[body](pen, k, dict(o, going=o.get("going", 1.0)), t, f, ent)
+    _mark(pen, k, body, v, ent)
+    _outfit(pen, k, ent, body, v)
     if lit:                                                              # a lit side and a shadow side, on whatever was just drawn
         side, strength, glow = lit[:3]
         r, g, b = _rgb(glow)
@@ -361,6 +389,6 @@ def draw_body(c, ent, o, t, x, y, blur=0.0):
             [skia.Point(side * 46, 0), skia.Point(-side * 46, 0)],
             [skia.Color(r, g, b, int(70 * strength)), skia.Color(r, g, b, 0), skia.Color(dr, dg, db, 0), skia.Color(dr, dg, db, int(150 * strength))], [0.0, 0.38, 0.5, 1.0]))
         c.drawRect(skia.Rect.MakeLTRB(-400, -500, 400, 100), shade)
-    if lit or edge:
+    if lit:
         c.restore()
     c.restore()
