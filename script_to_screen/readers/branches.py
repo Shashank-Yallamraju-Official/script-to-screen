@@ -58,7 +58,7 @@ def leaf(root, story, sheets0, members, choice):
     feels = [m for m in members if cares_for[m] >= 1]
     broken = [m for m in members if excuse[m] in (harm.get("breaks") or [])]
     earned = [m for m in members if m in feels and m in broken]
-    pressing, resolved, remaining = [], [], []
+    resolved, remaining = [], []
     for e in members + [x for x in (mark, world) if x]:
         for need, p, _ in standing.pressures(sheets[e], read["incoming"].get(e)):
             (resolved if need in (ending.get("meets") or {}).get(e, []) else remaining).append(f"{e}'s {need}")
@@ -121,8 +121,8 @@ def _tell(x, n=None):
     p = x["parts"]
     out = [(f"{n}. " if n else "") + f"score {x['score']}   (earned {p['earned']}, felt {p['felt']}, in front {p['in_front']}, resolved {p['resolved']}, remaining {p['remaining']}, strain {p['strain']}, blows {p['blows'] + 1})",
            f"     snag     {x['snag']}",
-           f"     harm     " + "\n              ".join(x["harms"]),
-           f"     care     " + ("; ".join(x["care"]) or "nobody new comes to care"),
+           "     harm     " + "\n              ".join(x["harms"]),
+           "     care     " + ("; ".join(x["care"]) or "nobody new comes to care"),
            f"     ending   {x['ending']}",
            f"     so       it cracks at {x['fault']}" + (f"; {x['first']} turns first" if x["first"] else "; nobody feels it"),
            f"              earned turns: {', '.join(x['earned']) or 'none'}" + (f"; knows but does not feel: {', '.join(x['unearned'])}" if x["unearned"] else "") +

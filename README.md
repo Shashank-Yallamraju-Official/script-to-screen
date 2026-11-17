@@ -649,7 +649,8 @@ command takes `--json`; a command that changes something also takes `--dry-run`,
 | Learn the vocabulary: what can be tuned, what can be observed | `s2s params`, `s2s channels` |
 | Ask what could be tuned at a moment, or what a word might mean | `s2s in-play the-vase:2+0`, `s2s params --find bouncy` |
 | Look at a moment, or a whole scene at a glance | `s2s still thermostat:2 --xray`, `s2s sheet thermostat` |
-| Render | `s2s render thermostat`, `s2s render --episode s01e01`, `s2s render --all` |
+| Render | `s2s render thermostat`, `s2s render --episode s01e01` (`--draft`, `--only 30-48`, `--fresh`), `s2s render --all` |
+| Look at an episode without rendering it | `s2s moments s01e01 36 42.5`, `s2s shots s01e01`, `s2s listen s01e01` |
 | Change a line, a feeling, a timing, a reason | `set-line`, `set-feeling`, `set-timing`, `set-why` |
 | Add or remove | `add-scene`, `add-turn`, `add-reaction`, `remove-turn` |
 | Reorder, or mark how finished a scene is | `move`, `set-status` |

@@ -411,10 +411,23 @@ def prepare(place, W):
 
 
 def draw_behind(c, stage, cam):
-    """The room and everything in it that stands behind the entities."""
+    """The room and everything in it that stands behind the entities. Nothing in a room moves, so while the camera holds still the
+    room is painted once and kept as a picture; it is painted afresh only while the camera is moving."""
     place, style = stage.look.place, stage.look.style.get("place", "wash")
     if not place or style == "none":
         return False
+    key = (round(cam.zoom, 5), round(cam.cx, 3), round(cam.tilt, 5))
+    kept = getattr(stage, "_room", None)
+    if not kept or kept[0] != key:                                          # always by way of a picture, so a frame is the same whichever frame was drawn before it
+        surf = skia.Surface(stage.W, stage.H)
+        _paint_behind(surf.getCanvas(), stage, cam)
+        kept = stage._room = (key, surf.makeImageSnapshot())
+    c.drawImage(kept[1], 0, 0, skia.SamplingOptions(skia.FilterMode.kLinear))
+    return True
+
+
+def _paint_behind(c, stage, cam):
+    place, style = stage.look.place, stage.look.style.get("place", "wash")
     if getattr(stage, "_place", None) is None:
         stage._place = prepare(place, stage.W)
     layers, painter, gy = stage._place, Painter(style, place), ground(stage.H)
@@ -438,7 +451,7 @@ def draw_behind(c, stage, cam):
             cast = float(lamp["cast"])
             lean = (0.5 if lamp.get("side", "left") == "left" else -0.5) * cast
             r, g, b = rgb(mix(place.get("shadow") or "#120c14", "#120c14", 0.45))
-            c.saveLayer(None, skia.Paint(Alphaf=0.56 * float(lamp.get("strength", 0.7)), ImageFilter=skia.ImageFilters.Blur(2.5, 2.5),
+            c.saveLayer(skia.Rect.MakeLTRB(-stage.W, base, 2 * stage.W, 1.35 * stage.H), skia.Paint(Alphaf=0.56 * float(lamp.get("strength", 0.7)),
                                          ColorFilter=skia.ColorFilters.Blend(skia.Color(r, g, b), skia.BlendMode.kSrcIn)))
             c.clipRect(skia.Rect.MakeLTRB(-stage.W, base, 2 * stage.W, 1.35 * stage.H))
             for piece in layers[name]:

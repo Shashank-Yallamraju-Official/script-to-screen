@@ -2,7 +2,6 @@
 written, can be rehearsed with --dry-run, and can be undone."""
 import json
 import re
-from pathlib import Path
 
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 

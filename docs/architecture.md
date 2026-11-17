@@ -280,6 +280,29 @@ Presentation reads the score and nothing else.
   camera reads the same tracks and chooses a framing.
 - **Feel is presentation.** All of `feel.yaml` belongs to a skin, not to the show's logic.
 
+## Object shows: what was added, and where it lives
+
+A show whose cast are objects (seals, matches, padlocks) with no faces, held in wide shots, uses the same four layers. What it added:
+
+| What | Where | Driven by |
+|---|---|---|
+| Object bodies, outfits and per-character variations; an `Inked` canvas that draws a line round every solid shape | `presentation/bodies.py` | the entity sheet: `body`, `outfit`, `climbs`, ... |
+| A room's light, cast shadows, raised bench, drawn outlines, open arches and sky | `presentation/place.py` (the room), `presentation/draw.py` (`seat`, `light`, `swell`, `bench_front`, `fireball`) | the place file: `light`, `shadow`, `ink`, `bench`, `sky` |
+| The land: the title sequence over it, and travel between scenes by way of it | `presentation/land.py` (`Land`, `Travel`) | `land.yaml` (`places`, `history`, `camera`), each scene's `day:` in series.yaml, each place's `land:` |
+| The anthem and the bed that plays under travel | `presentation/anthem.py` | `library/music.yaml: theme: anthem` |
+| Rendering an episode part by part | `presentation/episode.py` | see below |
+
+**How an episode is rendered.** Each part (a scene or a card) becomes a film of its own, as many at once as the machine has
+processors, and the parts are joined without encoding again. A part is stamped with everything it is made from (the engine, the
+show's files, its own script); if the stamp matches a film already in `out/.parts/`, that film is kept. So a change to one scene
+costs one scene. A room is painted once per camera position and kept as a picture, because nothing in a room moves.
+
+**Looking without rendering.** `s2s moments` (a contact sheet at chosen seconds), `s2s shots` (every camera shot and why),
+`s2s listen` (a picture of the sound, and what is wrong with it), `s2s render --draft` and `--only`.
+
+**Frames are repeatable.** The same frame is the same pixels on every run and in every process; nothing depends on the order
+frames are drawn in or on anything random per run. Tests and the part stamps rely on this.
+
 ## Readers
 
 A reader looks at the layers and reports. It changes nothing.

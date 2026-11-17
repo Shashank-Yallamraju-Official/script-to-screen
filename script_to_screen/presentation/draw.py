@@ -13,7 +13,7 @@ from ..world import SLOTS
 from . import place
 from .bodies import draw_body
 from .motion import back, pose, smooth
-from .view import MARGIN, ground, slot_x, view
+from .view import ground, slot_x, view
 
 BODY_W, BODY_H = 66, 156
 INK, PAPER, RULE = "#1d1d1f", "#f5f3ee", "#c9c5bb"
@@ -435,17 +435,131 @@ def grade(c, stage, W, H):
     if tint:
         c.drawRect(skia.Rect.MakeWH(W, H), skia.Paint(Color=col(place.mix("#ffffff", tint.get("color", "#8aa0b8"), float(tint.get("amount", 0.2)))), BlendMode=skia.BlendMode.kMultiply))
     dark = float(room.get("vignette", 0))
-    if dark > 0:
-        c.drawRect(skia.Rect.MakeWH(W, H), skia.Paint(Shader=skia.GradientShader.MakeRadial(
-            skia.Point(W / 2, H * 0.48), W * 0.72, [skia.Color(10, 6, 12, 0), skia.Color(10, 6, 12, 0), skia.Color(10, 6, 12, int(210 * dark))], [0.0, 0.5, 1.0])))
+    if dark > 0:                                                 # the same every frame: painted once and kept
+        kept = getattr(stage, "_vignette", None)
+        if kept is None or kept[0] != dark:
+            surf = skia.Surface(W, H)
+            surf.getCanvas().drawRect(skia.Rect.MakeWH(W, H), skia.Paint(Shader=skia.GradientShader.MakeRadial(
+                skia.Point(W / 2, H * 0.48), W * 0.72, [skia.Color(10, 6, 12, 0), skia.Color(10, 6, 12, 0), skia.Color(10, 6, 12, int(210 * dark))], [0.0, 0.5, 1.0])))
+            kept = stage._vignette = (dark, surf.makeImageSnapshot())
+        c.drawImage(kept[1], 0, 0)
     grain = float(stage.look.style.get("grain", 0))
     if grain > 0:
         img = getattr(stage.look, "_grain", None)
         if img is None:
             import numpy as np
-            v = np.random.default_rng(2).integers(96, 160, (H // 2, W // 2), dtype=np.uint8)
-            img = stage.look._grain = skia.Image.fromarray(np.dstack([v, v, v, np.full_like(v, 255)]), colorType=skia.kRGBA_8888_ColorType)
-        c.drawImageRect(img, skia.Rect.MakeWH(W, H), skia.SamplingOptions(), skia.Paint(BlendMode=skia.BlendMode.kOverlay, Alphaf=min(1.0, grain)))
+            v = np.repeat(np.repeat(np.random.default_rng(2).integers(96, 160, (H // 2, W // 2), dtype=np.uint8), 2, axis=0), 2, axis=1)     # at full size, so it is copied and not stretched
+            img = stage.look._grain = skia.Image.fromarray(np.ascontiguousarray(np.dstack([v, v, v, np.full_like(v, 255)])), colorType=skia.kRGBA_8888_ColorType)
+        c.drawImage(img, 0, 0, skia.SamplingOptions(), skia.Paint(BlendMode=skia.BlendMode.kOverlay, Alphaf=min(1.0, grain)))
+
+
+def seat(stage, states, bench):
+    """Who is at the room's raised bench. -> (states, those sat up behind it, those standing on it). Whoever stands along a bench
+    sits up behind it; an entity that `climbs` does not sit: it jumps up onto it, from either end."""
+    seated, up = [], []
+    if not bench:
+        return states, seated, up
+    states = dict(states)
+    for e, s in list(states.items()):
+        if stage.look.cast[e].get("climbs"):
+            near = min(s["slot"] - float(bench["from"]), float(bench["to"]) - s["slot"]) + 0.5
+            top = (float(bench.get("rise", 58)) + float(bench.get("front", 30)) + 9) * smooth(near)
+            states[e] = dict(s, rise=top + 120 * s.get("travel", 0.0))
+            if near > 0:
+                up.append(e)
+        elif float(bench["from"]) <= s["slot"] <= float(bench["to"]):
+            states[e] = dict(s, rise=float(bench.get("rise", 58)))
+            seated.append(e)
+    return states, seated, up
+
+
+def light(c, stage, states, room, bench, seated, up, t):
+    """The room's one light on the entities: each gets a lit side, and throws a shadow away from it. -> states, each told how it is lit.
+    With `cast` on the light, the sun or moon is behind the room and the shadows fall across the floor toward us, each the shape of
+    what throws it; without, each is a soft patch on the wall behind and the floor beneath."""
+    lamp, cool = room.get("light"), room.get("shadow")
+    if not lamp:
+        return states
+    W, H = stage.W, stage.H
+    side = -1 if lamp.get("side", "left") == "left" else 1
+    k = float(lamp.get("strength", 0.7))
+    cast = float(lamp.get("cast", 0))
+    if cast:
+        lean, y0 = -side * 0.5 * cast, ground(H) + 10
+        r, g, b = place.rgb(place.mix(cool, "#120c14", 0.45) if cool else "#120c14")
+        c.saveLayer(skia.Rect.MakeLTRB(-W, ground(H) - 30, 2 * W, 1.4 * H), skia.Paint(Alphaf=0.56 * k,       # only the floor: a layer the size of the frame is slow
+                                     ColorFilter=skia.ColorFilters.Blend(skia.Color(r, g, b), skia.BlendMode.kSrcIn)))
+        if bench:                                                # the bench's own, and everyone at it
+            tall = float(bench.get("rise", 58)) + float(bench.get("front", 30)) + 9
+            x0, x1 = slot_x(float(bench["from"]), W) - 70, slot_x(float(bench["to"]), W) + 70
+            c.drawPath(skia.Path().addPoly([skia.Point(x0, y0 - 16), skia.Point(x1, y0 - 16), skia.Point(x1 + lean * tall, y0 + cast * tall), skia.Point(x0 + lean * tall, y0 + cast * tall)], True), fill("#000000"))
+        for e, s in states.items():
+            high = s.get("rise", 0.0)
+            on_floor = not bench or e not in seated and e not in up
+            c.save()
+            c.translate(slot_x(s["slot"], W) + lean * high, (ground(H) if on_floor else y0) + cast * high)
+            c.concat(skia.Matrix().setAll(1, -lean, 0, 0, -cast, 0, 0, 0, 1))
+            draw_body(c, stage.look.cast[e], {k2: v for k2, v in s.items() if k2 not in ("ink", "lit")}, t, 0, 0)
+            c.restore()
+        c.restore()
+    out = {}
+    for e, s in states.items():
+        out[e] = dict(s, lit=(side, k, lamp.get("color", "#f6c26b"), cool))
+        if cast:
+            continue
+        x, y = slot_x(s["slot"], W), ground(H) - s.get("rise", 0.0)
+        soft = skia.Paint(AntiAlias=True, Color=col(place.mix(cool, "#120c14", 0.35) if cool else "#120c14", 95 * k * s["alpha"]), MaskFilter=skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 10))
+        c.drawOval(skia.Rect.MakeXYWH(x - side * 26 - 44, y - 150, 88, 150), soft)            # on the wall behind it
+        if not s.get("rise"):
+            c.drawOval(skia.Rect.MakeXYWH(x - side * 30 - 46, y - 7, 92, 18), soft)           # and on the floor under it
+    return out
+
+
+def swell(c, stage, states, t):
+    """Whatever is about to go off (a `blast` on it, within SWELL seconds) swells first: slowly, glowing, and shaking harder as it
+    fills, until the frame shakes with it. -> states, with that one grown."""
+    W, H = stage.W, stage.H
+    coming = next(((at, who) for at, name, who, _ in stage.score.events if name == "blast" and t < at <= t + SWELL and who in states), None)
+    if not coming:
+        return states
+    k = 1 - (coming[0] - t) / SWELL
+    grow, shake = 1 + 1.5 * k ** 1.4, 1 + 0.035 * k * math.sin(t * 70)
+    s = states[coming[1]]
+    states = dict(states, **{coming[1]: dict(s, sx=s["sx"] * grow * shake, sy=s["sy"] * grow / shake)})
+    gx, gy, gr = slot_x(s["slot"], W), ground(H) - s.get("rise", 0.0) - 110 * grow, 60 + 330 * k
+    c.drawCircle(gx, gy, gr, skia.Paint(AntiAlias=True, Shader=skia.GradientShader.MakeRadial(
+        skia.Point(gx, gy), gr, [col("#fff3c4", 200 * k), col("#f2a33a", 110 * k), col("#f2a33a", 0)], [0.0, 0.45, 1.0])))
+    c.translate(5 * k * k * math.sin(t * 83), 4 * k * k * math.cos(t * 71))
+    return states
+
+
+def bench_front(c, stage, states, bench, seated, edge):
+    """The bench's front, between whoever sits at it and us, with a plate at each seat: a name if the entity has one, else its colour."""
+    W, H = stage.W, stage.H
+    rise, front = float(bench.get("rise", 58)), float(bench.get("front", 30))
+    x0, x1, y0 = slot_x(float(bench["from"]), W) - 62, slot_x(float(bench["to"]), W) + 62, ground(H) - rise - front
+    wood = bench.get("color", "#a08a70")
+    boards = ((x0, y0, x1, ground(H) + 8), (x0 - 8, y0 - 9, x1 + 8, y0 + 3), (x0 - 16, ground(H) - 6, x1 + 16, ground(H) + 10))
+    for r, shade in zip(boards, (0.0, 0.3, 0.18)):
+        c.drawRect(skia.Rect.MakeLTRB(*r), fill(place.mix(wood, "#2e2a24", shade) if shade else wood))
+    if edge:
+        for r in boards:
+            c.drawRect(skia.Rect.MakeLTRB(*r), place.pen(edge, 3))
+    for e in seated:
+        px, ent = slot_x(round(states[e]["slot"]), W), stage.look.cast[e]
+        c.drawRoundRect(skia.Rect.MakeXYWH(px - 30, y0 + 16, 60, 26), 4, 4, fill("#f1e9dc", 255 * states[e]["alpha"]))
+        if ent.get("plate"):
+            f = font(15)
+            c.drawString(str(ent["plate"]), px - f.measureText(str(ent["plate"])) / 2, y0 + 35, f, fill(INK, 230 * states[e]["alpha"]))
+        else:
+            c.drawCircle(px, y0 + 29, 7, fill(ent["color"], 255 * states[e]["alpha"]))
+
+
+def fireball(c, stage, s, age):
+    """An explosion, `age` seconds after it went off: from where it started, out past the edges of the frame."""
+    bx, by, r = slot_x(s["slot"], stage.W), ground(stage.H) - 200 - s.get("rise", 0.0), 230 + 2300 * age
+    c.drawCircle(bx, by, r, skia.Paint(AntiAlias=True, Shader=skia.GradientShader.MakeRadial(
+        skia.Point(bx, by), r, [col("#fffdf6"), col("#fffdf6"), col("#fbe6a2"), col("#f2a33a"), col("#f2a33a", 0)], [0.0, 0.5, 0.72, 0.9, 1.0])))
 
 
 def draw_frame(c, stage, F, xray=False, slate=False):
@@ -465,66 +579,14 @@ def draw_frame(c, stage, F, xray=False, slate=False):
     if "rings" in seen:
         rings(c, stage, t, marks)
     states = {e: s for e in stage.score.pose if (s := pose(stage, e, t)) is not None}
-    bench = (stage.look.place or {}).get("bench")                # a raised bench: whoever stands along it sits up behind it
-    seated = []
-    up = []                                                      # whoever is up on the bench, not behind it
-    if bench:
-        for e, s in states.items():
-            if stage.look.cast[e].get("climbs"):                 # one that does not sit at a bench: it jumps up onto it, from either end
-                near = min(s["slot"] - float(bench["from"]), float(bench["to"]) - s["slot"]) + 0.5
-                top = (float(bench.get("rise", 58)) + float(bench.get("front", 30)) + 9) * smooth(near)
-                states[e] = dict(s, rise=top + 120 * s.get("travel", 0.0))
-                if near > 0:
-                    up.append(e)
-            elif float(bench["from"]) <= s["slot"] <= float(bench["to"]):
-                states[e] = dict(s, rise=float(bench.get("rise", 58)))
-                seated.append(e)
-    lamp = (stage.look.place or {}).get("light") if housed else None
-    edge, cool = ((stage.look.place or {}).get(k) if housed else None for k in ("ink", "shadow"))
+    room = (stage.look.place or {}) if housed else {}
+    bench, edge = (stage.look.place or {}).get("bench"), room.get("ink")
+    states, seated, up = seat(stage, states, bench)
     if edge:
         states = {e: dict(s, ink=edge) for e, s in states.items()}
-    if lamp:                                                     # one light: everything gets a lit side, and throws a shadow away from it
-        side = -1 if lamp.get("side", "left") == "left" else 1
-        k = float(lamp.get("strength", 0.7))
-        cast = float(lamp.get("cast", 0))                         # the sun or the moon is behind the room: shadows fall across the floor toward us, this long
-        if cast:
-            lean, y0 = -side * 0.5 * cast, ground(H) + 10
-            r, g, b = place.rgb(place.mix(cool, "#120c14", 0.45) if cool else "#120c14")
-            c.saveLayer(None, skia.Paint(Alphaf=0.56 * k, ImageFilter=skia.ImageFilters.Blur(2.5, 2.5),
-                                         ColorFilter=skia.ColorFilters.Blend(skia.Color(r, g, b), skia.BlendMode.kSrcIn)))
-            if bench:                                            # the bench's own, and everyone at it
-                tall = float(bench.get("rise", 58)) + float(bench.get("front", 30)) + 9
-                x0, x1 = slot_x(float(bench["from"]), W) - 70, slot_x(float(bench["to"]), W) + 70
-                c.drawPath(skia.Path().addPoly([skia.Point(x0, y0 - 16), skia.Point(x1, y0 - 16), skia.Point(x1 + lean * tall, y0 + cast * tall), skia.Point(x0 + lean * tall, y0 + cast * tall)], True), fill("#000000"))
-            for e, s in states.items():
-                high = s.get("rise", 0.0)
-                on_floor = not bench or e not in seated and e not in up
-                c.save()
-                c.translate(slot_x(s["slot"], W) + lean * high, (ground(H) if on_floor else y0) + cast * high)
-                c.concat(skia.Matrix().setAll(1, -lean, 0, 0, -cast, 0, 0, 0, 1))
-                draw_body(c, stage.look.cast[e], {k2: v for k2, v in s.items() if k2 not in ("ink", "lit")}, t, 0, 0)
-                c.restore()
-            c.restore()
-        for e, s in states.items():
-            states[e] = dict(s, lit=(side, k, lamp.get("color", "#f6c26b"), cool))
-            if cast:
-                continue
-            x, y = slot_x(s["slot"], W), ground(H) - s.get("rise", 0.0)
-            soft = skia.Paint(AntiAlias=True, Color=col(place.mix(cool, "#120c14", 0.35) if cool else "#120c14", 95 * k * s["alpha"]), MaskFilter=skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 10))
-            c.drawOval(skia.Rect.MakeXYWH(x - side * 26 - 44, y - 150, 88, 150), soft)            # on the wall behind it
-            if not s.get("rise"):
-                c.drawOval(skia.Rect.MakeXYWH(x - side * 30 - 46, y - 7, 92, 18), soft)           # and on the floor under it
+    states = light(c, stage, states, room, bench, seated, up, t)
     burst = next(((at, who) for at, name, who, _ in stage.score.events if name == "blast" and at <= t), None)     # an explosion, once it has gone off
-    coming = next(((at, who) for at, name, who, _ in stage.score.events if name == "blast" and t < at <= t + SWELL and who in states), None)
-    if coming:                                                   # before it goes off it swells: slowly, shaking harder as it fills
-        k = 1 - (coming[0] - t) / SWELL
-        grow, shake = 1 + 1.5 * k ** 1.4, 1 + 0.035 * k * math.sin(t * 70)
-        s = states[coming[1]]
-        states[coming[1]] = dict(s, sx=s["sx"] * grow * shake, sy=s["sy"] * grow / shake)
-        gx, gy, gr = slot_x(s["slot"], W), ground(H) - s.get("rise", 0.0) - 110 * grow, 60 + 330 * k
-        c.drawCircle(gx, gy, gr, skia.Paint(AntiAlias=True, Shader=skia.GradientShader.MakeRadial(
-            skia.Point(gx, gy), gr, [col("#fff3c4", 200 * k), col("#f2a33a", 110 * k), col("#f2a33a", 0)], [0.0, 0.45, 1.0])))
-        c.translate(5 * k * k * math.sin(t * 83), 4 * k * k * math.cos(t * 71))
+    states = swell(c, stage, states, t)
     if burst:
         age = t - burst[0]
         c.translate(22 * math.exp(-age / 0.12) * math.sin(age * 95), 16 * math.exp(-age / 0.12) * math.cos(age * 81))    # the frame is thrown
@@ -544,31 +606,12 @@ def draw_frame(c, stage, F, xray=False, slate=False):
     for e in sorted(states, key=lambda e: (e in cam.on, bool(line and line["who"] == e))):
         if e not in up:
             token(e)
-    if bench:                                                    # the bench's front, between the council and us, with a plate at each seat
-        rise, front = float(bench.get("rise", 58)), float(bench.get("front", 30))
-        x0, x1, y0 = slot_x(float(bench["from"]), W) - 62, slot_x(float(bench["to"]), W) + 62, ground(H) - rise - front
-        wood = bench.get("color", "#a08a70")
-        c.drawRect(skia.Rect.MakeLTRB(x0, y0, x1, ground(H) + 8), fill(wood))
-        c.drawRect(skia.Rect.MakeLTRB(x0 - 8, y0 - 9, x1 + 8, y0 + 3), fill(place.mix(wood, "#2e2a24", 0.3)))
-        c.drawRect(skia.Rect.MakeLTRB(x0 - 16, ground(H) - 6, x1 + 16, ground(H) + 10), fill(place.mix(wood, "#2e2a24", 0.18)))
-        if edge:
-            for r in ((x0, y0, x1, ground(H) + 8), (x0 - 8, y0 - 9, x1 + 8, y0 + 3), (x0 - 16, ground(H) - 6, x1 + 16, ground(H) + 10)):
-                c.drawRect(skia.Rect.MakeLTRB(*r), place.pen(edge, 3))
-        for e in seated:
-            px, ent = slot_x(round(states[e]["slot"]), W), stage.look.cast[e]
-            c.drawRoundRect(skia.Rect.MakeXYWH(px - 30, y0 + 16, 60, 26), 4, 4, fill("#f1e9dc", 255 * states[e]["alpha"]))
-            if ent.get("plate"):
-                f = font(15)
-                c.drawString(str(ent["plate"]), px - f.measureText(str(ent["plate"])) / 2, y0 + 35, f, fill(INK, 230 * states[e]["alpha"]))
-            else:                                                # no name yet: the plate carries the house's colour
-                c.drawCircle(px, y0 + 29, 7, fill(ent["color"], 255 * states[e]["alpha"]))
+    if bench:
+        bench_front(c, stage, states, bench, seated, edge)
     for e in up:                                                 # on the bench: in front of it, and of everyone sat behind it
         token(e)
-    if burst and burst[1] in states:                             # the fireball, from where it started, out past the edges of the frame
-        bx, by, r = slot_x(states[burst[1]]["slot"], W), ground(H) - 200 - states[burst[1]].get("rise", 0.0), 230 + 2300 * (t - burst[0])
-        ball = skia.Paint(AntiAlias=True, Shader=skia.GradientShader.MakeRadial(
-            skia.Point(bx, by), r, [col("#fffdf6"), col("#fffdf6"), col("#fbe6a2"), col("#f2a33a"), col("#f2a33a", 0)], [0.0, 0.5, 0.72, 0.9, 1.0]))
-        c.drawCircle(bx, by, r, ball)
+    if burst and burst[1] in states:
+        fireball(c, stage, states[burst[1]], t - burst[0])
     c.restore()
     if housed:
         place.draw_in_front(c, stage, cam)

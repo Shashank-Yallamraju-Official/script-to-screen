@@ -80,7 +80,8 @@ def shots(a):
          [A("scene", "a scene", nargs="?"), A("--episode", "an episode's id, e.g. s01e01: render it as one film"), A("--all", "every scene", action="store_true"),
           XRAY, A("--slate", "label every frame with its turn and step", action="store_true"),
           A("--draft", "with --episode: a quick look, not for showing. Half size, half the frames, no outlines on bodies", action="store_true"),
-          A("--only", "with --episode: just this stretch, in seconds, e.g. 30-48")],
+          A("--only", "with --episode: just this stretch, in seconds, e.g. 30-48"),
+          A("--fresh", "with --episode: make every part again, even those that have not changed", action="store_true")],
          "s2s render --episode s01e01 --draft", group="look")
 def render(a):
     if a.scene:
@@ -100,9 +101,9 @@ def render(a):
     if a.episode:                                                # one film: scenes and cards in order, joined by transitions, one soundtrack
         from ..presentation import episode
         only = tuple(float(x) for x in a.only.split("-")) if a.only else None
-        film, made = episode.render(root, a.episode, only, a.draft)
+        film, made = episode.render(root, a.episode, only, a.draft, a.fresh)
         return dict(file=str(film), parts=made, problems=problems, seconds=round(sum(m["seconds"] for m in made), 1),
-                    text="\n".join([f"warn: {p['scene']}: {p['msg']}" for p in problems] + [f"  {m['seconds']:>5}s  {m['kind']:<8} {m['id']}" for m in made]
+                    text="\n".join([f"warn: {p['scene']}: {p['msg']}" for p in problems] + [f"  {m['seconds']:>5}s  {m['kind']:<8} {m['id']}" + ("" if m["made"] else "  (unchanged: kept)") for m in made]
                                    + [f"{film} {round(sum(m['seconds'] for m in made), 1)}s"]))
     scenes = [Stage.of(Scene(p)) for p in paths]
     files = [dict(scene=st.score.id, file=str(R.render(st, a.xray, a.slate)), seconds=round(st.score.dur, 1)) for st in scenes]
