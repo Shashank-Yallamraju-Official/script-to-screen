@@ -207,7 +207,7 @@ def _kept(plan, look):
     return labels, np.stack(shots)
 
 
-def frames(root, eid, accept=False, tolerance=1.2):
+def frames(root, eid, accept=False, tolerance=2.5):
     """Has the episode's picture changed? Compares its kept frames (frames/<episode>.png in the show, kept in git) with how they
     draw now. -> (changed: [(label, how much)], png of now beside before, or None). With `accept`, how they draw now becomes the
     kept frames: do that when the change was meant. A change in the look that nobody meant shows up here before anyone watches."""
@@ -223,7 +223,8 @@ def frames(root, eid, accept=False, tolerance=1.2):
     if was.shape[1] != SMALL[0] * len(now):
         return [("the episode has a different number of parts than when its frames were kept", 255.0)], None
     was = np.stack(np.split(was, len(now), axis=1))
-    by = np.abs(now.astype(np.int16) - was.astype(np.int16)).mean(axis=(1, 2, 3))
+    apart = np.abs(now.astype(np.int16) - was.astype(np.int16)).mean(axis=3)                       # [n, 90, 160]
+    by = apart.reshape(len(now), 9, 10, 16, 10).mean(axis=(2, 4)).max(axis=(1, 2))               # the most-changed patch of each frame: a small change in one corner still counts
     changed = [(labels[i], round(float(by[i]), 1)) for i in range(len(now)) if by[i] > tolerance]
     png = None
     if changed:
