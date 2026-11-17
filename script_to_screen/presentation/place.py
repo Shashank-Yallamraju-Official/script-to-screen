@@ -366,8 +366,8 @@ class Painter:
                     w = piece.get("_w") or 120
                     c.drawCircle(w * 0.08, -170 - float(piece["sun"]) * 1.25 * w, w * 0.3, paint(self.sun))
                     c.restore()
-                if self.line:
-                    c.drawPath(path, pen(self.line, 1.6 if kind == "vine" else 3))
+                if self.line:                                               # line weight is nearness: the wall is drawn lightly, what stands in the room firmly
+                    c.drawPath(path, pen(mix(self.line, self.wall, 0.45), 1.4 if kind == "vine" else 2) if kind in QUIET else pen(self.line, 3))
             else:                                                           # wash: one hue, a step darker for what is solid, lighter for what is lit
                 if front:
                     c.drawPath(path, paint(mix(self.floor, "#2e2a24", 0.42 if role != "light" else 0.34)) if role != "line" else pen(self.floor, 0, 0))
@@ -413,6 +413,9 @@ def prepare(place, W):
 def shade_of(place):
     """The colour of a cast shadow in this place: its own `shade:` if it gives one, else its cool shadow colour, darkened."""
     return place.get("shade") or mix(place.get("shadow") or "#120c14", "#120c14", 0.45)
+
+
+QUIET = ("arch", "cornice", "vine")            # the wall itself: in an inked place these get a thin, soft line so the room stays behind the people
 
 
 SHADE = 0.5                                   # how dark a cast shadow is, at full light

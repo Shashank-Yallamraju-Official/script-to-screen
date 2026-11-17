@@ -327,7 +327,7 @@ class Inked:
     """A canvas that draws a line round every solid shape put on it, as it is put there: so a body has its inner lines as well as
     its outline, and what overlaps what stays right. A see-through shape (a shine, a glow) and one out of focus get no line."""
 
-    def __init__(self, c, color, width=2.4):
+    def __init__(self, c, color, width=2.8):
         self._c, self._w = c, width
         self._rgb = _rgb(color)
 

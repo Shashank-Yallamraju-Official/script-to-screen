@@ -1,47 +1,43 @@
-# The crown: the council chamber, built like a colosseum of pale stone, open to the sky and grown over. Solarpunk: light,
-# living, and made to last. Bare on purpose: everything in the room means something.
-#   the arches, and the sky in them   the hour. Here the sun is low and gold: the end of a long day
-#   vines over the arches             the building has been lived in for a long time
-#   two grown trees                   so has the council
-#   the bench and its plates          a council, each member at its own seat
-#   the flag, under the crown         who rules: Signet
+# The crown: the council chamber, built like a colosseum, open to the sky. Three rules decide everything in it.
+#
+#   1. Order is Signet's, so the room is symmetrical. One arch behind each of the seven seats, the flag on the middle one.
+#      Only two things are allowed to break the symmetry: time (the sun, and the shadows it throws) and whoever does not belong.
+#   2. Colour is ownership. Strong colour is only on what belongs to a house: here, Signet's red. The building is stone and wood;
+#      what is alive is green.
+#   3. Nearness is weight. The wall is pale and lightly drawn; the council is clear; the bench in front of them is the darkest thing.
+#
+#   seven arches             a seat each: the chamber was built for seven. Five sit. The sky in them is the hour
+#   the sun, in an empty arch   low and gold: the end of a long day
+#   the flag, on the middle arch   who rules, and the one seat with no sky behind it
+#   vines at the two ends, two grown trees   the building has stood a long time, and the outside has started to come in at the edges
 name: The crown
 land: signet                   # where this is on the land
-wall: "#f2cf7e"
-floor: "#63a455"
+wall: "#f3dfa9"
+floor: "#74a563"
 sky: ["#b9a3dc", "#f8e59c"]
 sun: "#fffbe0"
-light: {at: 1.6, up: 250, color: "#ffd98a", reach: 620, strength: 0.75, side: left, cast: 0.5, warm: 0.42}        # the low sun, through the arches on the left
+light: {at: 3, up: 230, color: "#ffd98a", reach: 560, strength: 0.7, side: left, cast: 0.5, warm: 0.42}        # the low sun, in the empty arch left of the middle
 ink: "#17194d"                 # drawn outlines on everything, as in a comic
-shadow: "#8a93ea"              # the side away from the sun goes to this
-air: warm                       # the sound of the room when nobody speaks
+shadow: "#b3aeea"              # the side away from the sun goes to this
+air: warm                      # the sound of the room when nobody speaks
 shade: "#232a78"               # cast shadows are deep blue, so on the green floor they read as shadow and not as darker green
-vignette: 0.28
-bench: {from: 0.65, to: 7.35, rise: 58, front: 30, color: "#d98a3e"}
+vignette: 0.16
+bench: {from: 0.65, to: 7.35, rise: 58, front: 30, color: "#7d5a44"}       # dark wood: nearest, and nobody's colour
 pieces:
-  - {kind: arch, at: 0.4, wide: 0.95, color: "#e0b45c"}
-  - {kind: arch, at: 1.6, wide: 0.95, color: "#e0b45c", sun: 0.22}
-  - {kind: arch, at: 2.8, wide: 0.95, color: "#e0b45c"}
-  - {kind: arch, at: 4.0, wide: 0.95, color: "#e0b45c"}
-  - {kind: arch, at: 5.2, wide: 0.95, color: "#e0b45c"}
-  - {kind: arch, at: 6.4, wide: 0.95, color: "#e0b45c"}
-  - {kind: arch, at: 7.6, wide: 0.95, color: "#e0b45c"}
-  - {kind: cornice, at: 4.0, wide: 14, color: "#e0b45c"}
-  - {kind: arch, at: 0.4, wide: 0.5, up: 268, color: "#e0b45c"}
-  - {kind: arch, at: 1.6, wide: 0.5, up: 268, color: "#e0b45c"}
-  - {kind: arch, at: 2.8, wide: 0.5, up: 268, color: "#e0b45c"}
-  - {kind: arch, at: 4.0, wide: 0.5, up: 268, color: "#e0b45c"}
-  - {kind: arch, at: 5.2, wide: 0.5, up: 268, color: "#e0b45c"}
-  - {kind: arch, at: 6.4, wide: 0.5, up: 268, color: "#e0b45c"}
-  - {kind: arch, at: 7.6, wide: 0.5, up: 268, color: "#e0b45c"}
-  - {kind: vine, at: 0.4, wide: 0.95, color: "#3f9d4a"}
-  - {kind: vine, at: 2.8, wide: 0.95, color: "#3f9d4a"}
-  - {kind: vine, at: 5.2, wide: 0.95, color: "#3f9d4a"}
-  - {kind: vine, at: 6.4, wide: 0.95, color: "#3f9d4a"}
-  - {kind: banner, at: 4.0, wide: 1.0, color: "#c8324e"}
-  - {kind: crownmark, at: 4.0, color: "#fbf3dc"}
-  - {kind: crest, at: 4.0, color: "#c8324e"}
-  - {kind: pot, at: -0.45, color: "#e07a3c"}
-  - {kind: tree, at: -0.45, color: "#3f9d4a"}
-  - {kind: pot, at: 8.45, color: "#e07a3c"}
-  - {kind: tree, at: 8.45, color: "#3f9d4a"}
+  - {kind: arch, at: 1, wide: 0.8, color: "#dcc58a"}
+  - {kind: arch, at: 2, wide: 0.8, color: "#dcc58a"}
+  - {kind: arch, at: 3, wide: 0.8, color: "#dcc58a", sun: 0.25}
+  - {kind: arch, at: 4, wide: 0.8, color: "#dcc58a"}
+  - {kind: arch, at: 5, wide: 0.8, color: "#dcc58a"}
+  - {kind: arch, at: 6, wide: 0.8, color: "#dcc58a"}
+  - {kind: arch, at: 7, wide: 0.8, color: "#dcc58a"}
+  - {kind: cornice, at: 4.0, wide: 14, color: "#dcc58a"}
+  - {kind: vine, at: 1, wide: 0.8, color: "#4a9a52"}
+  - {kind: vine, at: 7, wide: 0.8, color: "#4a9a52"}
+  - {kind: banner, at: 4, wide: 0.9, color: "#c8324e"}
+  - {kind: crownmark, at: 4, color: "#fbf3dc"}
+  - {kind: crest, at: 4, color: "#c8324e"}
+  - {kind: pot, at: -0.45, color: "#b9a67c"}
+  - {kind: tree, at: -0.45, color: "#4a9a52"}
+  - {kind: pot, at: 8.45, color: "#b9a67c"}
+  - {kind: tree, at: 8.45, color: "#4a9a52"}

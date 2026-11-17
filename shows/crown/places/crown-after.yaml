@@ -1,44 +1,40 @@
-# The crown, rebuilt exactly as it was, in new stone. Bare on purpose: the only things that differ are the things that changed.
-#   the sky in the arches      the hour. A pale sun, low on the other side: early, and cold
-#   no vines                   the stone is new; nothing has had time to grow on it
-#   saplings in the planters   the trees were lost, and not long ago
-#   three flags                who rules now: Mallet, Signet and Hasp
+# The crown, rebuilt exactly as it was, in new stone. The same three rules as the first chamber (see crown.yaml); the only things
+# that differ are the things that changed.
+#
+#   seven arches, seven sitting   the chamber is full now: two hammers, three seals, two locks
+#   three flags                   who rules now. Each hangs on the arch behind one of its own, and each shuts out that arch's light
+#   three strong colours          where there was one. Colour is ownership, and ownership is split
+#   a pale sun on the other side  early, and cold
+#   no vines; saplings            the stone is new and the trees were lost, not long ago
 name: The crown, rebuilt
 land: signet                   # where this is on the land
-wall: "#b9c6ea"
-floor: "#8294c9"
+wall: "#c3cdec"
+floor: "#8a9bcb"
 sky: ["#8f9fd6", "#dfe6f6"]
 sun: "#ffffff"
-light: {at: 6.4, up: 250, color: "#eef4f9", reach: 640, strength: 0.4, side: right, cast: 0.42}       # a pale early sun, through the arches on the right
-ink: "#17194d"                 # drawn outlines on everything, as in a comic
-shadow: "#6f7fd0"              # the side away from the sun goes to this
-air: cold                       # the sound of the room when nobody speaks
-vignette: 0.32
-bench: {from: 0.65, to: 7.35, rise: 58, front: 30, color: "#8d8fc0"}
+light: {at: 5, up: 250, color: "#eef4f9", reach: 600, strength: 0.4, side: right, cast: 0.42}       # a pale early sun, on the right
+ink: "#17194d"
+shadow: "#8d9be0"
+air: cold                      # the sound of the room when nobody speaks
+vignette: 0.2
+bench: {from: 0.65, to: 7.35, rise: 58, front: 30, color: "#6f6f93"}       # new wood, gone grey in this light: nearest, and nobody's colour
 pieces:
-  - {kind: arch, at: 0.4, wide: 0.95, color: "#9eaedd"}
-  - {kind: arch, at: 1.6, wide: 0.95, color: "#9eaedd"}
-  - {kind: arch, at: 2.8, wide: 0.95, color: "#9eaedd"}
-  - {kind: arch, at: 4.0, wide: 0.95, color: "#9eaedd"}
-  - {kind: arch, at: 5.2, wide: 0.95, color: "#9eaedd"}
-  - {kind: arch, at: 6.4, wide: 0.95, color: "#9eaedd", sun: 0.3}
-  - {kind: arch, at: 7.6, wide: 0.95, color: "#9eaedd"}
-  - {kind: cornice, at: 4.0, wide: 14, color: "#9eaedd"}
-  - {kind: arch, at: 0.4, wide: 0.5, up: 268, color: "#9eaedd"}
-  - {kind: arch, at: 1.6, wide: 0.5, up: 268, color: "#9eaedd"}
-  - {kind: arch, at: 2.8, wide: 0.5, up: 268, color: "#9eaedd"}
-  - {kind: arch, at: 4.0, wide: 0.5, up: 268, color: "#9eaedd"}
-  - {kind: arch, at: 5.2, wide: 0.5, up: 268, color: "#9eaedd"}
-  - {kind: arch, at: 6.4, wide: 0.5, up: 268, color: "#9eaedd"}
-  - {kind: arch, at: 7.6, wide: 0.5, up: 268, color: "#9eaedd"}
-  - {kind: banner, at: 2.8, wide: 1.0, color: "#e0952f"}
-  - {kind: hammermark, at: 2.8, color: "#e0952f"}
-  - {kind: banner, at: 4.0, wide: 1.0, color: "#c8324e"}
-  - {kind: crownmark, at: 4.0, color: "#f4efe2"}
-  - {kind: crest, at: 4.0, color: "#c8324e"}
-  - {kind: banner, at: 5.2, wide: 1.0, color: "#3f6fd0"}
-  - {kind: lockmark, at: 5.2, color: "#3f6fd0"}
-  - {kind: pot, at: -0.45, color: "#b07f8e"}
+  - {kind: arch, at: 1, wide: 0.8, color: "#a9b6e0"}
+  - {kind: arch, at: 2, wide: 0.8, color: "#a9b6e0"}
+  - {kind: arch, at: 3, wide: 0.8, color: "#a9b6e0"}
+  - {kind: arch, at: 4, wide: 0.8, color: "#a9b6e0"}
+  - {kind: arch, at: 5, wide: 0.8, color: "#a9b6e0", sun: 0.62}
+  - {kind: arch, at: 6, wide: 0.8, color: "#a9b6e0"}
+  - {kind: arch, at: 7, wide: 0.8, color: "#a9b6e0"}
+  - {kind: cornice, at: 4.0, wide: 14, color: "#a9b6e0"}
+  - {kind: banner, at: 2, wide: 0.9, color: "#e0952f"}
+  - {kind: hammermark, at: 2, color: "#e0952f"}
+  - {kind: banner, at: 4, wide: 0.9, color: "#c8324e"}
+  - {kind: crownmark, at: 4, color: "#f4efe2"}
+  - {kind: crest, at: 4, color: "#c8324e"}
+  - {kind: banner, at: 6, wide: 0.9, color: "#3f6fd0"}
+  - {kind: lockmark, at: 6, color: "#3f6fd0"}
+  - {kind: pot, at: -0.45, color: "#9aa5cf"}
   - {kind: sapling, at: -0.45, color: "#5fae6a"}
-  - {kind: pot, at: 8.45, color: "#b07f8e"}
+  - {kind: pot, at: 8.45, color: "#9aa5cf"}
   - {kind: sapling, at: 8.45, color: "#5fae6a"}
