@@ -1,0 +1,9 @@
+kind: "a magnifying glass of House Glass"
+body: glass          # drawn as this object: no face, and it moves the way the object can
+size: 1.1
+color: "#3f8f8a"
+voice: 247
+timbre: triangle
+status: 1
+reflex: 0
+tells: {}          # an object shows what it feels by how it moves, not by a list of tells

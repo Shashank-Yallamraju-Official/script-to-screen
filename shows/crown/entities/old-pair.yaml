@@ -1,0 +1,10 @@
+kind: "House Bout's head: an old pair laced together, which can only hit each other"
+body: glove          # drawn as this object: no face, and it moves the way the object can
+size: 1.15
+pair: true
+color: "#c2572b"
+voice: 123
+timbre: sawtooth
+status: 1
+reflex: 0
+tells: {}          # an object shows what it feels by how it moves, not by a list of tells

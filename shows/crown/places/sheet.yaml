@@ -1,0 +1,9 @@
+# House Rue: a drafting table. One vast sheet rubbed white, with crumbs at its edges. Nothing written is left.
+name: The sheet
+wall: "#f3f0ee"
+floor: "#ebe6e4"
+pieces:
+  - {kind: ghost, at: 2.0, wide: 3.2}
+  - {kind: ghost, at: 6.4, wide: 2.6}
+  - {kind: crumbs, at: 1.0, wide: 2.4}
+  - {kind: crumbs, at: 7.2, wide: 2.8}

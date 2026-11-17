@@ -1,0 +1,9 @@
+# House Glass: a house taken apart. Every piece laid out in order of size, and bright sills where they gather.
+name: The house in pieces
+wall: "#e3ebe8"
+floor: "#c5d1cc"
+window: "#fffef4"
+pieces:
+  - {kind: window, at: 2.0, wide: 2.0}
+  - {kind: window, at: 6.2, wide: 2.0}
+  - {kind: parts, at: 4.2, wide: 5.6}

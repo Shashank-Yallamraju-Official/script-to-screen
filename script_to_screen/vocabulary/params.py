@@ -91,7 +91,7 @@ PARAMS = {p.key: p for p in [
     _("entity.voice", "Voice", "The pitch of an entity's voice, in Hz.", "Hz", 60, 800, 1, "entities/<entity>.yaml voice",
       "sound", exercised_by=("bubble",), words=("voice", "deep", "high")),
     # ---- motion, the indicator and the voice: library/feel.yaml -----------------------------------------
-    _("feel.ease", "Ease", "Seconds a change takes to settle.", "seconds", 0.05, 0.8, 0.01, "library/feel.yaml ease",
+    _("feel.ease", "Ease", "Seconds a change takes to settle.", "seconds", 0.05, 2.0, 0.01, "library/feel.yaml ease",
       "look", exercised_by=MOVES, words=("snappy", "sluggish", "smooth", "abrupt")),
     _("feel.overshoot", "Overshoot", "How far a move swings past its mark before settling.", "amount", 0, 2, 0.05, "library/feel.yaml overshoot",
       "look", exercised_by=("move", "posture"), words=("bouncy", "springy", "stiff")),

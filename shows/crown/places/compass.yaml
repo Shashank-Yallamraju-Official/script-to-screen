@@ -1,0 +1,12 @@
+# House Lode: the inside of a compass. A round hall under glass, a pivot post for each needle, and an empty plinth at the centre.
+name: The compass hall
+wall: "#dfe5e6"
+floor: "#c3ccd0"
+window: "#f4f8f8"
+pieces:
+  - {kind: dome, at: 4.0, wide: 7.6}
+  - {id: plinth, kind: pedestal, at: 4.0, aka: [plinth]}
+  - {kind: post, at: 0.6}
+  - {kind: post, at: 1.6}
+  - {kind: post, at: 6.9}
+  - {kind: post, at: 7.8}

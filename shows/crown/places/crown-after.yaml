@@ -1,0 +1,10 @@
+# The crown, rebuilt exactly as it was, except for the wall: three emblems now, Mallet's on the left and Hasp's on the right.
+name: The crown, rebuilt
+wall: "#e6ddd6"
+floor: "#cdbfb6"
+pieces:
+  - {kind: crownmark, at: 4.0}
+  - {kind: crest, at: 4.0}
+  - {kind: hammermark, at: 2.5}
+  - {kind: lockmark, at: 5.5}
+  - {kind: bench, at: 4.0, wide: 7.6}

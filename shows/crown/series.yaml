@@ -1,0 +1,14 @@
+# The series from above. Scenes are added here as they are written.
+# (episodes/drafts holds an earlier opening, eight scenes of a message passing from house to house. It is not in the show.)
+seasons:
+  - id: s01
+    title: The Empty Crown
+    episodes:
+      - id: the-vote
+        title: "One: the vote"
+        logline: A council is about to vote when a single match gets into the chamber. Months later the same vote cannot be carried.
+        segments:
+          - {id: the-council, scene: episodes/e01/01-the-council.yaml}
+          - {id: months-later, card: caption, text: Months later, seconds: 3.5, into: cut}
+          - {id: the-council-again, scene: episodes/e01/02-the-council-again.yaml, into: cut}
+          - {id: the-vote-credits, card: credits}

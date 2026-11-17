@@ -1,0 +1,46 @@
+# The message starts here. Signet is next door to the seat, so it is first to know. It turns what it saw into
+# the old wording and seals it. What it sends is no longer what was seen. (Signet: set phrases, the same ones each time.)
+scene: The chancery
+place: chancery
+turns:
+  - id: 1
+    enter: {great-seal: {slot: 5, orient: out}}
+    why: The great seal, in its place. It has stamped this desk for decades.
+    hold: 4
+  - id: 2
+    enter: {seal: {from: left, orient: great-seal}}
+    why: A seal comes back from next door, stamping as it comes.
+    hold: 3
+  - id: 3
+    who: seal
+    say: The seat is empty.
+    why: The plain fact. It is the only time in the episode it is said plainly by someone who saw it.
+  - id: 4
+    who: great-seal
+    do: {great-seal: {orient: seal}}
+    say: By order of the crown.
+    why: The set phrase. It is how every sentence here begins.
+  - id: 5
+    who: seal
+    say: There is no crown.
+    hold: 5
+    why: It saw the seat. It will not use the phrase.
+  - id: 6
+    who: great-seal
+    say: By order of the crown.
+    why: The same phrase again. It has no other.
+    hold: 4
+  - id: 7
+    who: seal
+    say: What do I send?
+    why: It gives in and asks for wording, which is what this house can give.
+  - id: 8
+    who: great-seal
+    do: {great-seal: {orient: out}}
+    say: The crown is vacant. The old order stands.
+    why: The fact, rewritten in the old wording and sealed as official.
+    hold: 4
+  - id: 9
+    exit: [seal]
+    why: It goes out with the sealed version.
+    hold: 3

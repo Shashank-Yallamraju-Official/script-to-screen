@@ -1,0 +1,45 @@
+# Rue hears every line as blame. It rubs out the part it judges wrong, so what leaves has a gap in it.
+# (Rue: says a line, then takes it back.)
+scene: The sheet
+place: sheet
+turns:
+  - id: 1
+    enter: {stub: {slot: 5, orient: out}, eraser: {slot: 6, orient: stub}}
+    hold: 4
+    why: The stub and an eraser, lying flat on a sheet with nothing on it.
+  - id: 2
+    enter: {hammer: {from: left, orient: stub}}
+    hold: 2
+    why: The hammer arrives from the vault with the same short version.
+  - id: 3
+    who: hammer
+    say: Crown's vacant. Carry on.
+    why: Two words of fact and an instruction.
+  - id: 4
+    exit: [hammer]
+    hold: 3
+    why: It has delivered. It leaves.
+  - id: 5
+    who: stub
+    say: We can't carry on. Not after what we did.
+    hold: 4
+    why: It hears the instruction as blame.
+  - id: 6
+    who: stub
+    say: Rub that out.
+    why: It takes its own line back.
+  - id: 7
+    who: eraser
+    do: {eraser: {move: {toward: stub, zone: intimate}}}
+    say: Then what's left?
+    hold: 3
+    why: It comes close and asks what the message still says.
+  - id: 8
+    who: stub
+    say: The crown.
+    hold: 4
+    why: Only the part it could not judge wrong.
+  - id: 9
+    exit: [eraser]
+    why: It leaves with two words and a gap.
+    hold: 3

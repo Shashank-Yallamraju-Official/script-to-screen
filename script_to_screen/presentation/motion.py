@@ -31,6 +31,13 @@ def pose(stage, e, t):
         return None
     t1, cur = ks[idx]
     prev = ks[idx - 1][1] if idx else dict(cur, alpha=0.0) if t1 > 1e-9 else cur   # already there when a scene opens
+    thing = bool(stage.look.cast.get(e, {}).get("body"))             # a thing does not fade in or out: it travels on and off, the way it travels
+    off = lambda slot: slot + (-2.6 if slot <= 4 else 2.6)           # just past the nearer edge of the stage
+    leaving = thing and idx and cur["alpha"] == 0 and prev["alpha"] > 0
+    if thing and not idx and t1 > 1e-9:
+        prev = dict(cur, slot=off(cur["slot"]), alpha=1.0)
+    if leaving:
+        cur = dict(prev, slot=off(prev["slot"]))
     u = max(0.0, min(1.0, (t - t1) / max(float(feel["ease"]), 1e-3)))
     v = max(0.0, min(1.0, (t - t1) / max(float(feel.get("turn", feel["ease"])), 1e-3)))     # turning round has its own, slower clock
     soft, swing, round_ = smooth(u), back(u, float(feel["overshoot"])), glide(v)
@@ -42,4 +49,7 @@ def pose(stage, e, t):
         out[n] = prev[n] + (cur[n] - prev[n]) * swing
     out["flip"] = math.sin(math.pi * round_) if v < 1 and cur["facing"] != prev["facing"] else 0.0   # mid-turn, thin as paper; it thins and fills gradually
     out["travel"] = math.sin(math.pi * u) if u < 1 and cur["slot"] != prev["slot"] else 0.0            # stretched while moving
+    if leaving:
+        out["alpha"] = 1.0 if u < 1 else 0.0
+    out["going"] = u if u < 1 and cur["slot"] != prev["slot"] else 1.0                            # how far through a move it is (1 = at rest)
     return out

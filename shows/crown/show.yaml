@@ -1,0 +1,66 @@
+# Settings for the whole show.
+schema: 2           # the file format; the engine refuses a show written for a different one
+title: The Empty Crown     # a working title; change it here
+
+# How an episode is put together (`s2s render --episode <id>`). A segment in series.yaml can ask for its
+# own way in with `into: cut | dip | fade`.
+episode:
+  transition: dip            # between parts: dip (through the paper), fade (one into the next) or cut
+  transition_seconds: 0.8
+  title_seconds: 5
+  credits_seconds: 17
+
+# The credits, top to bottom. `cast` is everyone in the episode, worked out from its scenes.
+credits:
+  - {role: Created by, name: Shashank Yallamraju}
+  - cast
+
+# How things are drawn, where there is a choice of kind (amounts are in library/feel.yaml).
+style:
+  place: paper               # a room: wash, paper (muted cut paper), line, none. Paper gives each home its own colours
+  camera: film               # film (cut to a new subject, ease a reframing), drift (ease everything), cut, still
+  indicator: fill            # the voice in a bubble: fill (words take ink), dot, trace, pill
+  music: [line, frame]       # how music shows: line (the ground is a string), frame (bars close in), rings, none
+
+# How tight the camera may get, and how restless it may be.
+camera:
+  single: 3.0                # zoom for a shot of one
+  two: 1.9                   # ... of two standing close
+  group: 1.45                # ... of a group
+  min_shot: 1.8              # no shot is shorter than this many seconds
+  tilt: 4.0                  # degrees the frame tips for a hard bad surprise (0 = never)
+width: 1280
+height: 720
+fps: 60
+
+# The tempo grid. Every timing in a scene is counted in steps, so pauses, holds and syllables
+# land on the beat. At 120 beats per minute with 4 steps per beat, one step is an eighth of a
+# second. A scene can set its own `tempo`. Fractions of a step are allowed for fine nudges.
+tempo: 120
+steps_per_beat: 4
+scale: [0, 2, 4, 7, 9]      # the notes voices sing in, as semitones above the voice's own pitch
+
+# The felt states every entity shares. Colours appear only in the director's x-ray view.
+emotions: {fear: "#7b5ea7", anger: "#c8372d", sadness: "#4a6fa5", joy: "#e0a01e", shame: "#d6457a", surprise: "#2f9e8f"}
+
+# Whether each feeling is good or bad for whoever has it: -1 bad, +1 good, 0 neither. Music is
+# scored from this: a feeling that lands as a surprise gets a sinking figure if it is bad and a
+# rising one if it is good. An emotion at 0 (surprise itself) gets an unresolved one.
+valence: {fear: -1, anger: -1, sadness: -1, shame: -1, joy: 1, surprise: 0}
+
+# Music is sparse: only a dramatic event at least this strong gets a cue (strength = how
+# surprising it was x how prominent), and two cues are kept at least `apart` steps from each other.
+music: {threshold: 0.35, apart: 4}
+
+# Position in the room. weight = status on my side / status of everyone who has taken a side.
+# How many tells show = felt intensity x gain, where gain = slope x weight, kept within min..max.
+# At equal weight (0.5) the gain is 1: what is felt is what shows.
+gain: {slope: 2.0, min: 0.34, max: 1.5}
+
+# Steps. pause = before a line starts; hold = after a turn finishes; settle = a turn with no line.
+# bubble_break = a pause this long or longer inside a line starts a new bubble. A full stop is a
+# pause of 2 and a comma of 1, so by default sentences get their own bubbles and clauses do not.
+timing: {pause: 2, hold: 8, settle: 4, bubble_break: 2}
+
+# A tell counts as learned by the audience once it has shown in this many separate scenes.
+ledger: {learn_after: 3}

@@ -94,6 +94,21 @@ class Title:
         _centred(c, sub, y0 + 62, font(30), fill(GREY, 255 * smooth((t - lands - 0.15) / 0.5)), W)
 
 
+class Caption:
+    """A few words on bare paper, in silence: `{card: caption, text: Months later}`. For a jump in time."""
+
+    def __init__(self, look, text, seconds=3.0):
+        self.look, self.text, self.seconds = look, str(text or ""), float(seconds or 3.0)
+
+    def sound(self):
+        return np.zeros(int(self.seconds * music.RATE))
+
+    def draw(self, c, t):
+        c.clear(col(PAPER))
+        ink = smooth((t - 0.9) / 0.6) * (1 - smooth((t - (self.seconds - 0.7)) / 0.5))       # the paper is bare for a moment first
+        _centred(c, self.text, self.look.H * 0.52, font(40), fill(GREY, 255 * ink), self.look.W)
+
+
 class Credits:
     """The credits roll past the cast, who watch them go by and then look at us."""
 

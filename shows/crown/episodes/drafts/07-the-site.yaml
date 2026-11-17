@@ -1,0 +1,47 @@
+# Plumb waits until it is still, then weighs whether a thing is true, not who said it. It says one plain
+# statement, late. It passes the message on exactly as it came.
+scene: The site
+place: site
+turns:
+  - id: 1
+    enter: {heavy-bob: {slot: 5, orient: out}, bob: {slot: 3, orient: out}}
+    why: Two bobs under bare timber and open sky. One hangs dead still. One is still swinging.
+    hold: 5
+  - id: 2
+    enter: {glove: {from: left, orient: heavy-bob}}
+    hold: 1
+    why: The glove arrives at a run.
+  - id: 3
+    who: glove
+    say: THE CROWN. COME AND TAKE IT.
+    hold: 10
+    why: Nothing. The bobs do not answer until they are still.
+  - id: 4
+    who: bob
+    do: {bob: {orient: glove}}
+    say: Take it from whom?
+    why: The swinging one speaks before it is sure.
+    hold: 4
+  - id: 5
+    exit: [glove]
+    why: The glove has no answer, and there is nothing here to hit.
+    hold: 6
+  - id: 6
+    who: heavy-bob
+    say: The crown is empty.
+    why: Late, once, and true. It worked it out from a threat.
+    hold: 6
+  - id: 7
+    who: bob
+    do: {bob: {orient: heavy-bob}}
+    say: Do we tell the glasses that?
+    why: The swinging one wants to pass on what is true.
+  - id: 8
+    who: heavy-bob
+    say: We tell them what came. Exactly.
+    hold: 3
+    why: Plumb passes a message on exactly as it was received.
+  - id: 9
+    exit: [bob]
+    hold: 3
+    why: It sets off, a step and a wait at a time.

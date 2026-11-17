@@ -11,6 +11,7 @@ import skia
 
 from ..world import SLOTS
 from . import place
+from .bodies import draw_body
 from .motion import back, pose, smooth
 from .view import MARGIN, ground, slot_x, view
 
@@ -39,7 +40,10 @@ def font(size=28, mono=False):
     return skia.Font(skia.Typeface("DejaVu Sans Mono" if mono else "DejaVu Sans", skia.FontStyle.Bold()), size)
 
 
-def draw_token(c, ent, o, W, H, feel, blur=0.0):
+def draw_token(c, ent, o, W, H, feel, blur=0.0, t=0.0):
+    if ent.get("body"):                                          # a thing, drawn as that thing: no face, and its own way of moving
+        draw_body(c, ent, o, t, slot_x(o["slot"], W), ground(H), blur)
+        return
     a = 255 * o["alpha"]
     if a < 1:
         return
@@ -449,7 +453,7 @@ def draw_frame(c, stage, F, xray=False, slate=False):
     soft = min(1.0, max(0.0, (cam.zoom - 1.9) / 0.8)) if cam.on else 0.0     # in a close shot, whoever it is not a shot of goes out of focus
     for e in sorted(states, key=lambda e: (e in cam.on, bool(line and line["who"] == e))):
         o = states[e] if e == focal or not dim else dict(states[e], alpha=states[e]["alpha"] * (1 - dim))
-        draw_token(c, stage.look.cast[e], o, W, H, feel, 0.0 if e in cam.on else 2.2 * soft)
+        draw_token(c, stage.look.cast[e], o, W, H, feel, 0.0 if e in cam.on else 2.2 * soft, t)
     c.restore()
     if housed:
         place.draw_in_front(c, stage, cam)

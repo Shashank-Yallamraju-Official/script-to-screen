@@ -66,7 +66,7 @@ def find_root(path):
 
 
 STATUSES = ("draft", "staged", "tuned", "locked")
-CARDS = ("title", "credits")
+CARDS = ("title", "credits", "caption")
 _override = {}                              # root -> series data being rehearsed (see `rehearsing`)
 
 
@@ -100,7 +100,7 @@ class Series:
                     if kind == "card":                           # a title card or the credits: made from show.yaml, with no file of its own
                         if sg["card"] not in CARDS:
                             raise ScriptError(f"series.yaml: '{sg.get('id')}' is a card of kind '{sg['card']}'; the kinds are {', '.join(CARDS)}")
-                        episode["segments"].append(dict(id=str(sg["id"]), kind="card", card=str(sg["card"]), into=sg.get("into"),
+                        episode["segments"].append(dict(id=str(sg["id"]), kind="card", card=str(sg["card"]), into=sg.get("into"), text=sg.get("text"), seconds=sg.get("seconds"),
                                                         season=season["id"], episode=episode["id"]))
                         continue
                     seg = dict(id=str(sg["id"]), kind=kind, path=(self.root / str(sg[kind])).resolve(), file=str(sg[kind]),

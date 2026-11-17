@@ -1,0 +1,9 @@
+kind: "a match of House Cinder. Each burns once"
+body: match          # drawn as this object: no face, and it moves the way the object can
+size: 0.95
+color: "#b3392c"
+voice: 466
+timbre: sawtooth
+status: 1
+reflex: 0
+tells: {}          # an object shows what it feels by how it moves, not by a list of tells

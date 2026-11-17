@@ -1,0 +1,10 @@
+# House Hasp: a vault. Chains and hasps, every gate fastened from the inside, and no key.
+name: The vault
+wall: "#cfd3d6"
+floor: "#aeb4b8"
+pieces:
+  - {kind: gate, at: 0.4, wide: 2.2}
+  - {kind: vault, at: 7.4}
+  - {kind: chain, at: 2.6}
+  - {kind: chain, at: 3.4}
+  - {kind: chain, at: 5.2}

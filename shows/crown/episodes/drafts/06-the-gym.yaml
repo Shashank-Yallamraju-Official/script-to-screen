@@ -1,0 +1,45 @@
+# Bout hears every line as a challenge and answers before it is finished. It fills the gap with a fight, and
+# sends the message on as a threat.
+scene: The gym
+place: gym
+turns:
+  - id: 1
+    enter: {old-pair: {slot: 5, orient: out}, glove: {slot: 3, orient: old-pair}}
+    why: The old pair, laced together, hitting each other.
+    hold: 4
+  - id: 2
+    enter: {eraser: {from: left, orient: glove}}
+    hold: 2
+    why: The eraser arrives with what Rue left of the message.
+  - id: 3
+    who: eraser
+    say: The crown
+    hold: 1
+    why: It gets two words out. There is a gap where the rest was.
+  - id: 4
+    who: glove
+    do: {glove: {orient: eraser, move: {toward: eraser, zone: intimate}}}
+    say: WHAT ABOUT IT.
+    why: It answers before the line is done, and closes the distance.
+  - id: 5
+    who: eraser
+    say: That's all there is.
+    why: It has nothing after the gap.
+  - id: 6
+    who: old-pair
+    say: TAKEN.
+    why: The pair fills the gap with a fight.
+  - id: 7
+    who: glove
+    do: {glove: {orient: old-pair}}
+    say: WHO TOOK IT.
+    why: If it is taken, someone took it.
+  - id: 8
+    who: old-pair
+    say: COME AND TAKE IT.
+    hold: 3
+    why: The message becomes a threat.
+  - id: 9
+    exit: [glove]
+    why: The glove carries that out, at a run.
+    hold: 3

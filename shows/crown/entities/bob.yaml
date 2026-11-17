@@ -1,0 +1,11 @@
+kind: "a plumb bob of House Plumb, on a long line and still swinging"
+body: bob          # drawn as this object: no face, and it moves the way the object can
+size: 0.95
+line: 1.15
+swinging: true
+color: "#b8963a"
+voice: 208
+timbre: sine
+status: 1
+reflex: 0
+tells: {}          # an object shows what it feels by how it moves, not by a list of tells

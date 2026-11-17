@@ -50,6 +50,7 @@ def parts(root, eid):
                             sound=lambda st=st: _samples(sound.mix(st))))
         else:
             card = (cards.Title(look, show.cfg, episode, cast, step, cfg["title_seconds"]) if sg["card"] == "title"
+                    else cards.Caption(look, sg.get("text"), sg.get("seconds")) if sg["card"] == "caption"
                     else cards.Credits(look, show.cfg, episode, cast, sheets, step, cfg["credits_seconds"]))
             out.append(dict(id=sg["id"], kind=sg["card"], frames=round(card.seconds * look.fps), draw=lambda c, F, card=card: card.draw(c, F / look.fps),
                             sound=card.sound))

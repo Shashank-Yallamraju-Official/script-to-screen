@@ -1,0 +1,42 @@
+# Hasp hears every line as a threat, weighs it, and closes. It keeps the message. From here it goes no further,
+# which is why nothing reaches the far side through the pass.
+scene: The vault
+place: vault
+turns:
+  - id: 1
+    enter: {heavy-lock: {slot: 6, orient: out}, lock: {slot: 4, orient: out}}
+    hold: 4
+    why: Two locks, shut. They have not moved in a long time.
+  - id: 2
+    enter: {hammer: {from: left, orient: lock}}
+    hold: 2
+    why: A hammer arrives with Mallet's short version.
+  - id: 3
+    who: hammer
+    say: Crown's vacant. Carry on.
+    hold: 6
+    why: Nobody answers for a long time.
+  - id: 4
+    who: lock
+    do: {lock: {orient: heavy-lock}}
+    say: Is it safe?
+    hold: 5
+    why: Every line is weighed as a threat. The small lock asks the heavy one.
+  - id: 5
+    who: heavy-lock
+    say: "No."
+    hold: 3
+    why: One word, and it is the usual one.
+  - id: 6
+    who: hammer
+    say: Do I pass it on through?
+    why: The hammer asks whether the message may go on through the pass.
+  - id: 7
+    who: heavy-lock
+    say: "No."
+    hold: 4
+    why: The same word. The message stops here.
+  - id: 8
+    exit: [hammer]
+    why: It goes back the way it came. The gate stays shut.
+    hold: 4

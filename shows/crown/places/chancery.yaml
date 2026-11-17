@@ -1,0 +1,11 @@
+# House Signet: a desk-top chancery. Seals stand in racks, the ink pads are drying, every page is stamped black.
+name: The chancery
+wall: "#e3d9d2"
+floor: "#cbbdb4"
+pieces:
+  - {kind: page, at: 1.0, wide: 1.5}
+  - {kind: page, at: 3.2, wide: 1.2}
+  - {kind: page, at: 6.6, wide: 1.8}
+  - {kind: rack, at: 6.8, wide: 2.6}
+  - {kind: inkpad, at: 2.0}
+  - {kind: inkpad, at: 4.2}

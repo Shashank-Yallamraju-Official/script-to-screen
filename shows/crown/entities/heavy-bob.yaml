@@ -1,0 +1,10 @@
+kind: "House Plumb's head: the heaviest bob, which never swings"
+body: bob          # drawn as this object: no face, and it moves the way the object can
+size: 1.2
+line: 0.9
+color: "#b8963a"
+voice: 139
+timbre: sine
+status: 1
+reflex: 0
+tells: {}          # an object shows what it feels by how it moves, not by a list of tells

@@ -3,7 +3,9 @@
 A place is a file in the show's `places/` folder: a wall colour, a floor colour, and pieces
 standing along the same line of slots the entities use. A piece is a kind (door, window, sofa,
 lamp, plant, picture, table, shelf, rug, counter, fridge, thermostat, pedestal, vase, shards,
-plate), where it stands (`at`, a slot), and optionally how wide it is (`wide`, in slots), how
+plate, and the pieces of the houses' homes: rack, inkpad, page, dome, post, pegboard, crate, chain, gate, hooks,
+bag, ropes, crumbs, ghost, gantry, wallstub, mark, parts, and the council chamber's: crest, hammermark, lockmark,
+crownmark, bench), where it stands (`at`, a slot), and optionally how wide it is (`wide`, in slots), how
 far `up` it sits (pixels: a plate on a table), a `color`, and `depth: front` to stand it between
 the entities and the camera. A piece given a `color` keeps it in every style, so the thing a
 scene is about stands out from the room. A place can start `like:` another and change only what
@@ -25,11 +27,14 @@ from .view import ground, slot_x
 
 WALL_DEPTH, BACK_DEPTH, FRONT_DEPTH = 0.3, 0.15, -0.2
 FLOOR_UP = 46                                 # how far behind the entities' feet the wall meets the floor, in pixels
-ON_WALL = ("door", "window", "picture", "shelf", "thermostat", "vault", "sign")
-ON_FLOOR = ("rug", "shards")
+ON_WALL = ("door", "window", "picture", "shelf", "thermostat", "vault", "sign", "page", "dome", "pegboard", "chain", "hooks", "ghost", "crest", "hammermark", "lockmark", "crownmark")
+ON_FLOOR = ("rug", "shards", "crumbs", "mark")
 COLORS = dict(door="#cdbb9d", window="#b9c2c4", picture="#b7a58c", sofa="#9fb0aa", lamp="#b9a98c", plant="#8fa58a", table="#b49f84",
               shelf="#b49f84", rug="#c9b6a6", counter="#b9b3a2", fridge="#c5cbcc", thermostat="#d8d2c4", pedestal="#c2b8a6", vase="#5b7fa6",
-              shards="#5b7fa6", plate="#f4f1e8", vault="#9aa3a8", sign="#b9b3a2")
+              shards="#5b7fa6", plate="#f4f1e8", vault="#9aa3a8", sign="#b9b3a2",
+              rack="#a89784", inkpad="#4a4a52", page="#efe9dc", dome="#c7d3d6", post="#9aa3a8", pegboard="#b49f84", crate="#b49f84",
+              chain="#8f969b", gate="#8f969b", hooks="#8f969b", bag="#9c5a48", ropes="#b7a58c", crumbs="#d9a3ae", ghost="#c9c5bb",
+              gantry="#a8906c", wallstub="#b9b3a2", mark="#8f969b", parts="#9fb0aa", crest="#7a2e3b", hammermark="#6b5a4a", lockmark="#7f868c", crownmark="#b7a58c", bench="#b49f84")
 
 
 def rgb(h):
@@ -138,6 +143,86 @@ def shapes(kind, w):
                 ("dark", poly((-56, 6), (-48, -4), (-42, 6)))]
     if kind == "plate":
         return [("body", oval(0, -3, 34, 6)), ("line", poly((-18, -8), (22, -12), (-18, -8))), ("line", poly((-16, -5), (24, -8), (-16, -5)))]
+    if kind == "rack":                                               # a rack of slots, where seals stand in rows
+        w = w or 320
+        slots = [("dark", rect(x - 3, -64, 6, 30)) for x in range(int(-w / 2) + 20, int(w / 2) - 10, 44)]
+        return [("dark", rect(-w / 2 + 8, -34, 8, 34)), ("dark", rect(w / 2 - 16, -34, 8, 34)), ("body", rect(-w / 2, -40, w, 12, 3))] + slots
+    if kind == "inkpad":
+        return [("body", rect(-56, -18, 112, 18, 4)), ("dark", rect(-46, -26, 92, 10, 3))]
+    if kind == "page":                                               # a sheet on the wall, stamped over and over
+        w = w or 190
+        marks = [("dark", oval(-w / 2 + 34 + 42 * i + (9 if j % 2 else 0), -318 + 34 * j, 15, 13)) for j in range(4) for i in range(int((w - 40) // 42))]
+        return [("light", rect(-w / 2, -346, w, 150, 2))] + marks
+    if kind == "dome":                                               # a glass dome over a round hall
+        w = w or 700
+        arc = skia.Path()
+        arc.moveTo(-w / 2, -150)
+        arc.arcTo(skia.Rect.MakeLTRB(-w / 2, -150 - 290, w / 2, -150 + 290), 180, 180, False)
+        arc.close()
+        ribs = [("line", poly((x, -150), (x * 0.55, -150 - 290 * (1 - (x / (w / 2)) ** 2) ** 0.5 * 0.98), (x, -150))) for x in (-w / 3, 0, w / 3)]
+        return [("light", arc)] + ribs + [("body", rect(-w / 2 - 12, -156, w + 24, 12, 3))]
+    if kind == "post":                                               # a pivot post for a needle
+        return [("dark", rect(-14, -6, 28, 6, 2)), ("dark", rect(-3, -64, 6, 60)), ("body", oval(0, -68, 7, 7))]
+    if kind == "pegboard":                                           # a board with a painted outline for each hammer
+        w = w or 300
+        outs = []
+        for i in range(int((w - 40) // 70)):
+            x = -w / 2 + 44 + 70 * i
+            outs += [("line", rect(x - 22, -330, 44, 20, 3)), ("line", rect(x - 5, -310, 10, 86, 3))]
+        return [("body", rect(-w / 2, -350, w, 160, 4))] + outs
+    if kind == "crate":
+        return [("body", rect(-48, -84, 96, 84, 2)), ("dark", rect(-52, -92, 104, 10, 2)), ("line", poly((-48, -56), (48, -56), (-48, -56))),
+                ("line", poly((-48, -28), (48, -28), (-48, -28)))]
+    if kind == "chain":
+        return [("line", oval(0, y, 7 if i % 2 else 4, 13)) for i, y in enumerate(range(-372, -170, 22))] + [("dark", rect(-12, -172, 24, 30, 5))]
+    if kind == "gate":                                               # bars, fastened
+        w = w or 260
+        bars = [("body", rect(x - 5, -330, 10, 330)) for x in range(int(-w / 2) + 12, int(w / 2), 34)]
+        return bars + [("dark", rect(-w / 2, -334, w, 12, 3)), ("dark", rect(-w / 2, -180, w, 12, 3)), ("dark", rect(-w / 2, -30, w, 12, 3))]
+    if kind == "hooks":                                              # a rail of hooks, where pairs hang by their laces
+        w = w or 300
+        return [("body", rect(-w / 2, -300, w, 9, 3))] + [("dark", rect(x - 3, -292, 6, 26, 3)) for x in range(int(-w / 2) + 24, int(w / 2), 56)]
+    if kind == "bag":                                                # a punching bag, split
+        return [("line", poly((0, -372), (0, -300), (0, -372))), ("body", rect(-36, -300, 72, 176, 30)), ("dark", poly((-6, -250), (10, -200), (-4, -150), (6, -200))),
+                ("light", oval(18, -122, 16, 9)), ("light", oval(-22, -4, 20, 8)), ("light", oval(30, -2, 13, 6))]
+    if kind == "ropes":                                              # a ring whose ropes have gone slack
+        w = w or 420
+        sag = [("line", poly((-w / 2, y), (-w / 6, y + 26), (w / 5, y + 34), (w / 2, y + 6), (w / 5, y + 34), (-w / 6, y + 26))) for y in (-150, -104, -58)]
+        return [("dark", rect(-w / 2 - 8, -170, 16, 170, 4)), ("dark", rect(w / 2 - 8, -150, 16, 150, 4))] + sag
+    if kind == "crumbs":                                             # what rubbing leaves
+        w = w or 300
+        return [("body", oval(-w / 2 + (i * 53) % w, ((i * 29) % 30) - 12, 5 + i % 4, 3)) for i in range(int(w // 22))]
+    if kind == "ghost":                                              # what is left of a drawing that has been rubbed out
+        w = w or 360
+        return [("line", poly((-w / 2, -300), (-w / 6, -300), (-w / 2, -300))), ("line", poly((w / 8, -260), (w / 2, -260), (w / 8, -260))),
+                ("line", poly((-w / 3, -210), (-w / 3, -330), (-w / 3, -210))), ("line", rect(w / 5, -340, w / 5, 50, 2))]
+    if kind == "gantry":                                             # bare timber overhead, and no roof
+        w = w or 520
+        return [("dark", rect(-w / 2, -384, 14, 384)), ("dark", rect(w / 2 - 14, -384, 14, 384)), ("body", rect(-w / 2 - 16, -396, w + 32, 16, 2)),
+                ("line", poly((-w / 2 + 14, -300), (-w / 2 + 96, -384), (-w / 2 + 14, -300))), ("line", poly((w / 2 - 14, -300), (w / 2 - 96, -384), (w / 2 - 14, -300)))]
+    if kind == "wallstub":                                           # a wall built true, and stopped
+        w = w or 240
+        courses = [("line", poly((-w / 2, y), (w / 2, y), (-w / 2, y))) for y in range(-168, 0, 28)]
+        return [("body", rect(-w / 2, -196, w, 196))] + courses
+    if kind == "mark":                                               # a mark on the floor under a bob
+        return [("line", poly((-16, 0), (16, 0), (-16, 0))), ("line", poly((0, -5), (0, 5), (0, -5)))]
+    if kind == "parts":                                              # a thing taken to pieces, laid out in order of size
+        w = w or 420
+        n = 8
+        return [("body", rect(-w / 2 + i * w / n, -(8 + 9 * i), w / n - 14, 8 + 9 * i, 2)) for i in range(n)]
+    if kind == "crest":                                              # Signet's emblem: a seal's face
+        return [("body", oval(0, -300, 46, 46)), ("light", oval(0, -300, 34, 34)), ("body", oval(0, -300, 20, 20)), ("light", oval(0, -300, 8, 8))]
+    if kind == "hammermark":                                         # Mallet's emblem
+        return [("body", oval(0, -300, 46, 46)), ("light", oval(0, -300, 38, 38)), ("body", rect(-24, -328, 48, 20, 3)), ("body", rect(-5, -310, 10, 40, 3))]
+    if kind == "lockmark":                                           # Hasp's emblem
+        arc = skia.Path()
+        arc.addRoundRect(skia.Rect.MakeLTRB(-13, -330, 13, -292), 13, 13)
+        return [("body", oval(0, -300, 46, 46)), ("light", oval(0, -300, 38, 38)), ("body", arc), ("light", rect(-6, -322, 12, 24, 6)), ("body", rect(-20, -304, 40, 28, 4))]
+    if kind == "crownmark":                                          # the crown itself, over the chamber
+        return [("body", poly((-34, -366), (-40, -398), (-18, -382), (0, -404), (18, -382), (40, -398), (34, -366)))]
+    if kind == "bench":                                              # the council's bench
+        w = w or 700
+        return [("dark", rect(-w / 2, -64, w, 10, 3)), ("body", rect(-w / 2 + 8, -54, w - 16, 54))] + [("line", poly((x, -54), (x, 0), (x, -54))) for x in range(int(-w / 2) + 90, int(w / 2), 90)]
     raise ValueError(f"a place has no piece of kind '{kind}'; the kinds are: " + ", ".join(sorted(COLORS)))
 
 

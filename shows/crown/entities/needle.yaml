@@ -1,0 +1,9 @@
+kind: "a compass needle of House Lode"
+body: needle          # drawn as this object: no face, and it moves the way the object can
+size: 0.9
+color: "#6f8aa3"
+voice: 392
+timbre: sine
+status: 1
+reflex: 0
+tells: {}          # an object shows what it feels by how it moves, not by a list of tells

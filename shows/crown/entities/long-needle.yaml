@@ -1,0 +1,9 @@
+kind: "House Lode's head: the longest needle. It swings slowest, and the rest swing when it does"
+body: needle          # drawn as this object: no face, and it moves the way the object can
+size: 1.2
+color: "#6f8aa3"
+voice: 330
+timbre: sine
+status: 1
+reflex: 0
+tells: {}          # an object shows what it feels by how it moves, not by a list of tells

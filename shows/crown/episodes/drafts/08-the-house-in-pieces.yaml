@@ -1,0 +1,41 @@
+# Glass gets the message last. It catches one detail and loses the whole. It speaks in questions and never concludes.
+scene: The house in pieces
+place: apart
+turns:
+  - id: 1
+    enter: {glass-one: {slot: 4, orient: out}, glass-two: {slot: 6, orient: glass-one}, glass-three: {slot: 7, orient: out}}
+    hold: 4
+    why: Three glasses among the pieces of their house, in the light.
+  - id: 2
+    enter: {bob: {from: left, orient: glass-one}}
+    why: The bob arrives, a step and a wait at a time.
+    hold: 4
+  - id: 3
+    who: bob
+    say: The crown. Come and take it.
+    why: Exactly as it came, without the shouting.
+  - id: 4
+    who: glass-one
+    do: {glass-one: {orient: bob}, glass-two: {orient: bob}, glass-three: {orient: bob}}
+    say: Take it?
+    why: All three turn. One detail has caught.
+  - id: 5
+    who: glass-two
+    say: Take it where?
+    why: The same detail, larger.
+  - id: 6
+    who: glass-three
+    say: Who had it?
+    hold: 4
+    why: A different detail.
+  - id: 7
+    who: bob
+    say: It is empty.
+    hold: 4
+    why: It answers with the one thing Plumb is sure of.
+  - id: 8
+    who: glass-one
+    do: {glass-one: {move: {toward: bob, zone: personal}}}
+    say: Empty of what?
+    why: The one question nobody on the other side of the ridge has asked.
+    hold: 10

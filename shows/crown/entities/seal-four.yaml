@@ -1,0 +1,9 @@
+kind: "a seal of House Signet, on the council"
+body: seal          # drawn as this object: no face, and it moves the way the object can
+size: 0.85
+color: "#7a2e3b"
+voice: 220
+timbre: square
+status: 1
+reflex: 0
+tells: {}          # an object shows what it feels by how it moves, not by a list of tells

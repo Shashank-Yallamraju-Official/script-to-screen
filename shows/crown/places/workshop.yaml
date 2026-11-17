@@ -1,0 +1,10 @@
+# House Mallet: a workshop. A painted outline for each hammer, everything nailed down, crates built and left empty.
+name: The workshop
+wall: "#e2dccf"
+floor: "#c8bda9"
+pieces:
+  - {kind: pegboard, at: 2.2, wide: 3.0}
+  - {kind: counter, at: 6.4, wide: 2.6}
+  - {kind: crate, at: 0.2}
+  - {kind: crate, at: 8.2}
+  - {kind: crate, at: 7.4, up: 0}

@@ -1,0 +1,10 @@
+# House Plumb: a building site. True walls under bare timber, and no roof: the wall colour is open sky.
+name: The site
+wall: "#d9e4ea"
+floor: "#bdb7a8"
+pieces:
+  - {kind: gantry, at: 4.0, wide: 7.0}
+  - {kind: wallstub, at: 0.4, wide: 2.2}
+  - {kind: wallstub, at: 7.8, wide: 2.0}
+  - {kind: mark, at: 3.0}
+  - {kind: mark, at: 5.0}

@@ -1,0 +1,41 @@
+# Mallet hears a job in every line. There is no job in this one, so it makes one: it cuts the message down to an
+# instruction and nails it up.
+scene: The workshop
+place: workshop
+turns:
+  - id: 1
+    enter: {sledge: {slot: 5, orient: out}, hammer: {slot: 3, orient: sledge}}
+    hold: 3
+    why: The sledge and a hammer, at rest, head down.
+  - id: 2
+    enter: {seal: {from: left, orient: sledge}}
+    hold: 2
+    why: The seal arrives with Signet's version.
+  - id: 3
+    who: seal
+    say: By order. The crown is vacant. The old order stands.
+    why: The same sealed words, a second time.
+  - id: 4
+    who: sledge
+    do: {sledge: {orient: seal}}
+    say: What's the job?
+    why: It hears a job in every line, so it asks for the job.
+  - id: 5
+    who: seal
+    say: There isn't one.
+    hold: 4
+    why: The message has no instruction in it.
+  - id: 6
+    who: sledge
+    do: {sledge: {orient: hammer}}
+    say: Then it says carry on. Nail it up.
+    why: A message with no instruction in it is no use here, so it gets one.
+  - id: 7
+    who: hammer
+    say: Carry on.
+    hold: 2
+    why: The whole message is now two words.
+  - id: 8
+    exit: [hammer]
+    why: The hammer takes the short version down the road.
+    hold: 3

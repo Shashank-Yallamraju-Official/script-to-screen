@@ -1,0 +1,8 @@
+# The crown: the council chamber where Signet sits. One emblem on the wall, under the crown.
+name: The crown
+wall: "#e6ddd6"
+floor: "#cdbfb6"
+pieces:
+  - {kind: crownmark, at: 4.0}
+  - {kind: crest, at: 4.0}
+  - {kind: bench, at: 4.0, wide: 7.6}

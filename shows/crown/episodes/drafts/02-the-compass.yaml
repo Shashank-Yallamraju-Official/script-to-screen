@@ -1,0 +1,37 @@
+# Lode hears the sealed version. It does not want the seat; it wants someone to follow. The rest swing when the
+# longest needle does. Its copy of the message goes to whoever the head points at, which is nobody here.
+scene: The compass hall
+place: compass
+turns:
+  - id: 1
+    enter: {long-needle: {slot: 3, orient: plinth}, needle: {slot: 6, orient: plinth}}
+    why: Two needles on their pivots, pointed at an empty plinth, trembling.
+    hold: 5
+  - id: 2
+    enter: {seal: {from: left, orient: long-needle}}
+    hold: 2
+    why: The seal arrives with Signet's version.
+  - id: 3
+    who: seal
+    do: {long-needle: {orient: seal}, needle: {orient: seal}}
+    say: By order. The crown is vacant. The old order stands.
+    why: Both needles swing to the voice. The nearest, strongest voice wins.
+  - id: 4
+    who: long-needle
+    say: Who do we follow?
+    why: The only question this house has. It is not about itself.
+  - id: 5
+    who: needle
+    say: Who do we follow?
+    why: The rest say what the longest says.
+    hold: 5
+  - id: 6
+    exit: [seal]
+    why: The seal has no answer. It was not in the wording.
+    hold: 2
+  - id: 7
+    who: long-needle
+    do: {long-needle: {orient: plinth}, needle: {orient: plinth}}
+    say: Someone will come.
+    why: Back to the plinth. There is nothing on it.
+    hold: 8

@@ -1,0 +1,9 @@
+kind: "House Rue's head: the smallest stub, honoured for having erased the most"
+body: eraser          # drawn as this object: no face, and it moves the way the object can
+size: 0.6
+color: "#d9879a"
+voice: 440
+timbre: sine
+status: 1
+reflex: 0
+tells: {}          # an object shows what it feels by how it moves, not by a list of tells

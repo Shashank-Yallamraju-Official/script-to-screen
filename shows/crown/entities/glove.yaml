@@ -1,0 +1,9 @@
+kind: "a boxing glove of House Bout"
+body: glove          # drawn as this object: no face, and it moves the way the object can
+size: 0.9
+color: "#c2572b"
+voice: 185
+timbre: sawtooth
+status: 1
+reflex: 0
+tells: {}          # an object shows what it feels by how it moves, not by a list of tells

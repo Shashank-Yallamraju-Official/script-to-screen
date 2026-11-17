@@ -1,0 +1,8 @@
+# House Bout: a gym with the bell torn off. Pairs hang by their laces, the ropes sag, the bags are split.
+name: The gym
+wall: "#e4d6cc"
+floor: "#c7b3a6"
+pieces:
+  - {kind: hooks, at: 1.6, wide: 2.8}
+  - {kind: bag, at: 7.6}
+  - {kind: ropes, at: 4.4, wide: 5.0}
