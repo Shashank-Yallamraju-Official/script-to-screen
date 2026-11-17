@@ -52,3 +52,10 @@ one: a caption with the reason, the playhead on the moment, the knob on the valu
 drawing library, so it runs the commands that read and change scripts (tune, retime, notes, check) with a stand-in for it; anything
 that draws (render, frames, moments) is run in the repository. At the end of the session the changes are brought into the
 repository as under "Two copies of the show".
+
+## The bible is in the show
+
+The show's bible is `bible.md` and `bible.yaml` in its folder, not a separate document. Before a new idea is planned, the builder
+reads `s2s bible` (it opens with where the film veers from a rule) and `s2s board`. A decision the maker makes about the show
+is written into `bible.md` or `bible.yaml` in the same change that builds it, so the two cannot drift. If a rule has to be broken,
+the plan says so under CHOICES, and the warning stays.

@@ -32,7 +32,7 @@ from ..presentation.draw import draw_frame, hits
 from ..presentation.framecache import FrameCache
 from ..presentation.render import out_path
 from ..presentation.stage import Look, Stage
-from ..readers import inplay, ledger
+from ..readers import bible, inplay, ledger
 from ..script import find_root, load_yaml, scene_paths, series, tuning
 from ..vocabulary import params
 
@@ -874,6 +874,21 @@ class Session:
         return FRAMES.get(stage, F, 1.0 if full else 0.5, 90 if full else 82, xray)
 
 
+BIBLE_PAGE = """<!doctype html><html><head><meta charset="utf-8"><title>{{title}}: bible</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+  :root { --bg: #0f1012; --panel: #16171b; --line: #292b30; --text: #d7dae0; --dim: #8b909a; --accent: #5e6ad2; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.6 Inter, system-ui, sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; margin: 0 0 16px; } h2 { font-size: 18px; margin: 40px 0 10px; padding-top: 16px; border-top: 1px solid var(--line); } h3 { font-size: 15px; margin: 26px 0 8px; color: #fff; }
+  p { margin: 10px 0; } a { color: #aab1ee; } code { font: 12px "JetBrains Mono", ui-monospace, Menlo, monospace; background: var(--panel); padding: 1px 5px; border-radius: 4px; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 13px; display: block; overflow-x: auto; } th, td { text-align: left; vertical-align: top; padding: 6px 10px; border-bottom: 1px solid var(--line); }
+  th { color: var(--dim); font-weight: 500; } ul, ol { padding-left: 22px; } li { margin: 3px 0; } li.task { list-style: none; margin-left: -18px; }
+  main > p:first-of-type { padding: 10px 14px; border: 1px solid var(--accent); border-radius: 8px; background: #5e6ad214; } main > p:first-of-type + ul { border-left: 2px solid #e0a43a; }
+  img { max-width: 100%; border-radius: 8px; border: 1px solid var(--line); margin-top: 8px; } details summary { cursor: pointer; color: var(--dim); margin: 30px 0 6px; }
+</style></head><body><main>{{body}}
+<details><summary title="One frame per beat, with its reason underneath. Drawn when opened; it takes a few seconds.">Storyboard</summary><img loading="lazy" alt="The episode as a storyboard" src="/storyboard.png?episode={{episode}}"></details>
+</main></body></html>"""
+
+
 def make_handler(sess):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *a):
@@ -911,6 +926,12 @@ def make_handler(sess):
                         return self.send(sess.poll())
                     if url.path == "/frame":                 # build=A is the scene as it stood when the knob was put on a value
                         return self.send(sess.frame(int(q["f"][0]), flag("full"), flag("xray"), q.get("build") == ["A"]), "image/jpeg")
+                    if url.path == "/bible":                  # the show's bible, assembled now, as a page
+                        return self.send(BIBLE_PAGE.replace("{{body}}", bible.to_html(bible.build(sess.root))).replace("{{title}}", str(load_yaml(sess.root / "show.yaml").get("title", "Bible")))
+                                         .replace("{{episode}}", sess.seg["episode"]).encode(), "text/html; charset=utf-8")
+                    if url.path == "/storyboard.png":
+                        from ..presentation import readings
+                        return self.send(readings.storyboard(sess.root, q.get("episode", [sess.seg["episode"]])[0]).read_bytes(), "image/png")
                     if url.path == "/levels":
                         return self.send(sess.levels())
                     if url.path == "/takes":

@@ -29,14 +29,14 @@ pieces:
   - {kind: arch, at: 6, wide: 0.8, color: "#a9b6e0"}
   - {kind: arch, at: 7, wide: 0.8, color: "#a9b6e0"}
   - {kind: cornice, at: 4.0, wide: 14, color: "#a9b6e0"}
-  - {kind: banner, at: 2, wide: 0.9, color: "#e0952f"}
-  - {kind: hammermark, at: 2, color: "#e0952f"}
+  - {kind: banner, at: 2, wide: 0.9, color: "@mallet"}
+  - {kind: hammermark, at: 2, color: "@mallet"}
   - {kind: wornbanner, at: 4, wide: 0.9, color: "#a8364b"}       # Signet's flag is the one that was in the blast: charred, torn, still hanging
   - {kind: crownmark, at: 4, color: "#cdbfa6"}                  # the crown on it, scorched
   - {kind: roughcrest, at: 4, color: "#a8364b"}                 # the target, made again over the mend by a rougher hand
   - {kind: soot, at: 4, wide: 0.9}
-  - {kind: banner, at: 6, wide: 0.9, color: "#3f6fd0"}
-  - {kind: lockmark, at: 6, color: "#3f6fd0"}
+  - {kind: banner, at: 6, wide: 0.9, color: "@hasp"}
+  - {kind: lockmark, at: 6, color: "@hasp"}
   - {kind: pot, at: -0.45, color: "#9aa5cf"}
   - {kind: sapling, at: -0.45, color: "#5fae6a"}
   - {kind: pot, at: 8.45, color: "#9aa5cf"}

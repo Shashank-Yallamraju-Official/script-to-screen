@@ -21,7 +21,7 @@ The test for an entry: *a small change needed edits in several places, or broke 
 
 ## Still owed, most costly first
 
-1. **House colours are typed in three files.** Signet's red, Mallet's orange and Hasp's blue appear in the rebuilt chamber's flags, in the land's places and in the first chamber's flag. "Colour is ownership" is a rule of the show, so a house's colour should be said once (on the house) and read everywhere.
+1. **A house's colour is said once now, but only its flag takes it by name.** `land.yaml` gives Signet, Mallet and Hasp their colours and a place can write `color: "@signet"`. The worn flag's duller red, and the seals', hammers' and locks' own colours on their sheets, are still typed by hand.
 2. **The order of effects in a frame is hard-wired.** `draw_frame` calls `seat`, `shot_in`, `light`, `swell`, the bench front and the fireball in a fixed sequence, each handing `states` to the next. A new effect means editing `draw_frame` and knowing the order. A list of effects, each declaring what it needs, would localise that.
 3. **One `Land` object serves both the title sequence and the travel card, and carries state** (`span`, `where`). They work because of the order they are called in. Each card should hold its own.
 4. **Several things know how long a bar is** (`anthem.BAR`, the show's tempo, `Scene.bar`, and now `episode.parts` and the editor, which count a card's hand-set values in the show's bars). They agree only because show.yaml says 84. Nothing checks it. The anthem should take its tempo from the show.

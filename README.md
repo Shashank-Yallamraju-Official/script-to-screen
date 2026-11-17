@@ -650,6 +650,35 @@ Per-syllable values belong to the words they were tuned against (`for:`). If the
 reworded they are set aside, not applied and not deleted, and `s2s check` and
 `s2s tune list --orphans` say so. The editor writes every nudge this way.
 
+## The bible, the season and the storyboard
+
+A show can keep its bible in its own folder, so there is one place to update and the film can be checked against it.
+
+| File | Holds |
+|---|---|
+| `bible.md` | What only the writer knows, as markdown, with a slot wherever something the film already knows belongs: `{{rules}}`, `{{look}}`, `{{kept}}`, `{{houses}}`, `{{days}}`, `{{rooms}}`, `{{episodes}}`, `{{board}}` |
+| `bible.yaml` | The rules (`rules:` and `look:`), each with a name, what it means and, where a machine can judge it, a `check:`; and `kept:`, what the viewer is not told yet, with the words that would give it away |
+
+`s2s bible` prints the whole thing, assembled now: the written text, each slot filled from the film (the houses on the land,
+what the land does day by day and why, each scene's beats from its turns' reasons, what each thing in a room means from the
+notes at the top of its place file, the season from above), and, first, where the film veers from a rule. The editor's book
+button shows the same as a page. `s2s check` reports each veer as a warning, naming the scene and turn; a veer never stops a
+render, because a rule may be broken on purpose, but not by accident.
+
+| Check | Warns when |
+|---|---|
+| `cast_are_objects` | Someone in a scene is not drawn as an object (their sheet has no `body:`) |
+| `no_gendered_words` | A line says he, she, king, queen and the like |
+| `kept_words` | A line says a word listed under something kept from the viewer |
+| `colour_is_owned` | A piece in the places named has a strong colour that is no house's, and is not green |
+| `mirrored` | A piece in the places named has no twin on the other side of the middle |
+
+A house says its colour once, on the land (`places: {signet: {color: ...}}`), and a place takes it by name: `color: "@signet"`.
+
+`s2s board` is the season from above, one row per episode: what it is, how long, which days, how finished its scenes are,
+open notes and problems. `s2s storyboard <episode>` draws one frame per beat with its reason underneath
+(`out/<episode>.storyboard.png`); the bible page shows it too.
+
 ## The editor
 
     s2s edit the-thermostat          # or, on a Mac, double-click Open Editor.command
@@ -737,6 +766,7 @@ In the whole-episode view the joins play as plain cuts; dips and fades between p
 | Do this | To |
 |---|---|
 | M | Drop a note at the playhead, for the assistant to read (`s2s notes`). It is tied to its turn, so it stays on its moment when timings move. Enter with no words removes it; a note that has been dealt with turns grey |
+| The book button | The show's bible as a page, assembled now, with where the film veers from a rule at the top and the storyboard at the bottom |
 | The layers button | Takes: keep the whole show's tuning under a name, and switch between takes to compare. Switching is one undo step. Takes stay on this computer (`.s2s/takes`) |
 | Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z | Undo and redo your own changes. It survives closing the editor |
 | The pointer button beside Loop | Follow the assistant. When it changes something while the editor is open, a caption on the picture says what and why; with follow on, the editor also opens that part, goes to the moment, puts the knob on the value and replays it. Click the caption to go there again; its arrow takes the change back |
@@ -778,6 +808,7 @@ command takes `--json`; a command that changes something also takes `--dry-run`,
 | Know whether the picture changed | `s2s frames s01e01` compares with the frames last kept; `--accept` keeps how it looks now |
 | See and move beats on the bar grid | `s2s beats the-vote`, `s2s retime the-council 8=25 bars=34` |
 | Read the notes pinned in the editor | `s2s notes`, `s2s notes --done 3` |
+| Read the bible, the season, an episode as pictures | `s2s bible`, `s2s board`, `s2s storyboard the-vote` |
 | Change a line, a feeling, a timing, a reason | `set-line`, `set-feeling`, `set-timing`, `set-why` |
 | Add or remove | `add-scene`, `add-turn`, `add-reaction`, `remove-turn` |
 | Reorder, or mark how finished a scene is | `move`, `set-status` |

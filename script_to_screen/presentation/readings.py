@@ -269,3 +269,50 @@ def beats(root, eid):
 def _segments(root, eid):
     from ..script import series
     return series(root).episode(eid)["segments"]
+
+
+def storyboard(root, eid, cols=4, wide=360):
+    """An episode as a storyboard: one frame per beat (a turn once it has landed; a card at three moments), each with its reason
+    underneath. -> the png. The story read as pictures, in order."""
+    from .draw import INK, fill, font
+    plan, look, _ = parts(root, eid)
+    cells = []                                                       # (part, frame within it, label, words)
+    for p in plan:
+        if p["kind"] == "scene":
+            sc = p["stage"].score
+            for t in sc.turns:
+                at = t["start"] + max(0.0, t["length"] - t["hold"] / 2)
+                cells.append((p, min(p["frames"] - 1, round(at * sc.step * look.fps)), f"{p['id']} · {t['id']}", t["why"] or ""))
+        else:
+            says = dict(title="The title sequence", travel="A journey over the land", credits="The credits", caption="A caption").get(p["kind"], p["kind"])
+            cells += [(p, int(p["frames"] * k), f"{p['id']}", says if k == 0.2 else "") for k in (0.2, 0.5, 0.85)]
+    scale = wide / look.W
+    high, pad, text = int(look.H * scale), 10, 74
+    rows = (len(cells) + cols - 1) // cols
+    surface = skia.Surface(cols * (wide + pad) + pad, rows * (high + text + pad) + pad)
+    c = surface.getCanvas()
+    c.clear(col(PAPER))
+    small, bold = skia.Font(skia.Typeface("DejaVu Sans"), 11), font(11)
+    for k, (p, F, label, words) in enumerate(cells):
+        x, y = pad + (k % cols) * (wide + pad), pad + (k // cols) * (high + text + pad)
+        c.save()
+        c.translate(x, y)
+        c.clipRect(skia.Rect.MakeWH(wide, high))
+        c.scale(scale, scale)
+        p["draw"](c, F)
+        c.restore()
+        c.drawString(label, x, y + high + 15, bold, fill(INK, 255))
+        line, n = "", 0
+        for word in words.split():                                   # the reason, wrapped under the frame; cut short if it runs past four lines
+            if small.measureText(line + " " + word) > wide and line:
+                c.drawString(line + ("…" if n == 3 else ""), x, y + high + 30 + n * 13, small, fill(INK, 200))
+                line, n = "", n + 1
+                if n == 4:
+                    break
+            line = (line + " " + word).strip()
+        if line and n < 4:
+            c.drawString(line, x, y + high + 30 + n * 13, small, fill(INK, 200))
+    png = root / "out" / f"{eid}.storyboard.png"
+    png.parent.mkdir(exist_ok=True)
+    surface.makeImageSnapshot().save(str(png), skia.kPNG)
+    return png

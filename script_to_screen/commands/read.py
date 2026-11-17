@@ -339,6 +339,8 @@ def check(a):
     if only is None:                                             # the show's own files, against the declarations
         problems += [dict(level=lv, scene="(show)", turn=None, msg=msg) for lv, msg in params.check_library(Show(root).feel)]
         problems += [dict(level="warning", scene="(show)", turn=None, msg=msg) for msg in _stray_keys(root)]
+    from ..readers import bible                                  # where the film veers from one of the show's own rules (bible.yaml)
+    problems += [p for p in bible.veers(root) if only is None or p["scene"] == only]
     nerr = sum(p["level"] == "error" for p in problems)
     text = [f"{p['level']:5} {p['scene']}" + (f":{p['turn']}" if p.get("turn") is not None else "") + f"  {p['msg']}" for p in problems]
     return dict(ok=nerr == 0, errors=nerr, warnings=len(problems) - nerr, problems=problems,

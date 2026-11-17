@@ -34,9 +34,9 @@ pieces:
   - {kind: cornice, at: 4.0, wide: 14, color: "#dcc58a"}
   - {kind: vine, at: 1, wide: 0.8, color: "#4a9a52"}
   - {kind: vine, at: 7, wide: 0.8, color: "#4a9a52"}
-  - {kind: banner, at: 4, wide: 0.9, color: "#c8324e"}
+  - {kind: banner, at: 4, wide: 0.9, color: "@signet"}
   - {kind: crownmark, at: 4, color: "#fbf3dc"}
-  - {kind: crest, at: 4, color: "#c8324e"}
+  - {kind: crest, at: 4, color: "@signet"}
   - {kind: pot, at: -0.45, color: "#b9a67c"}
   - {kind: tree, at: -0.45, color: "#4a9a52"}
   - {kind: pot, at: 8.45, color: "#b9a67c"}

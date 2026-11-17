@@ -69,7 +69,7 @@ def parser():
 
 
 def run(argv=None):
-    from . import change, look, notes, read, structure, tune  # noqa: F401  (declares the commands)
+    from . import bible, change, look, notes, read, structure, tune  # noqa: F401  (declares the commands)
     top = parser()
     a = top.parse_args(argv)
     if not a.command:

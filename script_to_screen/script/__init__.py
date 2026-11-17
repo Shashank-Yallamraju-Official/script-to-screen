@@ -47,6 +47,15 @@ def place(root, name):
     if not file.exists():
         raise ScriptError(f"no place '{name}': there is no places/{name}.yaml")
     data = load_yaml(file) or {}
+    land = Path(root) / "land.yaml"
+    if land.exists() and any(str(pc.get("color", "")).startswith("@") for pc in data.get("pieces") or []):      # "@signet": that house's colour, said once, on the land
+        own = (load_yaml(land) or {}).get("places") or {}
+        for pc in data["pieces"]:
+            house = str(pc.get("color", ""))[1:] if str(pc.get("color", "")).startswith("@") else None
+            if house is not None:
+                if not (own.get(house) or {}).get("color"):
+                    raise ScriptError(f"places/{file.name}: a piece's colour is '@{house}', but land.yaml gives no house of that name a colour")
+                pc["color"] = own[house]["color"]
     return {**place(root, data["like"]), **data} if data.get("like") else data
 
 

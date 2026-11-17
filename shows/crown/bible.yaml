@@ -1,0 +1,27 @@
+# The show's rules, and what is kept from the viewer. `s2s bible` prints the whole bible (bible.md, with what the film
+# already knows filled in); `s2s check` warns wherever the film veers from a rule that has a `check:`.
+# A rule with no check is the writer's to judge.
+rules:
+  - {id: objects, name: Objects only, says: "No people, no hands, no faces. Every house is made of one kind of object.", check: cast_are_objects}
+  - {id: agender, name: Agender, says: "Everything, always.", check: no_gendered_words}
+  - {id: unexplained, name: Nothing is explained, says: "The viewer is told nothing they do not need. The metaphor is never stated.", check: kept_words}
+  - {id: verb, name: One verb per house, says: "A house moves, talks, fights and rules by doing the one thing its object does."}
+  - {id: motion, name: Feeling is motion, says: "Stronger feeling is a faster, harder version of the same verb."}
+  - {id: crown, name: The crown never moves, says: "Houses claim it and lose it."}
+  - {id: nobody, name: Nobody is good or bad, says: "Each house is a reasonable response to what happened."}
+  - {id: unscripted, name: Nothing is scripted, says: "Each house acts as its personality would. The writers set them going and watch."}
+
+# The three rules of the council chamber (also at the top of places/crown.yaml).
+look:
+  - {id: order, name: Order is Signet's, check: mirrored, in: [crown], about: 4,
+     says: "The room is symmetrical: seven arches, one behind each of seven seats, the flag on the middle one. Only two things may break the symmetry: time (the sun, and the shadows it throws) and whoever does not belong."}
+  - {id: colour, name: Colour is ownership, check: colour_is_owned, in: [crown, crown-after],
+     says: "Strong colour is only on what belongs to a house. The building is stone and wood; what is alive is green."}
+  - {id: nearness, name: Nearness is weight,
+     says: "The wall is pale and lightly drawn, the council is clear, and the bench in front of them is the darkest thing."}
+
+# What the viewer is not told yet. `words` are the words that would give it away if a line said them; with none, it is not checked.
+kept:
+  - {what: What the vote is on, where: Both scenes, words: []}
+  - {what: "Who shot the match, and who helped", where: Scene one, words: []}
+  - {what: Whether the second vote is on the same matter, where: Scene two, words: []}
