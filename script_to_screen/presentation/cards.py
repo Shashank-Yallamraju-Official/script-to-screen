@@ -102,7 +102,7 @@ class Land:
     """A title sequence over the show's land (`land.yaml`), as a model on a table seen from above and to one side.
 
     The land is a sheet lying flat. The camera swoops from one place to the next. As it reaches a place, a cog under
-    it turns, a platform lifts out of the sheet, and that house's object rises on it under its own colours. The wall
+    it turns, a platform lifts out of the sheet, and that house's object rises on it. The wall
     is laid, standing up from the sheet, as the camera follows it. Where something has burned, it smokes. The show's
     name arrives on the last chord of the anthem.
 
@@ -158,10 +158,6 @@ class Land:
         wall = land.get("wall") or {}
         if wall:
             c.drawRect(skia.Rect.MakeLTRB(0, wall["y"], 920, 840), fill("#3b3026", 92))           # behind the wall the sheet is in shadow
-        for g in range(0, 921, 92):                                   # a surveyor's grid
-            c.drawLine(g, 0, g, 840, stroke(self.INKED, 1.2, 46))
-        for g in range(0, 841, 84):
-            c.drawLine(0, g, 920, g, stroke(self.INKED, 1.2, 46))
         for a, b, bar0 in land.get("roads") or []:                    # a road inks itself out from where it starts
             k = smooth((t - float(bar0) * self.bar) / (2 * self.bar))
             if k > 0:
@@ -229,10 +225,6 @@ class Land:
                 grow = back(rise, 1.3) if rise < 1 else 1.0
                 sheet = dict(self.sheets[p["entity"]])
                 sheet["size"] = float(sheet.get("size", 1.0)) * float(p.get("size", 0.42))
-                pole = proj(x + 46, y, lift)
-                c.drawLine(pole[0], pole[1], pole[0], pole[1] - 78 * sc * grow, stroke(self.PALE, 2.2 * sc))        # its colours, on a pole
-                flag = skia.Path().moveTo(pole[0], pole[1] - 78 * sc * grow).lineTo(pole[0] + 26 * sc, pole[1] - 70 * sc * grow).lineTo(pole[0], pole[1] - 60 * sc * grow).close()
-                c.drawPath(flag, fill(sheet["color"]))
                 c.save()
                 c.translate(tx, ty)
                 c.scale(sc, sc)
