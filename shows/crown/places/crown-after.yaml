@@ -1,4 +1,4 @@
-# The crown, rebuilt exactly as it was. Everything is where it stood. What has changed is the light, which is cold
+# The crown, rebuilt exactly as it was. Everything is where it stood. What has changed is the trees, which are saplings now in the same planters, the light, which is cold
 # and comes from the other side, the flags, of which there are three, and Mallet's nails and Hasp's hasp in the woodwork.
 name: The crown, rebuilt
 wall: "#4f5661"
@@ -23,6 +23,8 @@ pieces:
   - {kind: crest, at: 4.0, color: "#8a3443"}
   - {kind: banner, at: 5.8, wide: 1.5, color: "#7f8b96"}
   - {kind: lockmark, at: 5.8, color: "#7f8b96"}
-  - {kind: inkwell, at: -0.5, color: "#262b36"}
-  - {kind: inkwell, at: 8.5, color: "#262b36"}
+  - {kind: pot, at: -0.45, color: "#7d6658"}
+  - {kind: sapling, at: -0.45, color: "#86b36e"}      # the same planters, with saplings in them: the trees are gone, and not long ago
+  - {kind: pot, at: 8.45, color: "#7d6658"}
+  - {kind: sapling, at: 8.45, color: "#86b36e"}
   - {kind: books, at: -1.2, depth: front}

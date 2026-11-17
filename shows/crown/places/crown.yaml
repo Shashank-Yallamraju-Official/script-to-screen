@@ -1,5 +1,5 @@
-# The crown: the council chamber, on Signet's desk. Ledgers on end are its walls, ink bottles its columns, and the desk
-# lamp is its sun. Warm, rich and closed. The council sits up behind a bench; the flag is the ruler's: Signet's.
+# The crown: the council chamber, on Signet's desk. Ledgers on end are its walls, the desk lamp is its sun, and two grown trees
+# stand in planters either side of the bench. Warm, rich and closed. The council sits up behind a bench; the flag is the ruler's: Signet's.
 name: The crown
 wall: "#5a3039"
 floor: "#33252a"
@@ -16,6 +16,8 @@ pieces:
   - {kind: banner, at: 4.0, wide: 1.5, color: "#a12c3d"}
   - {kind: crownmark, at: 4.0, color: "#f3e3c2"}
   - {kind: crest, at: 4.0, color: "#a12c3d"}
-  - {kind: inkwell, at: -0.5, color: "#2a2f3d"}
-  - {kind: inkwell, at: 8.5, color: "#2a2f3d"}
+  - {kind: pot, at: -0.45, color: "#8a5f47"}
+  - {kind: tree, at: -0.45, color: "#5f8f55"}         # two grown trees flank the bench: they have stood here for years
+  - {kind: pot, at: 8.45, color: "#8a5f47"}
+  - {kind: tree, at: 8.45, color: "#5f8f55"}
   - {kind: books, at: -1.2, depth: front}

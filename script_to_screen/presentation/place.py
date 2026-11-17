@@ -5,7 +5,7 @@ standing along the same line of slots the entities use. A piece is a kind (door,
 lamp, plant, picture, table, shelf, rug, counter, fridge, thermostat, pedestal, vase, shards,
 plate, and the pieces of the houses' homes: rack, inkpad, page, dome, post, pegboard, crate, chain, gate, hooks,
 bag, ropes, crumbs, ghost, gantry, wallstub, mark, parts, and the council chamber's: crest, hammermark, lockmark,
-crownmark, bench, banner).
+crownmark, bench, banner, bookwall, books, inkwell, pen, desklamp, nails, hasplate, pot, tree, sapling).
 
 A place can have one `light: {at, up, color, reach, strength, side}`: a pool of that colour on the wall and floor, a lit side and
 a shadow side on everything that stands in it, and a shadow behind each. `grade: {color, amount}` tints the whole frame and
@@ -42,7 +42,7 @@ COLORS = dict(door="#cdbb9d", window="#b9c2c4", picture="#b7a58c", sofa="#9fb0aa
               shards="#5b7fa6", plate="#f4f1e8", vault="#9aa3a8", sign="#b9b3a2",
               rack="#a89784", inkpad="#4a4a52", page="#efe9dc", dome="#c7d3d6", post="#9aa3a8", pegboard="#b49f84", crate="#b49f84",
               chain="#8f969b", gate="#8f969b", hooks="#8f969b", bag="#9c5a48", ropes="#b7a58c", crumbs="#d9a3ae", ghost="#c9c5bb",
-              gantry="#a8906c", wallstub="#b9b3a2", mark="#8f969b", parts="#9fb0aa", crest="#7a2e3b", hammermark="#6b5a4a", lockmark="#7f868c", crownmark="#b7a58c", bench="#b49f84", banner="#7a2e3b", bookwall="#7b5a4c", pen="#2e3440", desklamp="#c9a45a", nails="#8f969b", hasplate="#8f969b", inkwell="#27303f", books="#7b5a4c")
+              gantry="#a8906c", wallstub="#b9b3a2", mark="#8f969b", parts="#9fb0aa", crest="#7a2e3b", hammermark="#6b5a4a", lockmark="#7f868c", crownmark="#b7a58c", bench="#b49f84", banner="#7a2e3b", bookwall="#7b5a4c", pen="#2e3440", desklamp="#c9a45a", nails="#8f969b", hasplate="#8f969b", inkwell="#27303f", books="#7b5a4c", pot="#8a5f47", tree="#5d8a55", sapling="#7fb069")
 
 
 def rgb(h):
@@ -240,6 +240,15 @@ def shapes(kind, w):
                                               ("light", rect(-w / 2 + (i * 23) % 28 + 10, -52 * (i + 1) + 8, 14, 34, 3)))]
     if kind == "inkwell":                                            # an ink bottle, as big as a column
         return [("body", rect(-66, -190, 132, 190, 26)), ("light", rect(-44, -142, 88, 70, 8)), ("body", rect(-30, -232, 60, 48, 6)), ("dark", rect(-38, -256, 76, 28, 8))]
+    if kind == "pot":                                                # a planter, for a tree or a sapling
+        return [("body", poly((-56, -70), (56, -70), (44, 0), (-44, 0))), ("dark", rect(-62, -84, 124, 18, 6)), ("dark", oval(0, -78, 48, 7))]
+    if kind == "tree":                                               # a grown tree: years of it
+        return [("dark", poly((-11, -74), (11, -74), (7, -250), (-7, -250))), ("dark", poly((0, -180), (44, -236), (38, -244), (-2, -196))),
+                ("dark", oval(-52, -300, 58, 52)), ("body", oval(48, -292, 62, 56)), ("body", oval(-30, -346, 64, 58)), ("body", oval(22, -384, 56, 50)),
+                ("dark", oval(64, -250, 34, 30)), ("body", oval(-6, -296, 60, 50))]
+    if kind == "sapling":                                            # a new one, staked: planted not long ago
+        return [("line", poly((14, -74), (14, -178), (14, -74))), ("dark", poly((-3, -74), (3, -74), (2, -160), (-2, -160))),
+                ("body", oval(-15, -150, 17, 9, -32)), ("body", oval(15, -166, 17, 9, 32)), ("body", oval(0, -182, 9, 17))]
     if kind == "pen":                                                # a pen leaning against the wall
         return [("body", poly((-150, 0), (-128, -8), (120, -388), (98, -380))), ("light", poly((-150, 0), (-128, -8), (-112, -34), (-134, -26))),
                 ("dark", poly((98, -380), (120, -388), (132, -408), (110, -400)))]
