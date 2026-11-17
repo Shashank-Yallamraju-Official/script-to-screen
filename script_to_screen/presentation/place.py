@@ -308,6 +308,8 @@ class Painter:
         self.sky, self.sun = place.get("sky", self.window), place.get("sun", "#fff4d6")       # what is seen through an open arch
         self.dark = sum(rgb(self.wall)) < 330                               # in a dark room, solid things are a step lighter than the wall, not darker
         self.shade = "#aab3c8" if self.dark else "#2e2a24"
+        self.line = place.get("ink")                                        # an inked place: every shape gets a drawn outline in this colour, as in a comic
+        self.deep = self.line or "#3a332a"                                  # what a colour is mixed toward to darken it
 
     def room(self, c, W, H, base):
         c.drawRect(skia.Rect.MakeLTRB(-W, -1.2 * H, 2 * W, base), paint(self.wall))
@@ -316,6 +318,9 @@ class Painter:
             c.drawLine(-W, base, 2 * W, base, pen(self.ink, 2))
         else:
             c.drawRect(skia.Rect.MakeLTRB(-W, base - 12, 2 * W, base), paint(mix(self.wall, self.floor, 0.5)))    # a skirting board
+            if self.line:
+                c.drawLine(-W, base - 12, 2 * W, base - 12, pen(self.line, 3))
+                c.drawLine(-W, base, 2 * W, base, pen(self.line, 3))
 
     def piece(self, c, piece, on_floor=False, front=False):
         kind, color = piece["kind"], piece.get("color") or COLORS[piece["kind"]]
@@ -342,20 +347,27 @@ class Painter:
                         c.drawPath(path, paint(mix(color, self.wall, 0.25) if role == "dark" else mix(color, "#fbf8ef", 0.12) if role == "light" else color))
                     continue
                 if role == "line":
-                    c.drawPath(path, pen(mix(color, "#3a332a", 0.25), 2, 150))
+                    c.drawPath(path, pen(self.line, 2.2) if self.line else pen(mix(color, "#3a332a", 0.25), 2, 150))
                     continue
-                if role == "body" and not on_floor:
+                if role == "body" and not on_floor and not self.line:
                     c.save()
                     c.translate(7, 9)
                     c.drawPath(path, paint("#3a332a", 20))                   # cut paper sits a little off the wall
                     c.restore()
-                c.drawPath(path, paint((self.sky if kind == "arch" else "#fbf8ef" if not self.dark else mix("#fbf8ef", self.wall, 0.22)) if role == "light" else mix(color, "#3a332a", 0.28) if role == "dark" else color))
+                sky = kind == "arch" and role == "light"
+                if sky and isinstance(self.sky, list):                       # a sky of two colours: the first overhead, the second at the horizon
+                    top, low = (skia.Color(*rgb(k)) for k in self.sky)
+                    c.drawPath(path, skia.Paint(AntiAlias=True, Shader=skia.GradientShader.MakeLinear([skia.Point(0, path.getBounds().top()), skia.Point(0, path.getBounds().bottom())], [top, low])))
+                else:
+                    c.drawPath(path, paint((self.sky if kind == "arch" else "#fbf8ef" if not self.dark else mix("#fbf8ef", self.wall, 0.22)) if role == "light" else mix(color, self.deep, 0.3) if role == "dark" else color))
                 if kind == "arch" and role == "light" and piece.get("sun"):  # and, in one of them, the sun: low for evening or morning, high for noon
                     c.save()
                     c.clipPath(path, True)
                     w = piece.get("_w") or 120
                     c.drawCircle(w * 0.08, -170 - float(piece["sun"]) * 1.25 * w, w * 0.3, paint(self.sun))
                     c.restore()
+                if self.line:
+                    c.drawPath(path, pen(self.line, 1.6 if kind == "vine" else 3))
             else:                                                           # wash: one hue, a step darker for what is solid, lighter for what is lit
                 if front:
                     c.drawPath(path, paint(mix(self.floor, "#2e2a24", 0.42 if role != "light" else 0.34)) if role != "line" else pen(self.floor, 0, 0))
@@ -437,6 +449,12 @@ def draw_behind(c, stage, cam):
                 glow.setShader(skia.GradientShader.MakeRadial(skia.Point(0, 0), reach * 1.1, [skia.Color(r, g, b, int(120 * k)), skia.Color(r, g, b, 0)]))
                 c.drawCircle(0, 0, reach * 1.1, glow)
                 c.restore()
+            cool = place.get("shadow")                                      # and away from the light, everything goes to the shadow's colour
+            if cool:
+                r, g, b = rgb(cool)
+                far = x + (1 if lamp.get("side", "left") == "left" else -1) * stage.W * 0.95
+                c.drawRect(skia.Rect.MakeLTRB(-stage.W, -1.2 * stage.H, 2 * stage.W, 1.35 * stage.H), skia.Paint(BlendMode=skia.BlendMode.kMultiply, Shader=skia.GradientShader.MakeLinear(
+                    [skia.Point(x, 0), skia.Point(far, 0)], [skia.Color(255, 255, 255), skia.Color(255, 255, 255), skia.Color(r, g, b)], [0.0, 0.3, 1.0])))
         c.restore()
     return True
 

@@ -470,13 +470,16 @@ def draw_frame(c, stage, F, xray=False, slate=False):
                 states[e] = dict(s, rise=float(bench.get("rise", 58)))
                 seated.append(e)
     lamp = (stage.look.place or {}).get("light") if housed else None
+    edge, cool = ((stage.look.place or {}).get(k) if housed else None for k in ("ink", "shadow"))
+    if edge:
+        states = {e: dict(s, ink=edge) for e, s in states.items()}
     if lamp:                                                     # one light: everything gets a lit side, and throws a shadow away from it
         side = -1 if lamp.get("side", "left") == "left" else 1
         k = float(lamp.get("strength", 0.7))
         for e, s in states.items():
-            states[e] = dict(s, lit=(side, k, lamp.get("color", "#f6c26b")))
+            states[e] = dict(s, lit=(side, k, lamp.get("color", "#f6c26b"), cool))
             x, y = slot_x(s["slot"], W), ground(H) - s.get("rise", 0.0)
-            soft = skia.Paint(AntiAlias=True, Color=col("#120c14", 95 * k * s["alpha"]), MaskFilter=skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 10))
+            soft = skia.Paint(AntiAlias=True, Color=col(place.mix(cool, "#120c14", 0.35) if cool else "#120c14", 95 * k * s["alpha"]), MaskFilter=skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 10))
             c.drawOval(skia.Rect.MakeXYWH(x - side * 26 - 44, y - 150, 88, 150), soft)            # on the wall behind it
             if not s.get("rise"):
                 c.drawOval(skia.Rect.MakeXYWH(x - side * 30 - 46, y - 7, 92, 18), soft)           # and on the floor under it
@@ -503,6 +506,9 @@ def draw_frame(c, stage, F, xray=False, slate=False):
         c.drawRect(skia.Rect.MakeLTRB(x0, y0, x1, ground(H) + 8), fill(wood))
         c.drawRect(skia.Rect.MakeLTRB(x0 - 8, y0 - 9, x1 + 8, y0 + 3), fill(place.mix(wood, "#2e2a24", 0.3)))
         c.drawRect(skia.Rect.MakeLTRB(x0 - 16, ground(H) - 6, x1 + 16, ground(H) + 10), fill(place.mix(wood, "#2e2a24", 0.18)))
+        if edge:
+            for r in ((x0, y0, x1, ground(H) + 8), (x0 - 8, y0 - 9, x1 + 8, y0 + 3), (x0 - 16, ground(H) - 6, x1 + 16, ground(H) + 10)):
+                c.drawRect(skia.Rect.MakeLTRB(*r), place.pen(edge, 3))
         for e in seated:
             px, ent = slot_x(round(states[e]["slot"]), W), stage.look.cast[e]
             c.drawRoundRect(skia.Rect.MakeXYWH(px - 30, y0 + 16, 60, 26), 4, 4, fill("#f1e9dc", 255 * states[e]["alpha"]))

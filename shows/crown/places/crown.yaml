@@ -6,37 +6,39 @@
 #   the bench and its plates          a council, each member at its own seat
 #   the flag, under the crown         who rules: Signet
 name: The crown
-wall: "#efe4cc"
-floor: "#aab98b"
-sky: "#f6bd6a"
-sun: "#fff6d8"
-light: {at: 1.6, up: 250, color: "#ffd98a", reach: 620, strength: 0.6, side: left}        # the low sun, through the arches on the left
+wall: "#f2cf7e"
+floor: "#63a455"
+sky: ["#b9a3dc", "#f8e59c"]
+sun: "#fffbe0"
+light: {at: 1.6, up: 250, color: "#ffd98a", reach: 620, strength: 0.75, side: left}        # the low sun, through the arches on the left
+ink: "#17194d"                 # drawn outlines on everything, as in a comic
+shadow: "#8a93ea"              # the side away from the sun goes to this
 vignette: 0.28
-bench: {from: 0.65, to: 7.35, rise: 58, front: 30, color: "#bb9163"}
+bench: {from: 0.65, to: 7.35, rise: 58, front: 30, color: "#d98a3e"}
 pieces:
-  - {kind: arch, at: 0.4, wide: 0.95, color: "#cdbf9f"}
-  - {kind: arch, at: 1.6, wide: 0.95, color: "#cdbf9f", sun: 0.22}
-  - {kind: arch, at: 2.8, wide: 0.95, color: "#cdbf9f"}
-  - {kind: arch, at: 4.0, wide: 0.95, color: "#cdbf9f"}
-  - {kind: arch, at: 5.2, wide: 0.95, color: "#cdbf9f"}
-  - {kind: arch, at: 6.4, wide: 0.95, color: "#cdbf9f"}
-  - {kind: arch, at: 7.6, wide: 0.95, color: "#cdbf9f"}
-  - {kind: cornice, at: 4.0, wide: 14, color: "#cdbf9f"}
-  - {kind: arch, at: 0.4, wide: 0.5, up: 268, color: "#cdbf9f"}
-  - {kind: arch, at: 1.6, wide: 0.5, up: 268, color: "#cdbf9f"}
-  - {kind: arch, at: 2.8, wide: 0.5, up: 268, color: "#cdbf9f"}
-  - {kind: arch, at: 4.0, wide: 0.5, up: 268, color: "#cdbf9f"}
-  - {kind: arch, at: 5.2, wide: 0.5, up: 268, color: "#cdbf9f"}
-  - {kind: arch, at: 6.4, wide: 0.5, up: 268, color: "#cdbf9f"}
-  - {kind: arch, at: 7.6, wide: 0.5, up: 268, color: "#cdbf9f"}
-  - {kind: vine, at: 0.4, wide: 0.95, color: "#6aa85c"}
-  - {kind: vine, at: 2.8, wide: 0.95, color: "#6aa85c"}
-  - {kind: vine, at: 5.2, wide: 0.95, color: "#6aa85c"}
-  - {kind: vine, at: 6.4, wide: 0.95, color: "#6aa85c"}
-  - {kind: banner, at: 4.0, wide: 1.0, color: "#b3344a"}
+  - {kind: arch, at: 0.4, wide: 0.95, color: "#e0b45c"}
+  - {kind: arch, at: 1.6, wide: 0.95, color: "#e0b45c", sun: 0.22}
+  - {kind: arch, at: 2.8, wide: 0.95, color: "#e0b45c"}
+  - {kind: arch, at: 4.0, wide: 0.95, color: "#e0b45c"}
+  - {kind: arch, at: 5.2, wide: 0.95, color: "#e0b45c"}
+  - {kind: arch, at: 6.4, wide: 0.95, color: "#e0b45c"}
+  - {kind: arch, at: 7.6, wide: 0.95, color: "#e0b45c"}
+  - {kind: cornice, at: 4.0, wide: 14, color: "#e0b45c"}
+  - {kind: arch, at: 0.4, wide: 0.5, up: 268, color: "#e0b45c"}
+  - {kind: arch, at: 1.6, wide: 0.5, up: 268, color: "#e0b45c"}
+  - {kind: arch, at: 2.8, wide: 0.5, up: 268, color: "#e0b45c"}
+  - {kind: arch, at: 4.0, wide: 0.5, up: 268, color: "#e0b45c"}
+  - {kind: arch, at: 5.2, wide: 0.5, up: 268, color: "#e0b45c"}
+  - {kind: arch, at: 6.4, wide: 0.5, up: 268, color: "#e0b45c"}
+  - {kind: arch, at: 7.6, wide: 0.5, up: 268, color: "#e0b45c"}
+  - {kind: vine, at: 0.4, wide: 0.95, color: "#3f9d4a"}
+  - {kind: vine, at: 2.8, wide: 0.95, color: "#3f9d4a"}
+  - {kind: vine, at: 5.2, wide: 0.95, color: "#3f9d4a"}
+  - {kind: vine, at: 6.4, wide: 0.95, color: "#3f9d4a"}
+  - {kind: banner, at: 4.0, wide: 1.0, color: "#c8324e"}
   - {kind: crownmark, at: 4.0, color: "#fbf3dc"}
-  - {kind: crest, at: 4.0, color: "#b3344a"}
-  - {kind: pot, at: -0.45, color: "#c9825b"}
-  - {kind: tree, at: -0.45, color: "#6aa85c"}
-  - {kind: pot, at: 8.45, color: "#c9825b"}
-  - {kind: tree, at: 8.45, color: "#6aa85c"}
+  - {kind: crest, at: 4.0, color: "#c8324e"}
+  - {kind: pot, at: -0.45, color: "#e07a3c"}
+  - {kind: tree, at: -0.45, color: "#3f9d4a"}
+  - {kind: pot, at: 8.45, color: "#e07a3c"}
+  - {kind: tree, at: 8.45, color: "#3f9d4a"}
