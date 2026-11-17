@@ -297,8 +297,13 @@ processors, and the parts are joined without encoding again. A part is stamped w
 show's files, its own script); if the stamp matches a film already in `out/.parts/`, that film is kept. So a change to one scene
 costs one scene. A room is painted once per camera position and kept as a picture, because nothing in a room moves.
 
+**The grid.** A show has one tempo. A bar is `steps_per_beat x beats_per_bar` steps and a phrase is eight bars. A turn can ask
+to land on a bar (`bar: 24`: a speaking turn's line starts there) and a scene to be so many bars long (`bars: 32`); whatever
+comes before waits the difference, and a beat that cannot land is an error. A come-up is always two bars (`blast` swells for two
+bars first; `swell` is the come-up alone). Cards are whole bars too, so every part starts on the beat.
+
 **Looking without rendering.** `s2s moments` (a contact sheet at chosen seconds), `s2s shots` (every camera shot and why),
-`s2s listen` (a picture of the sound, and what is wrong with it), `s2s render --draft` and `--only`.
+`s2s listen` (a picture of the sound, and what is wrong with it), `s2s rhythm` (the episode as a song: bars, rise and fall), `s2s render --draft` and `--only`.
 
 **Frames are repeatable.** The same frame is the same pixels on every run and in every process; nothing depends on the order
 frames are drawn in or on anything random per run. Tests and the part stamps rely on this.

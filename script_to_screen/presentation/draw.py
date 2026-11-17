@@ -425,7 +425,7 @@ def hits(stage, F):
     return out
 
 
-SWELL = 3.2                                                      # seconds a thing swells for before it bursts
+SWELL_STEPS = 16                                                 # how long a thing swells for before it bursts: two bars
 
 
 def grade(c, stage, W, H):
@@ -517,13 +517,14 @@ def light(c, stage, states, room, bench, seated, up, t):
 
 
 def swell(c, stage, states, t):
-    """Whatever is about to go off (a `blast` on it, within SWELL seconds) swells first: slowly, glowing, and shaking harder as it
+    """Whatever is about to go off (a `blast` on it, within two bars) swells first: slowly, glowing, and shaking harder as it
     fills, until the frame shakes with it. -> states, with that one grown."""
     W, H = stage.W, stage.H
-    coming = next(((at, who) for at, name, who, _ in stage.score.events if name == "blast" and t < at <= t + SWELL and who in states), None)
+    long = SWELL_STEPS * stage.score.step
+    coming = next(((at, who) for at, name, who, _ in stage.score.events if name == "blast" and t < at <= t + long and who in states), None)
     if not coming:
         return states
-    k = 1 - (coming[0] - t) / SWELL
+    k = 1 - (coming[0] - t) / long
     grow, shake = 1 + 1.5 * k ** 1.4, 1 + 0.035 * k * math.sin(t * 70)
     s = states[coming[1]]
     states = dict(states, **{coming[1]: dict(s, sx=s["sx"] * grow * shake, sy=s["sy"] * grow / shake)})

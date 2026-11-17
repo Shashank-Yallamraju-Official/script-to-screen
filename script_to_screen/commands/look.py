@@ -69,6 +69,17 @@ def listen(a):
     return dict(file=str(png), findings=found, levels=levels, text="\n".join(lines + [str(png)]))
 
 
+@command("rhythm", "An episode read as a song: each part's length in bars, the rise and fall of sound and movement bar by bar, and where it goes flat.",
+         [A("episode", "an episode's id")], "s2s rhythm the-vote", group="look")
+def rhythm(a):
+    from ..presentation import episode
+    png, made, flats, curve = episode.rhythm(address.show_root(a.show), a.episode)
+    lines = [f"  one bar is {curve['bar']}s; a phrase is 8 bars; the episode is {curve['bars']:g} bars"]
+    lines += [f"  bar {p['starts']:>6g}  {p['bars']:>6g} bars  {p['part']}" + ("" if p["on_grid"] else "   ! off the grid") for p in made]
+    lines += [f"  ! flat: {f['bars']} bars from bar {f['starts']} with no rise or fall" for f in flats] or ["  no flat stretches"]
+    return dict(file=str(png), parts=made, flats=flats, curve=curve, text="\n".join(lines + [str(png)]))
+
+
 @command("shots", "Every camera shot in an episode, in order: when, how close, on whom, and why.", [A("episode", "an episode's id")], "s2s shots the-vote", group="look")
 def shots(a):
     from ..presentation import episode

@@ -163,6 +163,72 @@ def listen(root, eid):
     return png, [dict(what=k, at=round(t, 1), detail=d) for k, t, d in found], [dict(part=nm, at=round(t0, 1), level=round(lv)) for t0, nm, lv in joins]
 
 
+def rhythm(root, eid):
+    """An episode read as a song. Time is counted in bars (the show's tempo); a phrase is eight. For every bar: how loud it is and
+    how much moves on screen. -> (png, parts, flats): each part's length in bars and whether that is a whole number, and every
+    stretch of twelve bars or more in which neither sound nor picture rises or falls (the places a song would have lost its listener)."""
+    from .draw import INK, fill, font, stroke
+    plan, look, cfg = parts(root, eid)
+    show = Show(root).cfg
+    fps, rate = look.fps, sound.RATE
+    bar = 60.0 / float(show["tempo"]) * float(show.get("beats_per_bar", 2))
+    x = soundtrack(plan, fps)
+    one, prev, moved, at = skia.Surface(look.W, look.H), None, [], 0
+    for p in plan:                                                   # movement: how much of the picture changes, four times a second
+        for F in range(0, p["frames"], max(1, round(fps / 4))):
+            p["draw"](one.getCanvas(), F)
+            a = one.toarray(colorType=skia.kRGBA_8888_ColorType)[::8, ::8, :3].astype(np.int16)
+            moved.append(((at + F) / fps, 0.0 if prev is None else float(np.mean(np.abs(a - prev)))))
+            prev = a
+        at += p["frames"]
+    total = at / fps
+    n = int(np.ceil(total / bar - 1e-6))
+    t, mv = np.array([m[0] for m in moved]), np.array([m[1] for m in moved])
+    loud, move = [], []
+    for b in range(n):
+        seg = x[int(b * bar * rate):int((b + 1) * bar * rate)]
+        loud.append(min(1.0, max(0.0, (20 * np.log10(np.sqrt(np.mean(seg ** 2)) + 1e-6) + 60) / 60)))
+        m = mv[(t >= b * bar) & (t < (b + 1) * bar)]
+        move.append(min(1.0, float(np.mean(m)) / 8.0) if len(m) else 0.0)
+    out_parts, at = [], 0
+    for p in plan:
+        length = p["frames"] / fps / bar
+        out_parts.append(dict(part=p["id"], kind=p["kind"], starts=round(at / fps / bar, 2), bars=round(length, 2), on_grid=abs(length - round(length)) < 0.03 and abs(at / fps / bar - round(at / fps / bar)) < 0.03))
+        at += p["frames"]
+    flats, start = [], 0
+    for b in range(1, n + 1):                                        # a flat stretch: the level of both stays within a narrow band
+        band = lambda v: max(v[start:b]) - min(v[start:b])
+        if b == n or band(loud + [loud[min(b, n - 1)]]) > 0.22 or band(move + [move[min(b, n - 1)]]) > 0.25:
+            if b - start >= 12:
+                flats.append(dict(starts=start, bars=b - start))
+            start = b
+    W, H, pad = 1600, 460, 50
+    surf = skia.Surface(W, H)
+    c = surf.getCanvas()
+    c.clear(col(PAPER))
+    X, Y = (lambda b: pad + (W - 2 * pad) * b / max(n, 1)), (lambda v: 50 + (H - 140) * (1 - v))
+    for b in range(0, n + 1, 8):                                     # a line at every phrase
+        c.drawLine(X(b), 50, X(b), H - 90, stroke("#d8d2c4", 1))
+        c.drawString(str(b), X(b) - 6, H - 72, font(12, mono=True), fill(INK, 150))
+    for f in flats:
+        c.drawRect(skia.Rect.MakeLTRB(X(f["starts"]), 50, X(f["starts"] + f["bars"]), H - 90), fill("#c8324e", 26))
+    for values, colour in ((move, "#e0952f"), (loud, "#3f6fd0")):
+        path = skia.Path()
+        for b, v in enumerate(values):
+            (path.moveTo if b == 0 else path.lineTo)(X(b + 0.5), Y(v))
+        c.drawPath(path, stroke(colour, 2))
+    for p in out_parts:
+        c.drawLine(X(p["starts"]), 30, X(p["starts"]), H - 60, stroke(INK, 1.5, 160))
+        c.drawString(f"{p['part']}  {p['bars']:g} bars" + ("" if p["on_grid"] else "  (off the grid)"), X(p["starts"]) + 4, H - 44, font(12, mono=True), fill(INK if p["on_grid"] else "#c8324e"))
+    c.drawString("sound", pad, 32, font(13), fill("#3f6fd0"))
+    c.drawString("movement on screen", pad + 70, 32, font(13), fill("#e0952f"))
+    c.drawString("shaded: twelve bars or more with no rise or fall", pad + 250, 32, font(13), fill("#c8324e"))
+    png = root / "out" / f"{eid}_rhythm.png"
+    png.parent.mkdir(parents=True, exist_ok=True)
+    surf.makeImageSnapshot().save(str(png), skia.kPNG)
+    return png, out_parts, flats, dict(bar=round(bar, 3), bars=round(total / bar, 2), loud=[round(v, 2) for v in loud], move=[round(v, 2) for v in move])
+
+
 def shots(root, eid):
     """Every camera shot in an episode, in order: when, on whom, how close, and why. The way to catch a cut or a push-in nobody asked for."""
     plan, look, cfg = parts(root, eid)

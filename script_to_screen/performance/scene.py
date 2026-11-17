@@ -60,6 +60,7 @@ class Scene:
     # ---- the script, turn by turn (all times here are in steps) --------------------------------
     def _build(self):
         T, t0, sec = self.show.cfg["timing"], 0.0, self.step
+        self.bar = float(self.show.cfg["steps_per_beat"]) * float(self.show.cfg.get("beats_per_bar", 2))      # steps in a bar
         world = self.world
         st, need = world.st, world.need
         self.carried = {e: v["felt"] for e, v in self.carry.items() if v.get("felt")}   # as the last scene left it
@@ -329,6 +330,19 @@ class Scene:
                     self.quiet.add((round((t0 + at) * sec, 4), e))
                     reacts.append(dict(who=e, at=at, beat=0, index=j, on=on))
             length = max([cursor] + [at for at, _ in ops]) + hold
+            # the grid: a turn can ask to land on a bar (`bar: 24`), and a scene to be so many bars long (`bars: 32`). Whatever comes
+            # before waits the difference, so beats fall where the music's would. A speaking turn's line starts on its bar.
+            turns_raw = self.script.get("turns") or []
+            nxt = turns_raw[i + 1] if i + 1 < len(turns_raw) else None
+            asked = nxt.get("bar") if nxt else self.script.get("bars")
+            if asked is not None:
+                lead = float(tuning.turn_value(nxt, self.script, "pause", T["pause"])) if nxt and (nxt.get("say") or nxt.get("sing")) else 0.0
+                wait = float(asked) * self.bar - lead - (t0 + length)
+                if wait < -1e-6:
+                    self.flag("error", nxt.get("id", i + 2) if nxt else tid, f"asked to {'land on bar' if nxt else 'end at bar'} {asked:g}, but the scene is already at bar {(t0 + length + lead) / self.bar:.2f}: "
+                                                                    "shorten a hold before it, or ask for a later bar")
+                else:
+                    hold, length = hold + wait, length + wait
             snaps = [(0.0, a)]
             for at in sorted({at for at, _ in ops}):
                 for when, fn in ops:

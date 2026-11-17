@@ -61,3 +61,19 @@ def test_a_part_is_made_again_only_when_what_it_is_made_from_changes(tmp_path):
     after = [episode._stamp(root, "the-vote", k, p, False) for k, p in enumerate(plan)]
     changed = [p["id"] for p, a, b in zip(plan, before, after) if a != b]
     assert "the-council-again" in changed and "the-council" not in changed
+
+
+def test_a_turn_lands_on_the_bar_it_asks_for_and_a_scene_is_as_long_as_it_says():
+    from script_to_screen.performance.scene import Scene
+    sc = Scene(CROWN / "episodes" / "e01" / "01-the-council.yaml")
+    assert sc.steps == 32 * sc.bar                                   # `bars: 32`
+    blast = next(e for e in sc.events if e[1] == "blast")
+    assert abs(blast[0] / sc.step / sc.bar - 30) < 1e-6             # the blast, on bar 30
+    spoken = {t["id"]: (t["start"] + t["pause"]) / sc.bar for t in sc.turns if t["who"]}
+    assert spoken[2] == 2 and spoken[10] == 24                      # lines start on their bars
+
+
+def test_every_part_of_the_episode_is_a_whole_number_of_bars():
+    plan, look, cfg = episode.parts(CROWN, "the-vote")
+    bar = 60 / 84 * 2
+    assert [round(p["frames"] / look.fps / bar, 1) for p in plan] == [32.0, 20.0, 10.0, 40.0, 20.0]

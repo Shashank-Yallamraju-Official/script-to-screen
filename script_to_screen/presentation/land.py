@@ -233,6 +233,8 @@ class Travel:
         self.days = max(0, int(after["day"]) - int(before["day"]))
         self.lapse = 0.0 if not self.days else min(10.0, 4.0 + 2.4 * math.log10(self.days + 1))
         self.lead = (self.TIP + self.RISE) if last is not None else 0.8
+        whole = math.ceil((self.lead + self.lapse + self.RISE + self.TIP) / anthem.BAR - 1e-6) * anthem.BAR      # a whole number of bars, so the next scene starts on the beat
+        self.lapse += whole - (self.lead + self.lapse + self.RISE + self.TIP) if self.days else 0.0
         self.seconds = self.lead + self.lapse + self.RISE + self.TIP
 
     def sound(self):                                                 # the anthem's low figure keeps going under it, and rings on into the next scene

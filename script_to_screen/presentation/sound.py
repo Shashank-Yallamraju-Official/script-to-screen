@@ -127,8 +127,11 @@ def mix(stage):
     for at, name, _, quiet in stage.score.events:
         if name == "blast":                                      # an explosion: not one of the small sounds, and never quiet
             add(effects, at, blast())
-            lead = min(3.2, at)
+            lead = min(16 * stage.score.step, at)                # the come-up: two bars of rising hum
             add(effects, at - lead, swell(lead))
+            continue
+        if name == "swell":                                      # the come-up alone: it rises for two bars and stops dead, with nothing after it
+            add(effects, at, swell(16 * stage.score.step))
             continue
         p = sound_for(stage.look.sounds, name)
         if p and float(p.get("vol", 0)) > 0:

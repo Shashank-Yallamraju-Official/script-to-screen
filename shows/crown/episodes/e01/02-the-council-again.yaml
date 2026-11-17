@@ -3,69 +3,79 @@
 # (Signet: set phrases. Mallet: the task, in short instructions. Hasp: last, least, and mostly no.)
 scene: The council, again
 place: crown-after
+bars: 40                       # five phrases. The third is the same come-up as the first council's: it rises for two bars to bar 22, where last time it went off. This time: No.
 turns:
   - id: 1
     enter: {hammer: {slot: 1, orient: great-seal}, hammer-two: {slot: 2, orient: great-seal}, seal: {slot: 3, orient: great-seal}, great-seal: {slot: 4, orient: out}, seal-two: {slot: 5, orient: great-seal}, lock: {slot: 6, orient: great-seal}, lock-two: {slot: 7, orient: great-seal}}
     why: The same room. Three flags where there was one, and hammers and locks on the bench beside the seals.
-    hold: 19
   - id: 2
+    bar: 2
     who: great-seal
     say: By order of the crown. The council sits.
     why: Word for word what it said before.
   - id: 3
+    bar: 6
     who: hammer
     say: Put it to the vote.
     why: Mallet wants the task done.
   - id: 4
+    bar: 8
     who: seal
     say: The matter has been read.
     why: The same matter, or another. It is still not named.
   - id: 5
+    bar: 11
     who: great-seal
     say: It must be every member.
     why: The rule has one word changed. It used to be every seal.
-    hold: 6
   - id: 6
+    bar: 14
     who: great-seal
     say: We vote.
     why: The vote is called again.
   - id: 7
+    bar: 16
     who: seal
     say: Sealed.
     why: A seal votes the only way it can.
   - id: 8
+    bar: 17.5
     who: seal-two
     say: Sealed.
     why: And the next, in the same word.
   - id: 9
+    bar: 19
     who: hammer
     say: Carry it.
+    sfx: [{at: 10, sound: swell}]         # the come-up starts on bar 20, two bars before the No. The votes come quicker as it rises
     why: Mallet votes to get on with it.
   - id: 10
+    bar: 20.5
     who: hammer-two
     say: Carry it.
     why: Both hammers. Everyone now waits for the locks.
-    hold: 16
   - id: 11
+    bar: 22
     who: lock
     say: "No."
     why: Hasp speaks last, and says what it usually says.
-    hold: 6
   - id: 12
+    bar: 24
     who: lock-two
     say: "No."
     why: Both locks.
-    hold: 10
   - id: 13
+    bar: 27
     who: great-seal
     say: It is not every member.
     why: The vote cannot be carried. Under the old council this could not have happened.
   - id: 14
+    bar: 30
     who: hammer
     say: Then when?
     why: Mallet wants a date.
   - id: 15
+    bar: 33
     who: great-seal
     say: The council will sit again. At a later date.
     why: Adjourned, with nothing decided.
-    hold: 19
