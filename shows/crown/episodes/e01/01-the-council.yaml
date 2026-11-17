@@ -3,7 +3,7 @@
 # (Signet: set phrases, the same ones each time, in order of rank.)
 scene: The council
 place: crown
-bars: 32                       # four phrases of eight bars: the sitting, the rule, the vote called, and the match (in on 23, alight by 28, gone on 30)
+bars: 32                       # four phrases of eight bars: the sitting, the rule, the count, and the vote called; then the match (shot in, down on 28, gone on 30)
 turns:
   - id: 1
     enter: {great-seal: {slot: 4, orient: out}, seal: {slot: 1, orient: great-seal}, seal-two: {slot: 2, orient: great-seal}, seal-three: {slot: 6, orient: great-seal}, seal-four: {slot: 7, orient: great-seal}}
@@ -19,52 +19,35 @@ turns:
     say: The matter has been read.
     why: The matter is never named. They all know what it is.
   - id: 4
-    bar: 8
+    bar: 9
     who: seal-three
     say: Three times.
     why: Procedure. Whatever it is, it has been done properly.
   - id: 5
-    bar: 10
+    bar: 12
     who: great-seal
     say: Once sealed, it is not unsealed.
     why: The only line that says how much it matters.
   - id: 6
-    bar: 13
+    bar: 16
     who: seal
     say: It must be every seal.
     why: "The rule: the vote has to be unanimous."
   - id: 7
-    bar: 16
+    bar: 20
     who: great-seal
     say: Every seal is present.
     why: Nobody is missing. Nobody else is supposed to be here.
   - id: 8
-    bar: 19
+    bar: 24
     who: great-seal
     say: By order of the crown. We vote.
     why: The vote is called.
   - id: 9
-    bar: 23
-    enter: {match: {from: right, orient: great-seal}}
-    why: A match is in the chamber. How it got in is not shown.
+    bar: 27.68
+    enter: {match: {slot: 5, orient: out}}
+    why: A lit match comes in through the arch the sun is in, shot like an arrow, and sticks in the bench beside the great seal. Nobody can see into the sun, so who shot it is not shown. It touches down on bar 28, and the moment it touches, it swells. Nobody has time to move.
   - id: 10
-    bar: 24
-    who: seal-four
-    do: {seal-four: {orient: match}}
-    say: Who admitted
-    why: The nearest seal sees it. The question is the mystery, and it is not finished.
-  - id: 11
-    bar: 25.5
-    do: {match: {slot: 5}}
-    why: It jumps up onto the bench, between the great seal and the seal on its left hand. It is among them now.
-  - id: 12
-    bar: 26.75
-    do: {match: {posture: lean_in}}
-    why: It tips, strikes its head, and is alight.
-  - id: 13
-    bar: 28
-    why: It swells, slowly, and nobody moves.
-  - id: 14
     bar: 30
     sfx: [{at: 0, sound: blast, on: match}]
     why: It goes off. The frame is thrown, fills with light, and the light is all that is left.

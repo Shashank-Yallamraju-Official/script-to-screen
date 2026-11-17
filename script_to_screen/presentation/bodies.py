@@ -220,7 +220,7 @@ def _match(c, k, o, t, f, ent):
     going, lean = o["going"], o["lean"]
     if going < 1:
         c.rotate(math.sin(going * math.pi * 6) * 5, 0, 0)                 # a quick shuffle on its end
-    strike = min(1.0, abs(lean))
+    strike = 1.0 if ent.get("alight") else min(1.0, abs(lean))            # one that arrives already burning never has to strike
     c.rotate((1 if lean >= 0 else -1) * 24 * math.sin(strike * math.pi) * (1 - 0.5 * strike), 0, 0)   # it tips to strike, and comes back up
     _rr(c, -5, -128, 10, 128, 3, k.fill(k.mid))                           # the stick
     c.drawOval(skia.Rect.MakeXYWH(-10, -152, 20, 30), k.fill(k.color))    # the head
@@ -369,11 +369,13 @@ def draw_body(c, ent, o, t, x, y, blur=0.0):
     f = 1 if o["facing"] >= 0 else -1
     c.save()
     c.translate(x, y)
+    if o.get("spin"):
+        c.rotate(o["spin"])                                              # the whole thing turned about its foot: in flight, or stuck in at an angle
     lit = o.get("lit")                                                   # (side the light comes from, how strong, its colour)
     edge = o.get("ink") if OUTLINES else None                                                  # an inked show: the whole body gets a drawn outline
     if lit:
         g = size * max(1.0, o["sx"], o["sy"])                              # room for one that has swollen
-        c.saveLayer(skia.Rect.MakeLTRB(-180 * g, -340 * g, 180 * g, 40), None)
+        c.saveLayer(skia.Rect.MakeLTRB(-340 * g, -340 * g, 340 * g, 340 * g) if o.get("spin") else skia.Rect.MakeLTRB(-180 * g, -340 * g, 180 * g, 40), None)
     v = traits(ent)
     c.scale(o["sx"] * size * (0.95 + 0.10 * v[0]), o["sy"] * size * (0.96 + 0.08 * v[1]))          # a touch wider or taller than the next one
     k = Ink(_mix(ent["color"], PAPER if v[2] > 0.5 else "#1d1d1f", 0.16 * abs(v[2] - 0.5) * 2), a, blur)    # a shade lighter or darker

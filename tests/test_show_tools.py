@@ -77,7 +77,7 @@ def test_a_turn_lands_on_the_bar_it_asks_for_and_a_scene_is_as_long_as_it_says()
     blast = next(e for e in sc.events if e[1] == "blast")
     assert abs(blast[0] / sc.step / sc.bar - 30) < 1e-6             # the blast, on bar 30
     spoken = {t["id"]: (t["start"] + t["pause"]) / sc.bar for t in sc.turns if t["who"]}
-    assert spoken[2] == 2 and spoken[10] == 24                      # lines start on their bars
+    assert spoken[2] == 2 and spoken[8] == 24                       # lines start on their bars
 
 
 def test_every_part_of_the_episode_is_a_whole_number_of_bars():

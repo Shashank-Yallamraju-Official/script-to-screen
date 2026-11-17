@@ -473,6 +473,33 @@ def seat(stage, states, bench):
     return states, seated, up
 
 
+def shot_in(stage, states, room, bench, up):
+    """An entity whose sheet says `shot: true` does not walk in. It is shot in like an arrow: out of the arch the light comes from
+    (nobody can see into the sun), foot first, growing as it nears, and sticks where it lands, quivering upright. On a bench it
+    lands on the bench. -> states."""
+    W, H = stage.W, stage.H
+    for e, s in list(states.items()):
+        if not stage.look.cast[e].get("shot") or s.get("arriving") is None:
+            continue
+        u = s["arriving"]
+        v = min(1.0, u / FLIGHT) ** 1.25                          # the flight is the first part of the entrance; the rest is the quiver
+        from_slot, to_slot = float((room.get("light") or {}).get("at", s["to"] - 3)), s["to"]
+        high = place.FLOOR_UP + 250.0                             # the middle of an arch's opening
+        on_bench = bench and float(bench["from"]) <= to_slot <= float(bench["to"])
+        low = float(bench.get("rise", 58)) + float(bench.get("front", 30)) + 9 if on_bench else 0.0
+        angle = math.degrees(math.atan2(-(slot_x(to_slot, W) - slot_x(from_slot, W)), high - low))       # foot toward where it is going
+        w = max(0.0, (u - FLIGHT) / (1 - FLIGHT))
+        size = 0.3 + 0.7 * v
+        states = dict(states, **{e: dict(s, slot=from_slot + (to_slot - from_slot) * v, rise=high + (low - high) * v, sx=s["sx"] * size, sy=s["sy"] * size,
+                                         spin=angle if v < 1 else angle * math.exp(-6 * w) * math.cos(w * 20))})
+        if e not in up:
+            up.append(e)                                          # it comes over everyone's heads
+    return states
+
+
+FLIGHT = 0.42                                                    # how much of an entrance the flight takes
+
+
 def light(c, stage, states, room, bench, seated, up, t):
     """The room's one light on the entities: each gets a lit side, and throws a shadow away from it. -> states, each told how it is lit.
     With `cast` on the light, the sun or moon is behind the room and the shadows fall across the floor toward us, each the shape of
@@ -584,6 +611,7 @@ def draw_frame(c, stage, F, xray=False, slate=False):
     room = (stage.look.place or {}) if housed else {}
     bench, edge = (stage.look.place or {}).get("bench"), room.get("ink")
     states, seated, up = seat(stage, states, bench)
+    states = shot_in(stage, states, room, bench, up)
     if edge:
         states = {e: dict(s, ink=edge) for e, s in states.items()}
     states = light(c, stage, states, room, bench, seated, up, t)

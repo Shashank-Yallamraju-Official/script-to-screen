@@ -51,5 +51,7 @@ def pose(stage, e, t):
     out["travel"] = math.sin(math.pi * u) if u < 1 and cur["slot"] != prev["slot"] else 0.0            # stretched while moving
     if leaving:
         out["alpha"] = 1.0 if u < 1 else 0.0
+    if thing and not idx and t1 > 1e-9 and u < 1:                    # on its way in: how far through its entrance, and where it is headed
+        out["arriving"], out["to"] = u, cur["slot"]
     out["going"] = u if u < 1 and cur["slot"] != prev["slot"] else 1.0                            # how far through a move it is (1 = at rest)
     return out

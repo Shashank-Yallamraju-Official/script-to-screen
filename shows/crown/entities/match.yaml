@@ -1,7 +1,9 @@
 kind: "a match of House Cinder. Each burns once"
 body: match          # drawn as this object: no face, and it moves the way the object can
 size: 0.95
-climbs: true         # it does not sit at a bench: it jumps up onto it
+climbs: true         # it does not sit at a bench: it is up on it
+alight: true         # it is burning when it arrives
+shot: true           # it does not walk in: it is shot in through a window like an arrow, and sticks where it lands
 outfit: vest
 outfit_color: "#2f2a26"
 color: "#b3392c"
