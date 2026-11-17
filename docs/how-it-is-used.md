@@ -89,8 +89,8 @@ something happens helps judge whether it feels right.
 
 The loops alternate on the same scene, and the hand-offs are where work gets lost.
 
-**From writing to tuning.** The assistant finishes a pass and names the place. The editor
-opens there, and shows what changed since the writer last looked.
+**From writing to tuning.** The assistant finishes a pass and names the place. If the editor
+is open, it shows each change as it is made, with the reason.
 
 **From tuning to writing.** The writer's saved values and pins are there for the assistant
 to read. A pin says "this beat doesn't land" at a moment; the assistant treats it as a note.
@@ -127,18 +127,20 @@ project's oldest habit, hand-set values becoming derived ones, turned into a rou
 | Stable addresses | Yes for scenes: `scene:turn`, by an id that survives renaming and moving. A turn is still named by its `id` or number |
 | See what the writer did by hand | Yes. `s2s history --by hand` lists every hand change with its address, before and after |
 | **Tuning loop** | |
-| Replay at once after a change | Yes for the knob: the moment replays by itself after the last nudge. Changing a note replays its line. The slider panel does not replay yet |
+| Replay at once after a change | Yes. After a nudge the moment replays by itself; changing a note replays its line |
 | Loop a stretch | Yes. A turn, or the moment around the picked value, with a gap between passes |
 | Before and after | Yes. B flips between the scene as it was when the value was picked and the scene now |
 | Undo anything | Yes. Timings, notes and sliders, across restarts |
 | The real thing | Yes. The editor draws with the renderer and plays the same sound |
-| Every tunable value reachable | Yes. By command, all 32 declared parameters. In the editor, the knob reaches whatever is in play at the playhead: time, notes, stress, motion, sounds, tones and entities |
+| Every tunable value reachable | Yes. By command, every declared parameter (`s2s params`). In the editor, the knob reaches whatever is in play at the playhead: time, notes, stress, motion, sounds, tones and entities; placed sounds, a card's music, level curves and the camera's stops over the land are dragged where they are drawn |
 | Scope is visible | Yes. The knob shows one mark per scope and which one the value comes from; widening is a deliberate key and says what it now covers |
-| A pin | Dropped. An address such as `the-vase:2+6`, and `s2s in-play` at that moment, do the job |
+| A pin | Yes. `M` drops a note at the playhead; it is tied to its turn and kept in the show's `notes.yaml`. The assistant reads them with `s2s notes` and closes each with `--done` |
 | **Where they meet** | |
 | Who set each value | Yes. Hand-set values live in `tune:` blocks; `s2s tune get` shows every scope's say and `s2s tune list` shows all of them |
 | Warning before discarding tuned values | Yes. Rewording a line sets its per-syllable tunes aside and says so; they are kept until the new wording is tuned |
 | Locking | Yes. `set-status <scene> locked`; every change command then refuses |
 | Editor follows the files | Yes. There is no Save; each release is applied on top of the file as it stands, and outside changes appear within half a second |
+| The writer sees what the assistant changed | Yes. A change made by command while the editor is open shows a caption with its reason; with follow on, the editor goes to the moment, puts the knob on the value and replays it. The caption's arrow takes it back |
+| The writer's copy and the repository stay in step | Yes, by a routine and not by itself: the launcher fetches the latest before opening; the assistant brings the writer's nudges and notes back before it works ([working-agreement.md](working-agreement.md)) |
 
 Nothing in this table can lose work any more.

@@ -78,6 +78,14 @@ unit.*
 hand, and one such edit failed silently. *Consequence: every change goes through typed,
 validated commands, and the engine's replies are written to be read by an assistant: what
 changed, what is wrong, how to look.*
+| 27 | An object show: no people, no faces; a metaphor in which every detail, the room and the land included, has to fit; "we don't offer any information we don't have to" | The look is part of the meaning. A place needed rules of its own (symmetry, colour, nearness), and the engine's feelings and tells were switched off, not removed |
+| 28 | Fewer cuts, a slower pace; a map between scenes that shows time passing | The viewer's sense of the world is built outside the scenes. An episode needed a land, days, and a title sequence that carries story |
+| 29 | How do we find the rhythm of the whole show, so it flows like a song? | Time needed a second, coarser grid: bars and phrases, and beats that are placed on them |
+| 30 | A ledger of what hurts; then pay it off. Then tech debt | The author manages the tool's health as well as the show's. See [pain-points.md](pain-points.md), [tech-debt.md](tech-debt.md) |
+| 31 | A q+a and a written plan before a new idea is built; "nothing I didn't ask for" | The gap was never capability, it was unasked-for choices. See [working-agreement.md](working-agreement.md) |
+| 32 | Nudge micro-timings of dialogue, sound and music myself, inside the tool, on my own computer | Round 3 again, at a finer grain: sounds, bars, cards and the camera all became things to drag |
+| 33 | What do professional tools have? Build what would help you (the assistant) most | The assistant is a user whose needs can be asked about. Its answers were all about the hand-off: notes, a picture of the sound, the two copies in step |
+| 34 | Let me watch you edit | Round 21's "seeing what the assistant changed", asked for outright. The editor became the place both loops are visible |
 
 ## How the first predictions did
 
@@ -103,6 +111,23 @@ And the design, which matters more than the ranking:
 The lesson taken: the first list extrapolated the last few rounds, which were all about
 on-screen detail, and under-read the first round and the author's position outside the show.
 The list below is rebuilt with that corrected.
+
+## How the second predictions did
+
+Of the fourteen likely asks listed below when rounds 27 to 34 began, these arrived:
+
+| What was asked | Predicted? | Verdict |
+|---|---|---|
+| Decoration, on purpose: sets, props, richer bodies | Yes | Right, and larger than predicted: the look became part of the meaning, with rules of its own |
+| A different stage | Partly | It arrived as a land and a raised bench, not as depth within a room |
+| The rest of an episode's furniture | Yes | Right: a title sequence, journeys, captions, credits |
+| Seeing what the assistant changed | Yes | Right, including "a way back" |
+| The rhythm of a whole episode; bars | No | Missed. "Time is musical" was a decision, but only at the scale of a syllable |
+| Tuning on the writer's own computer; two copies of a show | No | Missed. "Other writers using it" was the nearest, and assumed one place where a show lives |
+| A written plan before building | No | Missed, and it is about the collaboration, not the tool: the list has never predicted one of those |
+
+The lesson taken: the misses are again about the author's position outside the show (how they work, where, and at what
+scale they hear it), which is the same lesson as last time.
 
 ## What is likely next
 

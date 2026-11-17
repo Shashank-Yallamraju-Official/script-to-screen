@@ -39,6 +39,13 @@ the phase before. A phase that does mean to change it re-records the reference a
 | G4 | **The group on screen.** In a show that names its group: people look at whoever they rate; tendencies fire in scenes, and `explain` reports them; `fresh` starts a scene with nobody still feeling what they felt; `against` says who opposes a proposal. Second-hand feelings are capped, old news is not felt twice, and a feeling spreads only to those who trust and rate its source. Scenes 2 to 4 of the heist are written and staged | The demo's pictures and sound are unchanged; its scores gain two fields | Done |
 | G5 | **Ties that move.** In a show that names its group, how one person sees another changes with what happens: doing someone good gains their trust, once a scene; harm loses it, each time, unless they are warm enough to let it go; a deed done well in front of people (`deed:`) raises how they rate you; `tie:` sets one outright. Logged, carried, and reported by `explain`. Scenes 5 to 7 of the heist: the three moments in which Ines, Nico and Ruth come to care about Dot | The demo is unchanged | Done |
 | P3b | **What-ifs as pictures.** `s2s what-if --sheet` stages every column as a still, side by side: a two-turn scene per variation, worked out by the engine with that variation's sheets, drawn at the moment the event has landed. Someone added to the room stands where their regards put them | No scene changes | Done |
+| O1 | **An object show.** A third show, `shows/crown/`, whose cast are objects with no faces, held in wide shots. Bodies with outfits and per-character variations; a room that is lit, casts shadows, has a raised bench, open arches and a sky; every solid shape drawn with an ink line (`bodies.Inked`). The room is painted once per camera position and kept | The demo and the heist are unchanged | Done |
+| O2 | **The land.** `land.yaml` is a model of the show's world. The title sequence travels it on the bars of an anthem; between two scenes that say their `day:`, it plays the days between them (the land changes as `history` says, under a sun and moon), and a `travel` card comes down to the next scene | The demo is unchanged | Done |
+| O3 | **One tempo and a bar grid.** `beats_per_bar` gives a show bars; a turn can ask for a `bar:` and a scene for `bars:`; a beat that cannot land is an error. `s2s rhythm`, `s2s beats`, `s2s retime` | Demo scores gained `waited`, then `bar` and `sfx`, on each turn; re-recorded each time after checking nothing else differed | Done |
+| O4 | **An episode in parts, and ways of looking.** Each part renders as its own film, in parallel, and is kept while nothing it is made from changes. `s2s moments`, `shots`, `listen`, `frames` (kept frames, compared by the most-changed patch). Every key a file may use is declared in `vocabulary/keys.py` | Unchanged | Done |
+| N8 | **Small timings by hand.** Placed sounds as blocks (start, length, level, fades), one level per kind of sound, a line dragged to another bar, ripple, level curves per layer, a waveform lane, hearing one layer alone, range render, takes, a level per part | Demo scores re-recorded for the `sfx` fields; picture and sound unchanged | Done |
+| N9 | **The episode in the editor.** A strip of the episode's parts; cards open like scenes (music moved, levelled and faded; the credits' and the title's length; the camera's stops over the land moved by dragging the picture); the whole episode as one timeline | Unchanged | Done |
+| N10 | **The two loops meet.** Notes pinned to moments (`M`, `s2s notes`), tied to their turn. A Mac launcher that fetches the latest work. Changes the assistant makes while the editor is open are shown: a caption with the reason, the playhead on the moment, the knob on the value | Unchanged | Done (`docs/working-agreement.md`) |
 
 ## Where the nudging loop ended up
 
@@ -52,8 +59,9 @@ Measured on the demo show, from the action to a rebuilt scene:
 | A slider that only changes the look | reworked the whole scene | 7 ms, the scene is not reworked |
 
 
-The slider panel was removed once the knob could reach every value. Pins were dropped: an
-address such as `the-vase:2+6` already names a moment for the assistant.
+The slider panel was removed once the knob could reach every value. Pins were dropped at first
+(an address such as `the-vase:2+6` names a moment for the assistant) and came back as notes in
+N10, once the writer was tuning on their own computer and needed to say "here" without typing an address.
 
-Left until asked for, with room kept: title cards and skins, themes (a motif for a character or an
-idea), a camera that reads the drama track, cached event replay across a long series, the MCP server.
+Left until asked for, with room kept: skins, themes (a motif for a character or an idea), the
+series index, cached event replay across a long series, the MCP server.

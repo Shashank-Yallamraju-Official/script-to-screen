@@ -1,9 +1,9 @@
 # Architecture
 
-This is the target design. The code in this repository is the working prototype, restructured
-enough to be a real project (a package, a command, tests, a file-format version) but not yet
-rebuilt to this design. The section [From here to there](#from-here-to-there) says exactly
-what exists and in what order the rest should be built.
+This is the design the code is built to. Most of it exists; the section
+[What exists](#what-exists) says which parts do, and [phases.md](phases.md) says in what order
+they were built. Where this document describes something not yet built (the series index, the
+MCP server, skins), it says so there.
 
 Read [how-it-is-used.md](how-it-is-used.md) first: it describes the two loops this design
 has to serve. Then [requirements-history.md](requirements-history.md): the design answers the
@@ -291,7 +291,10 @@ A show whose cast are objects (seals, matches, padlocks) with no faces, held in 
 | The land: the title sequence over it, and travel between scenes by way of it | `presentation/land.py` (`Land`, `Travel`) | `land.yaml` (`places`, `history`, `camera`), each scene's `day:` in series.yaml, each place's `land:`. A title sequence between two scenes plays the days between them: the land changes as `history` says (`ruin`, `ring`, `reach`, `flags`, each gradual with `over:`), under a sun and moon; the travel card after it only comes down |
 | The anthem and the bed that plays under travel | `presentation/anthem.py` | `library/music.yaml: theme: anthem` |
 | Rendering an episode part by part | `presentation/episode.py` | see below |
-| Looking at an episode without rendering it | `presentation/readings.py` | `s2s moments`, `shots`, `listen`, `rhythm`, `frames` |
+| Looking at an episode without rendering it | `presentation/readings.py` | `s2s moments`, `shots`, `listen`, `rhythm`, `frames`, `beats` |
+| Sounds placed by hand, with a length, a level and fades; a level curve per layer; a room's quiet bed | `presentation/sound.py` (`blast`, `swell`, `air`, `faded`, `bent`, `mix`) | a turn's `sfx:`, a scene's `levels:`, `library/sounds.yaml`, a place's `air:` |
+| Hand-set values on a card: its length, where its music lands, its level and fades | `presentation/episode.py` (`parts`) | `tune:` and `levels:` on the segment in series.yaml |
+| Notes pinned to moments | `commands/notes.py` | the show's `notes.yaml`; `s2s notes` |
 
 **How an episode is rendered.** Each part (a scene or a card) becomes a film of its own, as many at once as the machine has
 processors, and the parts are joined without encoding again. A part is stamped with everything it is made from (the engine, the
@@ -304,7 +307,15 @@ comes before waits the difference, and a beat that cannot land is an error. A co
 bars first; `swell` is the come-up alone). Cards are whole bars too, so every part starts on the beat.
 
 **Looking without rendering.** `s2s moments` (a contact sheet at chosen seconds), `s2s shots` (every camera shot and why),
-`s2s listen` (a picture of the sound, and what is wrong with it), `s2s rhythm` (the episode as a song: bars, rise and fall), `s2s render --draft` and `--only`.
+`s2s listen` (a picture of the sound, and what is wrong with it), `s2s rhythm` (the episode as a song: bars, rise and fall),
+`s2s beats` (where every turn lands on the grid; `s2s retime` moves several at once), `s2s render --draft` and `--only`.
+
+**The editor and the episode.** The editor opens one part at a time: a scene, or a card. A card is given to the timeline in a
+scene's shape (one turn as long as the card, its music as a placed sound), so the same page serves both; the whole episode is
+one more such part, its parts end to end with the episode's own soundtrack. Everything the editor changes it writes as a
+hand-set value where the thing lives: a `tune:` block on a turn, on a segment, or in the library; `levels:` on a scene or a
+segment; the camera's stops in `land.yaml`. A change made from outside while the editor is open (the assistant, with a
+command and its reason) is read from the journal and shown: a caption, the playhead on the moment, the knob on the value.
 
 **Keys are declared once.** `vocabulary/keys.py` lists every key a show's files may use; the engine reads nothing else, and
 `s2s check` warns about anything else. **The look is kept.** `s2s frames` compares an episode with its kept frames
@@ -356,51 +367,45 @@ rendering choice.
 
 ## Repository layout
 
-Today:
-
 ```
-script_to_screen/                 the engine (prototype modules: model, speech, draw, render, ledger, editor)
-shows/demo/           a show: show.yaml, library/, entities/, episodes/<season>/<episode>/<scene>.yaml
-tests/                34 tests of behaviour, each named for the rule it protects
-docs/                 this design
-```
-
-The target:
-
-```
-script_to_screen/commands/        every operation on a show; validation, dry runs, undo, provenance
-script_to_screen/cli/             the command line, generated from the commands
-script_to_screen/mcp/             (later) the MCP server, generated from the same commands
-script_to_screen/script/          schemas, manifests, loading, migrations
-script_to_screen/world/           events, replay, state queries
-script_to_screen/perform/         the score, the registries, derivation steps (one file each)
-script_to_screen/present/         skins, stages, cards, voices, instruments, camera, the renderers
-script_to_screen/readers/         checks, the ledger, the series index
-script_to_screen/editor/          the server and the page
-shows/<name>/         a show is data and can live in its own repository
+script_to_screen/
+  vocabulary/     params.py (every tunable value), channels.py (everything observable), keys.py (every key a file may use)
+  script/         loading a show's files, series.yaml, hand-set values (tuning.py)
+  world/          what is true at each moment, as a log of changes and their causes
+  performance/    scene.py plays a scene on the grid and ends in a score (score.py); the steps it runs: speech, expression,
+                  appraisal, standing, tendencies, placing, drama, scoring, camera
+  presentation/   draw.py, bodies.py, place.py, motion.py (a frame); sound.py, music.py, anthem.py, master.py (the mix);
+                  cards.py, land.py (titles, credits, the land); episode.py (one film from its parts); readings.py (looking
+                  without rendering); stage.py, view.py, render.py, framecache.py
+  readers/        ledger.py, inplay.py, parity.py, story.py, branches.py, whatif.py
+  commands/       every command, declared once: read.py, change.py, structure.py, tune.py, look.py, notes.py; edit.py is the
+                  journal and undo; address.py turns "thermostat:2+6" into a place
+  tools/          editor.py (a local server) and editor.html (the page)
+  cli.py          the command line, generated from the commands
+shows/<name>/     a show is data: show.yaml, series.yaml, library/, entities/, places/, episodes/, and (optionally) land.yaml,
+                  notes.yaml, frames/ (kept frames), reference/ (parity references). .s2s/ holds the journal and takes; out/ the films
+tests/            what the engine promises, each test named for the rule it protects
+docs/             this design, the decisions, the phases, and the running lists
 ```
 
-## From here to there
+Layers only import downward (a test enforces it): vocabulary, script, world, performance, presentation, readers, commands, tools.
 
-Each step leaves the tests passing and the demo show rendering the same.
+## What exists
 
-| Step | What changes | Why this order |
-|---|---|---|
-| 0. Done | Package, `s2s` command, show separated from engine, schema number, tests, CI | A base that can be changed without fear |
-| 1 | **Commands and the command line**, over the prototype as it is: read the show, change it with typed commands, rehearse, check, explain, stills and contact sheets, short addresses. Every value records who set it | The writing loop. Today the assistant edits files by hand, which is the main way work can go wrong |
-| 2 | **The tuning loop, made safe and fast.** The editor follows the files and never overwrites them; undo for everything; replay at once after any change; loop a chosen stretch; before and after; pins; locking | The writer's only direct contact with the tool. Two of its gaps can lose work today |
-| 3 | **Manifests, identities and the series index** | Tracking and comparing; title cards need segments; stable identities get harder to add later |
-| 4 | **The score.** The model writes tracks; drawing and audio read only tracks | The contract everything else depends on |
-| 5 | **Skins and cards.** The token becomes one skin; the title card is the first card | Presentation changes most; the title screen proves the seam |
-| 6 | **Derivation steps**, with provenance; then **Drama** and **Scoring** | Opens the door to music, appraisal and masking |
-| 7 | **Registries.** Every tunable value reachable in the editor, with its scope shown and promotable | Finishes the tuning loop and removes the per-feature editor work |
-| 8 | **The world as an event log**, with caching | Before a series gets long, and before facts |
-| 9 | **Schemas and migrations** for every file type | Before a second show or a second author exists |
-| Later | **The MCP server**, generated from the commands | The end state. Nothing above waits for it, and by then the commands are proven |
-
-Steps 1 and 2 come first because they are the two loops in
-[how-it-is-used.md](how-it-is-used.md): the assistant's way in and the writer's. Neither has
-to wait for the internals to be rebuilt.
+| Part of the design | State |
+|---|---|
+| Commands and the command line; dry runs, undo, a journal with the writer's words | Built. Entity sheets' written values and tells are still edited as files |
+| The tuning loop: the editor follows the files, nothing is ever unsaved, replay, before and after, loop, the knob at every scope | Built |
+| Identities and series.yaml; segments of kind scene and card | Built |
+| The score as the contract between performance and presentation | Built |
+| Registries: parameters, channels, and the keys of turns, places, land and sheets | Built. Keys of scenes and of series.yaml are not declared yet |
+| Derivation steps: speech, expression, appraisal, standing, tendencies, placing, drama, scoring, camera | Built as modules run in a fixed order; not yet replaceable per entity |
+| Cards, the land, an episode as one film rendered part by part | Built |
+| The world as an event log | Built; replay is not cached across a long series |
+| Schemas and migrations | A schema number and `s2s migrate` (1 to 2) |
+| Skins (a body as a skin over abstract channels) | Bodies are chosen by the entity sheet (`body:`), drawn in `bodies.py`; there is no separate skin registry |
+| The series index: a map, a thread, a comparison | Not built. `s2s list` and the ledger are what there is |
+| The MCP server | Not built. Nothing waits for it |
 
 ## How the asks land
 

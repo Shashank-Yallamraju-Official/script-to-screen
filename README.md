@@ -6,36 +6,43 @@ A turn-based animation engine. The frame starts empty. Something appears on scre
 because the script says so, and every turn has to say why.
 
     pip install -e ".[dev]"        # plus ffmpeg on the PATH, for rendering
-    s2s edit shows/demo/episodes/s01/e01/01-the-last-dumpling.yaml
     s2s list                       # run from the repository or a show's folder
+    s2s edit the-thermostat        # the editor, in your browser
     s2s render --episode s01e01
-    s2s parity check righteous
+    s2s check
     pytest
+
+On a Mac, double-clicking `Open Editor.command` sets up what the editor needs and opens it on the crown show.
 
 | | |
 |---|---|
-| `script_to_screen/vocabulary/` | What can be tuned and what can be observed, declared once |
+| `script_to_screen/vocabulary/` | What can be tuned, what can be observed, and every key a show's files may use, declared once |
 | `script_to_screen/script/` | Layer 1: reads a show's files |
 | `script_to_screen/world/` | Layer 2: what is true, and a log of every change and its cause |
 | `script_to_screen/performance/` | Layer 3: the scene played out on the tempo grid. Its output is the score: named tracks of plain data |
-| `script_to_screen/presentation/` | Layer 4: how a score looks and sounds. It is given a score and a look, and nothing else |
-| `script_to_screen/readers/` | The audience ledger and the parity check |
+| `script_to_screen/presentation/` | Layer 4: how a score looks and sounds; cards, the land, an episode as one film, and ways of looking at one without rendering it |
+| `script_to_screen/readers/` | The audience ledger, what is in play at a moment, the parity check |
 | `script_to_screen/commands/` | Every command, declared once; the command line is generated from them |
 | `script_to_screen/tools/` | The editor |
-| `shows/demo/` | A small show used for development: one episode of three scenes, plus a staging study |
+| `shows/demo/` | A small show with faces and feelings, used for development: one episode, plus a staging study |
+| `shows/heist/` | A second show, for groups and a story worked out as filters |
+| `shows/crown/` | "The Iron Mind": an object show on a bar grid, with a land, a title sequence and a lit, inked look |
 | `tests/` | What the engine promises, as tests |
-| [docs/how-it-is-used.md](docs/how-it-is-used.md) | The two loops the tool serves: writing through an assistant, tuning by hand |
-| [docs/architecture.md](docs/architecture.md) | The target design, and the order to build it in |
-| [docs/phases.md](docs/phases.md) | The build phases, and the reference scene every phase must reproduce |
-| [docs/lld-nudging.md](docs/lld-nudging.md) | Low-level design of the hand-tuning loop: identify, change, test |
-| [docs/requirements-history.md](docs/requirements-history.md) | How the requirements evolved, and what is likely to be asked next |
-| [docs/decisions.md](docs/decisions.md) | The choices that would be expensive to reverse |
 
-**Status.** This is a working prototype in a real project's clothes: it is packaged, tested
-and versioned, and its internals are being rebuilt to the design in `docs/`, phase by phase
-([docs/phases.md](docs/phases.md)). Two
-earlier stages are kept as git tags: `paper-v1` (the paper cut-out renderer) and
-`prototype-v1` (the prototype before this restructure).
+| Read | For |
+|---|---|
+| [docs/how-it-is-used.md](docs/how-it-is-used.md) | The two loops the tool serves: writing through an assistant, tuning by hand |
+| [docs/working-agreement.md](docs/working-agreement.md) | How an idea becomes animation: plans, the two copies of a show, working in the writer's open editor |
+| [docs/architecture.md](docs/architecture.md) | The design: four layers, the score, what an object show added |
+| [docs/decisions.md](docs/decisions.md) | The choices that would be expensive to reverse |
+| [docs/phases.md](docs/phases.md) | What was built, in order, and what each phase was allowed to change |
+| [docs/pain-points.md](docs/pain-points.md), [docs/tech-debt.md](docs/tech-debt.md) | What gets in the way of making a show, and what makes a change risky; both kept as running lists |
+| [docs/requirements-history.md](docs/requirements-history.md) | How the requirements evolved, and what is likely to be asked next |
+| [docs/lld-nudging.md](docs/lld-nudging.md), [lld-profiles.md](docs/lld-profiles.md), [lld-groups.md](docs/lld-groups.md) | Low-level designs: the hand-tuning loop; profiles and appraisal; groups and stories |
+
+**Status.** A working tool, packaged, tested and versioned. The restructure described in `docs/phases.md` is done; what is
+still owed is listed in `docs/tech-debt.md`. Two earlier stages are kept as git tags: `paper-v1` (the paper cut-out
+renderer) and `prototype-v1` (the prototype before the restructure).
 
 Everything below describes how a show is written. Paths are relative to a show's folder.
 
@@ -272,8 +279,9 @@ listed reacts as the line ends".
 A segment's `id` is its identity: arcs, addresses, references and output files use it, so a
 file can be renamed or moved without breaking anything, and reordering is moving a line
 (`s2s move the-vase --before the-last-dumpling`). A scene's `status` is draft, staged, tuned
-or locked; a locked scene refuses every change. Today every segment is a scene; a title
-card will be another kind. `s2s list` prints this view with each scene's length and problems.
+or locked; a locked scene refuses every change. A segment is a scene or a card (a title, a
+journey over the land, a caption, the credits; see "An episode as one film"). `s2s list`
+prints this view with each scene's length and problems.
 
 Scenes run in the order listed. Each level of the hierarchy has its own clock:
 
@@ -309,6 +317,21 @@ An `arc` changes an entity's tells from a given scene onward:
 Time is counted in **steps** of a tempo grid (`tempo` and `steps_per_beat` in `show.yaml`;
 at the defaults one step is an eighth of a second). Pauses, holds and syllables all land on
 the grid, and fractions of a step are allowed for nudges. A scene can set its own `tempo`.
+
+**Bars.** A show that sets `beats_per_bar` in `show.yaml` has bars: a bar is
+`steps_per_beat x beats_per_bar` steps, and a phrase is eight bars. A turn can ask to land on
+a bar and a scene to be so many bars long:
+
+    bars: 32                                         # the scene's length
+    turns:
+      - {id: 8, who: great-seal, say: We vote., bar: 24, why: The vote is called.}
+
+A speaking turn's line starts on its bar; whatever comes before waits the difference. A beat
+that cannot land (the turn before has not finished) is an error from `s2s check`. Cards are
+whole bars too, so every part of an episode starts on the beat. `s2s beats <episode>` lists
+where every turn lands, `s2s retime <scene> 8=25 9=28 bars=34` moves several at once, and
+`s2s rhythm <episode>` draws the episode as a song: bars, and the rise and fall of sound and
+movement.
 
 **One bubble holds one beat, and a pause is what separates beats.** A line breaks into
 bubbles wherever the speaker pauses, and each bubble gives way to the next: it eases in
@@ -356,7 +379,20 @@ to break a word (some·one) or a caret before the syllable that should be strong
 | `library/sounds.yaml` | One synthesised sound per kind of event: enter, exit, move, turn, look, posture, bubble, feel |
 | `library/feel.yaml` | The small motions (settle time, overshoot, how long a turn takes, paper flip, stretch, how a bubble eases in and fades out), the speech indicator, how voiced or plucked a syllable sounds, and how strongly a featured reaction is set apart |
 
-A turn can also place a sound by hand: `sfx: [{at: 4, sound: thud}]`.
+A turn can also place a sound by hand:
+
+    sfx: [{at: 4, sound: thud}]                      # four steps into the turn
+    sfx: [{at: 0, sound: blast, on: match}]          # an explosion: it swells for two bars first, then goes off on `at`
+    sfx: [{at: 10, sound: swell, len: 12, vol: 0.8, fade_out: 4}]      # the come-up alone, which stops dead unless it fades
+
+`len`, `vol`, `fade_in` and `fade_out` are optional (steps, and a level where 1 is as its kind
+is set). Every sound of a kind has one level in `library/sounds.yaml` (`blast: {vol: 0.8}`). A
+place can have `air: warm | cold`, a quiet bed so a room is never dead silent between lines.
+
+A layer of a scene can have its level bent over time, straight from point to point:
+
+    levels:
+      music: [[0, 1], [64, 0.4], [96, 1]]            # [steps from the scene's start, level]; also voices, sounds
 
 ## The camera and places
 
@@ -412,6 +448,20 @@ slide against each other when the camera moves. A place is drawn in one of three
 cut paper, and `line` is ink outline. Bubbles follow their speaker but stay the same size
 however close the camera is.
 
+A place can also be lit and drawn in ink, which is how the crown show looks:
+
+    sky: ["#b9a3dc", "#f8e59c"]                      # seen through open arches: top colour, bottom colour
+    light: {at: 3, up: 230, color: "#ffd98a", reach: 560, strength: 0.7, side: left, cast: 0.5, warm: 0.42}
+    shadow: "#b3aeea"                                # the side of things away from the light goes to this
+    shade: "#232a78"                                 # the colour of cast shadows
+    ink: "#17194d"                                   # an outline round every solid shape, bodies included
+    bench: {from: 0.65, to: 7.35, rise: 58, front: 30, color: "#7d5a44"}     # a raised bench the cast sit behind
+    air: warm
+
+The light throws shadows across the floor, shaped by the arches it comes through and blocked
+by whatever hangs in them. Every key a place, a light, a bench or a piece may use is listed in
+`vocabulary/keys.py`; `s2s check` warns about any other and suggests the nearest.
+
 ## An episode as one film
 
 `s2s render --episode s01e01` makes one file: the episode's scenes and cards in the order
@@ -438,6 +488,32 @@ Everything about it is set in `show.yaml`:
 | `episode.transition_seconds`, `title_seconds`, `credits_seconds` | How long each takes |
 | `style` | How rooms are drawn, how the camera moves, how the voice shows in a bubble, how music shows |
 | `camera` | How tight each kind of shot may get, the shortest a shot may be (`min_shot`), and how far the frame tips (`tilt`; 0 turns it off) |
+
+**The land.** A show with a `land.yaml` gets its title sequence over a model of its world, not
+a card: places rise as the camera reaches them, on the bars of the anthem. `places` says where
+each is and what stands on it; `camera` is the path, `[bar, x, y, zoom]` per stop; `history`
+is what changes and on which day. A scene says which day it happens on, and a `travel` card
+takes the film from one scene to the next by way of the land:
+
+    segments:
+      - {id: the-council, scene: episodes/e01/01-the-council.yaml, day: 1}
+      - {id: the-vote-title, card: title, into: cut}
+      - {id: months-later, card: travel, into: fade}
+      - {id: the-council-again, scene: episodes/e01/02-the-council-again.yaml, day: 120}
+      - {id: the-vote-credits, card: credits}
+
+A title sequence that sits between two scenes with days plays the days between them: the land
+changes as `history` says, under a sun and moon, with a day counter; the journey after it only
+comes down. A place says where it is on the land with `land: <place>`. A `caption` card is a
+line of text on paper (`text:`, `seconds:`).
+
+**Hand-set values on a card** live on its segment, as a scene's live on its turns:
+
+    - {id: the-vote-credits, card: credits, tune: {bars: 24, music_at: 0.5, music_vol: 0.8, music_in: 1, music_out: 2}}
+
+`bars` is the credits' length; `music_at` moves where the music lands (in bars, later or
+earlier); `music_vol` is its level; `music_in` and `music_out` fade it, the fade-out ending as
+the card ends. `levels: {music: [[steps, level], ...]}` bends its level over time.
 
 The theme is two figures in `music.py`, `theme.title` and `theme.credits`, written in scale
 degrees like every other cue; write your own under `figures:` in `library/music.yaml`.
@@ -576,7 +652,7 @@ reworded they are set aside, not applied and not deleted, and `s2s check` and
 
 ## The editor
 
-    s2s edit the-thermostat
+    s2s edit the-thermostat          # or, on a Mac, double-click Open Editor.command
 
 The editor is for tuning by hand: nudge a value, replay, compare. It does not change words,
 feelings or structure. **There is no Save.** While you drag, the picture previews; when you
@@ -584,64 +660,94 @@ let go, that one value is written to the file (comments and layout kept) and rec
 journal. The editor follows the files, so a change made elsewhere, by the assistant or in a
 text editor, appears within half a second and is never overwritten.
 
-In a show with bars (`beats_per_bar` in show.yaml) the ruler counts bars, with a stronger line every
-eight. If a nudge pushes a line off the bar it was asked to land on, the editor says so, and Undo takes it back.
+**What is on screen.** The picture; a bar of controls; a strip of the episode's parts; and the
+timeline: a ruler (in bars, where the show has them, with a stronger line every eight), then
+lanes for whose time it is, the turns, each entity, the lines, placed sounds, the waveform and
+the notes of the voice. Every control and lane says what it is when you hover it.
 
-**Whose time is it?** The top strip of the timeline divides the scene into stretches, and
-every stretch belongs to exactly one value: a pause, a syllable, a breath (hatched), a held
-reaction, a hold. Click a stretch and the **knob** appears on that value.
+**Whose time is it?** The top lane divides the scene into stretches, and every stretch belongs
+to exactly one value: a pause, a syllable, a breath (hatched), a held reaction, a hold. Click
+a stretch and the **knob** appears on that value.
+
+### Moving and playing
 
 | Do this | To |
 |---|---|
-| Click a stretch in the top strip | Put the knob on the value that owns that time |
-| Click the picture | A word in the bubble puts the knob on that syllable; the bubble, on the line's tone; a token, on whatever that entity is doing at that moment |
-| / then a word, then Enter | Find a value by how you would describe it (gap, snappy, louder, bouncy). The knob goes to the best match nearest the playhead, and the playhead goes to where it shows at work |
-| Up or Down with nothing picked | Pick whatever owns the moment under the playhead |
-| Up, Down (Shift for a fine step); or type a number | Nudge the picked value. Each nudge is written at once; a quick run is one undo step |
-| Backspace | Take the hand-set value off; it goes back to what it inherits |
-| W | Widen: use this value for the next scope out (a turn's hold for its scene, then the show; a breath for every pause of its kind) |
-| Tab, Shift+Tab; or click an icon beside the knob | Step the knob through everything **in play** at the playhead: the value that owns the moment, then the syllable's note and stress, then what nearby events show at work (ease and flip where someone turns), their sounds, the line's tone, its speaker, the voice. Hover an icon to see what it is and why it is listed |
-| (after any nudge) | The moment replays by itself: the value's stretch with a second before and after, with sound |
-| Enter | Replay that moment again |
-| B | Flip between **A**, the scene as it was when you picked the value, and **B**, the scene now, and replay. A badge on the picture says when A is showing |
-| L | Loop: with the knob on a value, the moment repeats with a half-second gap until you press Space |
-| Escape | Put the knob away |
-| Hover the dots beside the value | See every scope's say. One dot per scope, narrowest first; the filled one is where the value comes from, and it is coloured if set by hand |
-| Click or drag the ruler; Left and Right (Shift for a whole step) | Move through the scene |
-| Drag a turn's right edge | Change its hold |
-| Drag a line | Change the pause before it starts. In a show with bars, a line that has a `bar:` moves to another bar instead (it snaps to eighths of a bar; Shift for finer), and what comes before it waits |
-| Drag a sound in the sounds lane | Change when it starts. Drag its edge to change how long it lasts (for an explosion, how long it swells first) |
-| Click a sound, then Tab | Put the knob on its start, its length, then its level. `/` then "louder" finds the level of every sound of that kind |
-| Drag the dot at a sound's top corner | Fade it in (left dot) or out (right dot). A card's music has the same two dots |
-| M | Drop a note at the playhead, for the assistant to read (`s2s notes`). It stays on its moment when timings move; Enter with no words removes it |
-| H; or the button beside Play | Hear, and see in the waveform lane, everything, or the voices, the sounds or the music alone |
-| Shift-drag on the timeline | Mark a stretch. Play stays inside it, and Render makes a video of only that (out/<part>.range.mp4). Escape clears it |
-| The layers button | Takes: keep the whole show's tuning under a name, and switch between takes. Switching is one undo step. Takes stay on this computer (.s2s/takes) |
-| The meter at the start of the strip | Measure each part's average level in decibels; a part more than 3 dB from the middle one turns amber |
-| The film button at the start of the strip | The whole episode as one timeline: play through the joins, see every line and sound in its place, drop notes anywhere. Double-click a part to open it; drag the credits' right edge for their length |
-| With one layer chosen (H), double-click the waveform lane | Add a point to that layer's level curve; drag a point to bend the level over time; double-click a point to remove it. On a card the curve is its music's |
-| On the title sequence: the camera lane | A diamond at each stop of the camera's path. Drag to retime; click one, then drag the picture to move where the camera looks, Up and Down for closer or further; double-click to add or remove a stop. The title block's right edge sets its length |
-| R; or the button beside Loop | Ripple: when on, moving a line to another bar or changing a hold or pause moves every later pinned line by as much, and the scene's length with it. Off, a change stays inside its own gap |
-| The pointer button beside Loop | Follow the assistant. When it changes something while the editor is open, a caption on the picture says what and why; with follow on, the editor also goes to that moment, puts the knob on the value and replays it. Click the caption to go there again; its arrow takes the change back |
-| Click a part in the strip above the timeline | Open another part of the episode: a scene, the title sequence, a journey over the land, the credits |
-| On a card: drag its music; Up, Down | Change where the music lands, by eighths of a bar; make it louder or quieter. Written to that segment in series.yaml as `tune: {music_at, music_vol}` |
-| Drag the right edge of an outlined box in an entity's lane | Change how long a featured reaction holds the scene |
-| Drag a note up or down | Change a syllable's pitch (Alt for notes outside the scale) |
-| Drag a note's right edge | Change a syllable's length |
-| Double-click a note | Cycle its stress: weak, strong, main accent |
-| Hold Shift while dragging | Move in quarter steps |
-| Space, L | Play or pause; loop the current turn (or, with the knob on a value, the moment around it) |
+| Space | Play or pause |
+| Click or drag the ruler; Left and Right (Shift for a whole step); Home, End | Move through the part |
+| L | Loop the current turn, or, with the knob on a value, the moment around it |
+| Shift-drag on the timeline | Mark a stretch. Play stays inside it, and Render makes a video of only that (`out/<part>.range.mp4`). Escape clears it |
 | X | X-ray: weight, and felt against shown, drawn below the ground line |
 | [ and ] | Previous and next scene |
-| Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z | Undo and redo your own changes, sliders included. It survives closing the editor |
+| The film-frame button | Render the part (or the marked stretch) to video |
 
-Undo in the editor only ever takes back changes made by hand; it never undoes the
-assistant's. It refuses if the file has changed since, because that would lose work.
-`s2s history --by hand` lists what was tuned by hand. A locked scene cannot be nudged. A turn
-with an amber dot has hand-tuned syllable values left over from an earlier wording.
+### The knob: one value at a time
+
+| Do this | To |
+|---|---|
+| Click a stretch in the top lane | Put the knob on the value that owns that time |
+| Click the picture | A word in the bubble puts the knob on that syllable; the bubble, on the line's tone; a token, on whatever that entity is doing at that moment |
+| / then a word, then Enter | Find a value by how you would describe it (gap, snappy, louder, bouncy). The knob goes to the best match nearest the playhead |
+| Up or Down with nothing picked | Pick whatever owns the moment under the playhead |
+| Up, Down (Shift for a fine step); or type a number | Nudge the picked value. Each nudge is written at once; a quick run is one undo step |
+| Tab, Shift+Tab; or click an icon beside the knob | Step the knob through everything **in play** at the playhead: the owner of the moment, the syllable's note and stress, what nearby events show at work, their sounds, the tone, the speaker, the voice |
+| Backspace | Take the hand-set value off; it goes back to what it inherits |
+| W | Widen: use this value for the next scope out (a turn's hold for its scene, then the show) |
+| (after any nudge), Enter | The moment replays by itself, with sound; Enter replays it again |
+| B | Flip between **A**, the scene as it was when you picked the value, and **B**, the scene now, and replay |
+| Hover the dots beside the value | See every scope's say: one dot per scope, narrowest first; the filled one is where the value comes from |
+| Escape | Put the knob away |
+
+### Timing
+
+| Do this | To |
+|---|---|
+| Drag a turn's right edge | Change its hold |
+| Drag a line | Change the pause before it. In a show with bars, a line that has a `bar:` moves to another bar instead (eighths of a bar; Shift for finer) |
+| R; or the button beside Loop | Ripple. Off, a change stays inside its own gap: later lines keep their bars. On, moving a line or changing a hold or pause moves every later pinned line by as much, and the scene's length with it |
+| Drag the right edge of an outlined box in an entity's lane | Change how long a featured reaction holds the scene |
+| Drag a note up or down; drag its right edge; double-click it | A syllable's pitch (Alt for notes outside the scale); its length; its stress |
+
+If a change pushes a line off the bar it was asked to land on, the editor says so, and Undo takes it back.
+
+### Sound
+
+| Do this | To |
+|---|---|
+| Drag a sound in the sounds lane; drag its edge | Change when it starts; how long it lasts (for an explosion, how long it swells first) |
+| Drag the dot at a sound's top corner | Fade it in (left) or out (right), inside its own length |
+| Click a sound, then Tab | Put the knob on its start, length, level and fades. `/` then "louder" finds the level of every sound of its kind |
+| H; or the button beside Play | Hear, and see in the waveform lane, everything, or the voices, the sounds or the music alone |
+| With one layer chosen, double-click the waveform lane | Add a point to that layer's level curve. Drag a point to bend the level; double-click a point to remove it |
+| The meter at the start of the strip | Measure each part's average level in decibels; a part more than 3 dB from the middle one turns amber |
+
+### The episode and its cards
+
+| Do this | To |
+|---|---|
+| Click a part in the strip | Open it: a scene, the title sequence, a journey, the credits |
+| The film button at the start of the strip | The whole episode as one timeline: play through the joins, see every line and sound in its place, drop notes anywhere. Double-click a part to open it; drag the credits' right edge for their length |
+| On a card: drag its music; its corner dots; Up, Down | Where the music lands, by eighths of a bar; its fades; its level |
+| On the title sequence: the camera lane | A diamond at each stop of the camera's path. Drag to retime; click one, then drag the picture to move where the camera looks, Up and Down for closer or further; double-click to add or remove a stop. The title block's right edge sets its length |
+
+In the whole-episode view the joins play as plain cuts; dips and fades between parts are in the rendered film.
+
+### Notes, takes, undo, and the assistant
+
+| Do this | To |
+|---|---|
+| M | Drop a note at the playhead, for the assistant to read (`s2s notes`). It is tied to its turn, so it stays on its moment when timings move. Enter with no words removes it; a note that has been dealt with turns grey |
+| The layers button | Takes: keep the whole show's tuning under a name, and switch between takes to compare. Switching is one undo step. Takes stay on this computer (`.s2s/takes`) |
+| Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z | Undo and redo your own changes. It survives closing the editor |
+| The pointer button beside Loop | Follow the assistant. When it changes something while the editor is open, a caption on the picture says what and why; with follow on, the editor also opens that part, goes to the moment, puts the knob on the value and replays it. Click the caption to go there again; its arrow takes the change back |
+
+Undo in the editor only ever takes back changes made by hand; the assistant's are taken back
+with the caption's arrow (or `s2s undo`). Undo refuses if the file has changed since, because
+that would lose work. `s2s history --by hand` lists what was tuned by hand. A locked scene
+cannot be nudged. A turn with an amber dot has hand-tuned syllable values left over from an
+earlier wording.
 
 How much replays around a nudge is set in `show.yaml`: `editor: {lead_in: 8, lead_out: 8}`, in steps.
-
 The arrow-into-a-wall icon appears when a scene inherits something; hover it to see what was
 carried in and what happened off-screen.
 
@@ -668,7 +774,10 @@ command takes `--json`; a command that changes something also takes `--dry-run`,
 | Ask what could be tuned at a moment, or what a word might mean | `s2s in-play the-vase:2+0`, `s2s params --find bouncy` |
 | Look at a moment, or a whole scene at a glance | `s2s still thermostat:2 --xray`, `s2s sheet thermostat` |
 | Render | `s2s render thermostat`, `s2s render --episode s01e01` (`--draft`, `--only 30-48`, `--fresh`), `s2s render --all` |
-| Look at an episode without rendering it | `s2s moments s01e01 36 42.5`, `s2s shots s01e01`, `s2s listen s01e01` |
+| Look at an episode without rendering it | `s2s moments s01e01 36 42.5` (a contact sheet), `s2s shots s01e01` (every shot, and why), `s2s listen s01e01` (its loudness, and what is wrong with it), `s2s rhythm s01e01` (bars, rise and fall) |
+| Know whether the picture changed | `s2s frames s01e01` compares with the frames last kept; `--accept` keeps how it looks now |
+| See and move beats on the bar grid | `s2s beats the-vote`, `s2s retime the-council 8=25 bars=34` |
+| Read the notes pinned in the editor | `s2s notes`, `s2s notes --done 3` |
 | Change a line, a feeling, a timing, a reason | `set-line`, `set-feeling`, `set-timing`, `set-why` |
 | Add or remove | `add-scene`, `add-turn`, `add-reaction`, `remove-turn` |
 | Reorder, or mark how finished a scene is | `move`, `set-status` |

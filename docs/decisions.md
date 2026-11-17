@@ -357,6 +357,60 @@ name, and the look holds what it is made of and how it is drawn. Bubbles are let
 they follow their speaker but do not scale with the camera; a line from someone out of frame
 comes in from that edge.
 
+## 25. One tempo for a show, and a bar grid above the step grid
+
+**Decision.** A show has one tempo. Above the steps there are bars (`beats_per_bar`) and
+phrases of eight bars. A turn can ask to land on a bar and a scene to last so many; whatever
+comes before waits, and a beat that cannot land is an error. Cards are whole bars. A hand
+change stays inside its own gap unless the writer asks for ripple.
+
+**Instead of** a tempo per scene with nothing landing anywhere in particular, or laying an
+episode out in seconds.
+
+**Because** the first episode had scenes and music on different clocks and no rise or fall,
+and nobody could see it. A grid coarse enough to count on makes "this lands on 28" a thing
+that can be said, checked and dragged.
+
+**Costs.** Lines pinned to bars can leave dead air before them, which is the writer's to
+close. Several places must agree on how long a bar is (see `tech-debt.md`).
+
+## 26. Hand-set values live where the thing lives, and notes live outside the script
+
+**Decision.** Everything tuned by hand is written beside the thing it changes: a `tune:`
+block on a turn, on a card's segment in series.yaml, or in the library; `levels:` on a scene
+or a segment; the camera's stops in land.yaml. Notes pinned in the editor go in the show's
+`notes.yaml` and nowhere else.
+
+**Instead of** a file of overrides per editor session, or notes written into scenes as comments.
+
+**Because** decision 19 (where a value is stored says who set it) has to hold for cards and
+sound as it does for syllables, or the two loops stop being able to see each other's work. A
+note is about the film, not part of it: it must never change a render, and it has to survive
+the scene being rewritten.
+
+**Costs.** series.yaml and land.yaml are now written by the editor as well as by people, so
+their layout must survive a round trip. A note tied to a turn is lost if the turn is removed.
+
+## 27. The editor stays a local web page, and the assistant works beside it through the files
+
+**Decision.** The editor is a page served by a small local server on the writer's computer.
+The assistant never drives the page. It runs the show's commands in the writer's folder, with
+the reason for each, and the editor, which already follows the files, reads the journal and
+shows the change: a caption, the playhead on the moment, the knob on the value, a replay.
+
+**Instead of** a standalone app, or the assistant operating the editor's controls by remote
+control of the screen.
+
+**Because** the files and the journal are the one channel both loops already share
+(decisions 12 and 17). Driving the page would be slow and limited to what the page can do;
+commands are exact and can do everything. A standalone app would fix small things (sound
+that waits for a click, clashing keys) and cost the ability to test the page without the
+writer's computer.
+
+**Costs.** The assistant cannot draw on the writer's computer, only change scripts there;
+rendering stays in the repository. Two copies of a show exist during a session and are brought
+together by a routine (`working-agreement.md`), not by the tool.
+
 ## Open questions
 
 These are not decided, because the conversation has not yet produced the evidence.

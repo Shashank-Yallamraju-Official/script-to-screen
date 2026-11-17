@@ -21,25 +21,12 @@ Rules that go with it:
 - **An open choice is reasoned from the story,** then made and flagged, not asked about one at a time.
 - **Timing is the maker's to adjust.** Get the beats in the right order on sensible bars; do not polish timing. The maker moves beats on the timeline.
 
-## The timeline
+## Timing is tuned in the editor
 
-The Beat Timeline page (https://claude.ai/artifact/Y92QSWrNDr8n28y4Pp6V62) shows each scene's beats on the bar grid. The maker
-drags them and saves; the builder applies what was saved.
-
-- Beats snap to an eighth of a bar (the show's smallest step).
-- Dragging moves one beat. Holding Shift moves everything after it too.
-- A beat that could not play where it is (the one before has not finished, or it runs past the scene's end) turns red, and
-  nothing can be saved until it is fixed.
-
-To apply saved timings (the page's store: `episodes/<episode>` is what the show has, `edits/<episode>` is what was saved):
-
-    1. read  edits/<episode>            -> {moves: {<scene>: {<turn>: <bar>}}}
-    2. s2s retime <scene> <turn>=<bar> ...      once per scene; all of a scene's moves together
-    3. s2s render --episode <episode>
-    4. s2s beats <episode> --json       -> write its parts to  episodes/<episode>
-    5. set   edits/<episode>            to {moves: {}}
-
-The map sequence (camera stops and the days) is not on the timeline yet.
+The maker adjusts timing by hand in the editor (`Open Editor.command`, or `s2s edit <scene>`): lines dragged to other bars,
+sounds moved and stretched, music placed, the camera's stops over the land. The README's "The editor" lists every control.
+Anything the editor cannot fix, the maker pins with a note (`M`), and the builder reads the notes (`s2s notes`), treats each as
+a request, and closes it (`s2s notes --done N`) when dealt with. A note that asks for a new idea still gets a plan first.
 
 ## Two copies of the show, kept in step
 
