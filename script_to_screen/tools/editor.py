@@ -178,7 +178,55 @@ class Session:
         changed = self.sync()
         if self.stale is not None and time.monotonic() - self.stale > 1.0:
             self.inform()
-        return dict(rev=self.rev, info_rev=self.info_rev, changed=changed)
+        pinned = (self.root / notes.FILE).stat().st_mtime_ns if (self.root / notes.FILE).exists() else 0
+        if pinned != getattr(self, "_pinned", pinned):               # a note was closed or added elsewhere
+            self.info_rev += 1
+        self._pinned = pinned
+        return dict(rev=self.rev, info_rev=self.info_rev, changed=changed, news=self.news())
+
+    def news(self):
+        """Changes made from outside the editor since it last looked (by the assistant, with a command): what changed, why, and
+        where to look. The journal is only read when it has grown."""
+        j = edit.journal(self.root)
+        size = j.stat().st_size if j.exists() else 0
+        if not hasattr(self, "_journal"):                            # the first look: everything already there is old news
+            self._journal = (size, len(edit.entries(self.root)))
+            return []
+        if size == self._journal[0]:
+            return []
+        es = edit.entries(self.root)
+        seen = self._journal[1]
+        self._journal = (size, len(es))
+        out = []
+        for e in es[seen:]:
+            if e.get("by", "command") == "hand" or not e.get("changes"):
+                continue
+            c = e["changes"][0]
+            addr, field = str(c["address"]), str(c.get("field") or "")
+            knob = label = None
+            for a in (addr, f"{addr}.{field}"):
+                try:
+                    label = tune.parse(a, self.root).param.label
+                    knob = a
+                    break
+                except Exception:
+                    pass
+            try:
+                part = series(self.root).of(self.root / e["path"])["id"]
+            except Exception:
+                part = addr.split(".")[0] if e["path"] in ("series.yaml",) else None
+            turn = addr.split(":")[1].split(".")[0] if ":" in addr else None
+            says = "; ".join(f"{x['address']}{'' if str(x.get('field')) in str(x['address']) else ' ' + str(x.get('field'))}: {json.dumps(x.get('before'), ensure_ascii=False)} \u2192 {json.dumps(x.get('after'), ensure_ascii=False)}"
+                             for x in e["changes"][:3]) + (f" (and {len(e['changes']) - 3} more)" if len(e["changes"]) > 3 else "")
+            if label and len(e["changes"]) == 1:                  # in the knob's own words: "the-council-again, turn 9 · Lasts: 16 → 12"
+                says = ", turn ".join(x for x in (part or addr.split(".")[0], turn) if x) + f" \u00b7 {label}: {json.dumps(c.get('before'))} \u2192 {json.dumps(c.get('after'))}"
+            out.append(dict(id=e["id"], text=says, because=e.get("because"), part=part, turn=turn, address=knob))
+        return out
+
+    def take_back(self):
+        """Undo the assistant's last change (the writer's own are undone with Undo)."""
+        edit.undo(self.root, by="command")
+        self.load()
 
     # ---- the episode's other parts: its title sequence, its journeys over the land, its credits -----------
     CARD = dict(title=("anthem", "The title sequence: the anthem, whole."), travel=("anthem (low figure)", "A journey over the land, down to the next scene."),
@@ -918,6 +966,9 @@ def make_handler(sess):
                             out["value"] = sess.value(body["address"])
                         except Refused:
                             out["value"] = None
+                    elif self.path == "/take-back":
+                        sess.take_back()
+                        out["dirty_from"] = 0
                     elif self.path in ("/undo", "/redo"):
                         sess.step(self.path[1:])
                         out["dirty_from"] = 0

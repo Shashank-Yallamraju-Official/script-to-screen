@@ -46,3 +46,17 @@ def test_a_take_keeps_the_whole_tuning_and_switching_to_it_is_one_undo_step(show
     assert hold() == first + 7 and [t["here"] for t in sess.takes()] == [False, True]
     sess.take(drop="Before")
     assert [t["name"] for t in sess.takes()] == ["Long hold"]
+
+
+def test_a_change_made_by_command_while_the_editor_is_open_is_told_with_its_reason_and_place(show):
+    sess = Session(show.scene("room", [ENTER, LINE]))
+    assert sess.poll()["news"] == []
+    sess.patch([dict(path=["turns", 1, "hold"], value=9)], commit=True)                      # the writer's own change is not news
+    assert sess.poll()["news"] == []
+    assert commands.run(["tune", "set", "room:2.hold", "14", "--because", "note 1: it lands late", "--show", str(show.root), "--json"]) == 0
+    r = sess.poll()
+    (n,) = r["news"]
+    assert r["changed"] and n["part"] == "room" and n["turn"] == "2" and n["address"] == "room:2.hold" and n["because"] == "note 1: it lands late" and "14" in n["text"]
+    assert sess.state()["turns"][1]["hold"] == 14 and sess.poll()["news"] == []              # told once
+    sess.take_back()
+    assert sess.state()["turns"][1]["hold"] == 9

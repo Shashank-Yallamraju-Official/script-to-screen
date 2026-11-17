@@ -112,13 +112,17 @@
   .pin { position: absolute; top: 2px; width: 9px; height: 12px; margin-left: -1px; background: #e0a43a; clip-path: polygon(0 0, 100% 0, 100% 62%, 22% 62%, 22% 100%, 0 100%); cursor: pointer; z-index: 6; }
   .pin.done { background: #5a5f69; }
   #note { all: unset; display: none; width: 260px; padding: 2px 8px; border: 1px solid #e0a43a; border-radius: 6px; background: var(--bg); color: var(--text); font: 12px Inter, system-ui, sans-serif; user-select: text; }
+  #said { position: absolute; left: 14px; top: 14px; display: none; align-items: center; gap: 8px; max-width: 70%; padding: 5px 10px; border-radius: 8px; background: #16171bdd; border: 1px solid #5e6ad2; font-size: 12px; cursor: pointer; z-index: 3; }
+  #said svg { width: 13px; height: 13px; flex: none; fill: none; stroke: #aab1ee; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+  #said span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } #said i { font-style: normal; color: #9aa0ab; }
+  #said b { font-weight: 400; color: #9aa0ab; padding: 0 3px; } #said b:hover { color: #fff; }
   #toast { position: fixed; left: 14px; bottom: 14px; padding: 8px 12px; border-radius: 8px; background: var(--raise); border: 1px solid var(--line); display: none; cursor: pointer; max-width: 60vw; white-space: pre-line; z-index: 9; }
   #toast.bad { border-color: var(--bad); color: var(--bad); }
 </style>
 </head>
 <body>
 <div id="app">
-  <div id="stage"><canvas id="view" width="1280" height="720"></canvas><div id="spin"></div><div id="abmark"></div></div>
+  <div id="stage"><canvas id="view" width="1280" height="720"></canvas><div id="spin"></div><div id="said"></div><div id="abmark"></div></div>
   <div id="bar">
     <button id="prev"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5"/></svg></button>
     <button id="next"><svg viewBox="0 0 16 16"><path d="m6 3 5 5-5 5"/></svg></button>
@@ -126,6 +130,7 @@
     <button id="play" title="Play or pause (Space)"></button>
     <button id="loop" title="Loop (L): the current turn, or, with the knob on a value, the moment around it, with a short gap between passes"><svg viewBox="0 0 16 16"><path d="M3 7V6a2 2 0 0 1 2-2h7M10 2l2 2-2 2M13 9v1a2 2 0 0 1-2 2H4M6 14l-2-2 2-2"/></svg></button>
     <button id="ripple"><svg viewBox="0 0 16 16"><path d="M2 3v10M5 8h9M11 5l3 3-3 3"/></svg></button>
+    <button id="follow"><svg viewBox="0 0 16 16"><path d="M3 2.5 12 7l-4 1.2L6.5 12z"/><path d="M11 11.5h3M12.5 10v3"/></svg></button>
     <button id="xray" title="X-ray (X): the director's view. Everything below the ground line is for you, not the audience. The bar is an entity's weight in the room. Ringed pips are what it feels; filled pips are what shows."><svg viewBox="0 0 16 16"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg></button>
     <button id="hear"></button>
     <button id="carry"><svg viewBox="0 0 16 16"><path d="M2 8h8M7 5l3 3-3 3M13 3v10"/></svg></button>
@@ -739,6 +744,32 @@ view.addEventListener('pointermove', e => {
   patch(['camera', camDrag.i, 'xy'], camDrag.last);
 });
 view.addEventListener('pointerup', async () => { const d = camDrag; camDrag = null; if (d && d.last) { while (sending) await new Promise(r => setTimeout(r, 20)); patch(['camera', d.i, 'xy'], d.last, true); } });
+// ---- following the assistant: a change made from outside is shown, not just applied ----------------
+let followOn = true, saidList = [];
+function showFollow() {
+  $('follow').classList.toggle('on', followOn);
+  $('follow').title = (followOn ? 'Following the assistant: when it changes something, the editor goes to that moment, puts the knob on the value and replays it.'
+    : 'Not following: the assistant\'s changes still appear, with a caption on the picture, but the playhead stays where you put it.') + ' Click to switch.';
+}
+$('follow').onclick = () => { followOn = !followOn; showFollow(); };
+async function goTo(n) {                                  // go to where a change was made, and replay it
+  pause();
+  if (n.part && n.part !== S.id) await openPart(n.part);
+  const t = n.turn != null && S.turns.find(t => String(t.id) === String(n.turn));
+  if (t) setF(frameOf(t.start + (t.say ? t.say.at : 0)));
+  if (n.address) { try { clearTimeout(ipT); await inPlay(); await pickAt(n.address); if (picked) audition(); } catch (e) {} }
+}
+function said(n) {
+  saidList = [n, ...saidList.filter(x => x.id !== n.id)].slice(0, 6);
+  const box = $('said'); box.style.display = 'flex';
+  box.innerHTML = '<svg viewBox="0 0 16 16"><path d="M8 2v3M8 11v3M2 8h3M11 8h3M4 4l2 2M10 10l2 2M12 4l-2 2M6 10l-2 2"/></svg><span></span><b title="Take this change back">\u21b6</b>';
+  box.querySelector('span').innerHTML = '<i></i>'; box.querySelector('span').firstChild.before(n.text); box.querySelector('i').textContent = n.because ? '  \u00b7 ' + n.because : '';
+  box.title = 'The assistant changed this. Click to go there again.\n\nIts last changes:\n' + saidList.map(x => x.text + (x.because ? '  (' + x.because + ')' : '')).join('\n');
+}
+$('said').addEventListener('click', async e => {
+  if (e.target.tagName === 'B') { try { const r = await api('/take-back', {}); dropFrames(0); S = r.state; build(); $('said').style.display = 'none'; } catch (err) { toast(err.message, true); } return; }
+  if (saidList[0]) goTo(saidList[0]);
+});
 // ---- ripple: does a change push everything after it, or stay inside its own gap? ----------------
 let ripple = false;
 function showRipple() {
@@ -913,13 +944,14 @@ setInterval(async () => {                                // follow the files: pi
     if (drag || sending || nudging) return;
     if (r.rev !== S.rev) { S = await api('/state'); dropFrames(0); build(); if (pick) pickAt(pick, true); }
     else if (r.info_rev !== S.info_rev) { S = await api('/state'); build(); }
+    if (r.news && r.news.length) { const n = r.news[r.news.length - 1]; r.news.forEach(said); if (followOn) goTo(n); }
   } catch (e) {}
 }, 500);
 
 (async () => {
   S = await api('/state');
   view.width = S.width; view.height = S.height; view.style.aspectRatio = S.width + '/' + S.height;
-  $('play').innerHTML = ICON.play; showHear(); showRipple();
+  $('play').innerHTML = ICON.play; showHear(); showRipple(); showFollow();
   fit(); build(); window._ready = true;
 })();
 </script>

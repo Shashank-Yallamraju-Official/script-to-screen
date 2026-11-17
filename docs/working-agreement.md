@@ -56,3 +56,12 @@ The writer tunes on their own computer (`Open Editor.command`); the assistant bu
   That patch is applied in the repository with `git apply --3way`, committed as "Nudges from the editor", and pushed.
   Pins come with it (`shows/<show>/notes.yaml`); read them with `s2s notes`, and mark each with `s2s notes --done N` once dealt with.
 - If both sides changed the same value, the writer's wins, and the assistant says which value it was.
+
+## Working in the writer's open editor
+
+When the writer has the editor open and wants to watch, the assistant makes its changes in the writer's own folder, through the
+linked computer's shell, with the show's commands and always with `--because` (the writer's note or words). The editor shows each
+one: a caption with the reason, the playhead on the moment, the knob on the value, a replay. The linked shell cannot load the
+drawing library, so it runs the commands that read and change scripts (tune, retime, notes, check) with a stand-in for it; anything
+that draws (render, frames, moments) is run in the repository. At the end of the session the changes are brought into the
+repository as under "Two copies of the show".
