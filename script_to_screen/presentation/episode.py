@@ -97,6 +97,8 @@ def parts(root, eid):
             if vol != 1 or fin or fout:                              # louder or quieter; eased in; faded out by the time the card ends
                 out[-1]["sound"] = lambda made=out[-1]["sound"], vol=vol, fin=fin, fout=fout, end=int(out[-1]["frames"] / look.fps * sound.RATE): \
                     sound.faded(made(), fin, fout, end if fout else None) * vol
+            if (sg.get("levels") or {}).get("music"):                # and its level bent over time
+                out[-1]["sound"] = lambda made=out[-1]["sound"], pts=sg["levels"]["music"]: sound.bent(made(), pts, step)
         out[-1]["into"] = sg.get("into") or ("cut" if sg["kind"] == "scene" and n and segs[n - 1].get("card") == "travel" else cfg["transition"])
     return out, look, cfg
 

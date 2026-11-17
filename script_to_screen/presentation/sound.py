@@ -124,6 +124,26 @@ def faded(x, fade_in=0.0, fade_out=0.0, end=None):
     return x
 
 
+def bent(x, points, step):
+    """A layer with its level bent over time. `points` are [[steps from the start, level], ...]; the level runs straight from one
+    to the next, and holds before the first and after the last. No points: the layer as it is."""
+    if not points:
+        return x
+    pts = sorted((float(a), float(v)) for a, v in points)
+    t = np.arange(len(x)) / RATE / step
+    return x * np.interp(t, [p[0] for p in pts], [p[1] for p in pts])
+
+
+def levels_of(stage):
+    """The level curves written on a scene (`levels: {voices | sounds | music: [[steps, level], ...]}`)."""
+    from ..script import load_yaml, series
+    try:
+        seg = series(stage.root).by_id.get(stage.score.id)
+        return (load_yaml(seg["path"]) or {}).get("levels") or {} if seg else {}
+    except Exception:
+        return {}
+
+
 def mix(stage, only=None):
     """The whole scene's sound, or (`only`: voices, sounds or music) one of its three layers alone. Voices (one note per syllable), effects (one per event) and music (the score's
     cues, voiced in the mode their meaning calls for) are made as three buses, then mixed and mastered together."""
@@ -171,6 +191,8 @@ def mix(stage, only=None):
     cues = stage.score.music if vol > 0 else []                  # the score names the cue; the look says what it sounds like
     tune = music.render(cues, stage.score.step, n, settings) * vol
     room = dict(settings.get("mix") or {}, **{k: float(feel.get(k, master.DEFAULTS[k])) for k in ("reverb", "duck", "warmth")})
+    curves = stage.levels if getattr(stage, "levels", None) is not None else levels_of(stage)       # a layer's level, bent over time by hand
+    voices, effects, tune = (bent(x, curves.get(name), step) for name, x in (("voices", voices), ("sounds", effects), ("music", tune)))
     if only:                                                     # one layer alone, as it sits in the mix
         voices, effects, tune = (x if name == only else np.zeros(n) for name, x in (("voices", voices), ("sounds", effects), ("music", tune)))
     return wav_bytes(master.master(voices, effects, tune, room))

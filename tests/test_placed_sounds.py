@@ -151,3 +151,17 @@ def test_the_whole_episode_is_one_timeline_and_the_credits_can_be_made_longer(se
     sess.patch([dict(path=["turns", 1, "hold"], value=30 * bar)], commit=True)
     seg = yaml.safe_load((sess.root / "series.yaml").read_text())["seasons"][0]["episodes"][0]["segments"][-1]
     assert seg["tune"] == {"bars": 30} and sess.state()["turns"][1]["length"] == pytest.approx(30 * bar, abs=0.5)
+
+
+def test_a_layers_level_can_be_bent_over_time(sess):
+    x = sound.bent(np.ones(sound.RATE * 2), [[0, 1], [10, 0]], 0.1)                              # ten steps of a tenth of a second: down to nothing over one second
+    assert x[0] == 1 and abs(x[sound.RATE // 2] - 0.5) < 0.01 and x[-1] == 0
+    before = heard(sess.stage)
+    sess.curve("sounds", [[0, 0], [400, 0]])
+    assert sess.state()["levels"] == {"sounds": [[0, 0], [400, 0]]} and yaml.safe_load(sess.path.read_text())["levels"] == {"sounds": [[0, 0], [400, 0]]}
+    bang = int(sess.state()["turns"][2]["start"] * sess.scene.step * sound.RATE) + 2000
+    assert np.abs(heard(sess.stage)[bang:bang + 20000]).max() < np.abs(before[bang:bang + 20000]).max() * 0.2      # the explosion is gone from the mix
+    sess.step("undo")
+    assert sess.state()["levels"] == {} and "levels" not in sess.path.read_text()
+    with pytest.raises(ValueError):
+        sess.curve("everything", [[0, 1]])

@@ -16,6 +16,8 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from types import SimpleNamespace
+
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from urllib.parse import parse_qs, urlparse
 
 
@@ -424,6 +426,47 @@ class Session:
                     edit.record(self.root, "take", None, path, [dict(address=rel, field="take", before=None, after=t["name"])], before, text, by="hand", group=group)
             self.load()
 
+    def curves(self):
+        """The level curves of the part that is open: {layer: [[steps, level], ...]}."""
+        if self.card == self.WHOLE:
+            return {}
+        if self.card:
+            sg = next(s for s in series(self.root).episode(self.seg["episode"])["segments"] if s["id"] == self.card)
+            return {k: [list(p) for p in v] for k, v in (sg.get("levels") or {}).items()}
+        return {k: [list(map(float, p)) for p in v] for k, v in (self.doc.get("levels") or {}).items()}
+
+    def curve(self, layer, points):
+        """Set a layer's level curve (no points takes it away). Written to the scene's file, or to the card's segment, and journaled."""
+        if layer not in self.LAYERS or (self.card and layer != "music") or self.card == self.WHOLE:
+            raise ValueError("a level curve belongs to the voices, the sounds or the music of one part")
+        pts = sorted([tune.tidy(max(0.0, float(a))), tune.tidy(min(max(float(v), 0.0), 2.0))] for a, v in points)
+        file = self.root / "series.yaml" if self.card else self.path
+        before = file.read_text()
+        doc = edit.yaml().load(before)
+        holder = next(s for se in doc["seasons"] for ep in se["episodes"] for s in ep["segments"] if str(s["id"]) == self.card) if self.card else doc
+        was = (holder.get("levels") or {}).get(layer)
+        if pts:
+            if holder.get("levels") is None:
+                holder["levels"] = tune._flow(CommentedMap()) if self.card else CommentedMap()
+            seq = CommentedSeq(tune._flow(CommentedSeq(p)) for p in pts)
+            holder["levels"][layer] = tune._flow(seq)
+        elif was is not None:
+            del holder["levels"][layer]
+            if not holder["levels"]:
+                del holder["levels"]
+        after = edit.dump(doc)
+        if after != before:
+            edit.write(file, after)
+            edit.record(self.root, "nudge", None, file, [dict(address=f"{self.card or self.seg['id']}.levels.{layer}", field="levels", before=edit.plain(was), after=pts)], before, after, by="hand")
+        if self.card:
+            self.stamps = self.stamp()
+            self.rev += 1
+        else:
+            self.doc = edit.load(self.path)
+            self.stamps = self.stamp()
+            self.work(score=False)
+            self.clean = (self.path.read_text(), self.scene)
+
     def render_range(self, F0, F1):
         """A stretch of the part that is open, as a video file of its own: out/<part>.range.mp4."""
         import io
@@ -494,7 +537,7 @@ class Session:
 
     def state(self):
         if self.card:
-            return dict(self.card_state(), notes=self.pins())
+            return dict(self.card_state(), notes=self.pins(), levels=self.curves())
         sc, look, stage = self.scene, self.stage.look, self.stage
         turns = []
         for t in sc.turns:
@@ -522,7 +565,7 @@ class Session:
         mine = [p for p in self.problems if p["scene"] == sc.id]
         done, undone = edit.stacks(self.root, by="hand")
         return dict(rev=self.rev, info_rev=self.info_rev, id=sc.id, can_undo=bool(done), can_redo=bool(undone), status=self.seg["status"], fps=stage.fps, step=sc.step, tempo=sc.tempo,
-                    spb=sc.grid["steps_per_beat"], scale=list(sc.grid["scale"]), lead=self.lead, notes=self.pins(),
+                    spb=sc.grid["steps_per_beat"], scale=list(sc.grid["scale"]), lead=self.lead, notes=self.pins(), levels=self.curves(),
                     bar=sc.grid["steps_per_beat"] * int(load_yaml(self.root / "show.yaml").get("beats_per_bar") or 0),       # steps in a bar, or 0 if the show has no bars
                     bars=self.doc.get("bars"),
                     width=stage.W, height=stage.H, total=stage.total, steps=sc.steps,
@@ -810,6 +853,8 @@ def make_handler(sess):
                     elif self.path == "/take":                # keep the show as it stands, switch to a take, or drop one
                         sess.take(body.get("save"), body.get("open"), body.get("drop"))
                         out["dirty_from"], out["takes"] = 0, sess.takes()
+                    elif self.path == "/curve":               # a layer's level, bent over time
+                        sess.curve(body["layer"], body.get("points") or [])
                     elif self.path == "/note":                # a note pinned to a moment
                         sess.pin(int(body.get("f", 0)), body.get("text"), body.get("id"))
                     elif self.path == "/open" and body.get("part"):      # open a part of the episode by name: a scene, or a card

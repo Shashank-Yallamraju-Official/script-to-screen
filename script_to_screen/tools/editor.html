@@ -104,6 +104,7 @@
   #takelist div { display: flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 5px; border: 1px solid var(--line); cursor: pointer; font-size: 12px; }
   #takelist div.here { border-color: #5e6ad2; } #takelist div span { flex: 1; } #takelist div b { font-weight: 400; color: #7f8590; padding: 0 2px; }
   #takelist input { all: unset; padding: 3px 8px; border: 1px solid var(--line); border-radius: 5px; font-size: 12px; color: var(--text); user-select: text; }
+  .lv { position: absolute; width: 9px; height: 9px; margin: -5px 0 0 -5px; border-radius: 50%; background: #fff; border: 2px solid #c4871f; box-sizing: border-box; cursor: grab; z-index: 3; }
   .mark { position: absolute; top: 0; bottom: 0; background: #5e6ad21f; border-left: 1px solid #5e6ad2; border-right: 1px solid #5e6ad2; pointer-events: none; z-index: 1; }
   .wav { position: absolute; left: 0; pointer-events: none; }
   .pin { position: absolute; top: 2px; width: 9px; height: 12px; margin-left: -1px; background: #e0a43a; clip-path: polygon(0 0, 100% 0, 100% 62%, 22% 62%, 22% 100%, 0 100%); cursor: pointer; z-index: 6; }
@@ -251,14 +252,14 @@ function build() {
     ...(S.card && S.card.sounds && S.card.sounds.length ? [['sfx', ICON.sound, 'Every placed sound in the episode. Open its part to move it.', ROW]] : []),
     ...(S.card && S.card.music ? [['sfx', ICON.roll, 'This part\'s music. Drag it to change where it lands, by eighths of a bar (hold Shift for finer). \u2191 \u2193 make it louder or quieter.', ROW]] : []),
     ...(S.turns.some(t => t.sfx.length) ? [['sfx', ICON.sound, 'Sounds placed by hand. Drag one to change when it starts; drag its edge to change how long it lasts (for an explosion, how long it swells first). Click it, then Tab, to reach its level.', ROW]] : []),
-    ['wave', ICON.wave, 'The sound, as the film will have it: tall where it is loud. Line a hit up against a bar by eye. The button beside Play chooses what is heard and drawn here: everything, or the voices, the sounds or the music alone.', WAVE],
+    ['wave', ICON.wave, 'The sound, as the film will have it: tall where it is loud. Line a hit up against a bar by eye. The button beside Play chooses what is heard and drawn here: everything, or the voices, the sounds or the music alone. With one layer chosen (or on a card), the pale line is that layer\'s level: double-click to add a point, drag a point to bend it, double-click a point to remove it.', WAVE],
     ['roll', ICON.roll, 'Every syllable is one note. Brightness is stress: faint is weak, solid is strong, ringed is the phrase\'s main accent. Double-click a note to change its stress. Drag it up or down for pitch (Alt for notes outside the scale), or drag its right edge for length. Hold Shift for quarter steps. A white outline marks a line you have set by hand.', ROLL]];
   const y = {}; let top = RULER + 8;
   for (const l of lanes) { y[l[0]] = top + l[3] / 2; if (l[0] === 'roll') rollTop = top; top += l[3]; }
   const H = top + 8;
   $('gutter').innerHTML = lanes.map(l => `<div style="top:${y[l[0]] - l[3] / 2}px;height:${l[3]}px" title="${l[2]}">${l[1]}</div>`).join('');
   $('gutter').style.height = H + 'px';
-  track.querySelectorAll('.turn,.cut,.beat,.felt,.say,.note,.rx,.own,.cue,.fx,.pin,.ln').forEach(d => d.remove());
+  track.querySelectorAll('.turn,.cut,.beat,.felt,.say,.note,.rx,.own,.cue,.fx,.pin,.ln,.lv').forEach(d => d.remove());
   track.style.width = x(S.steps) + PAD + 'px'; track.style.height = H + 'px'; $('head').style.height = H + 'px';
   const all = S.turns.flatMap(t => t.say ? t.say.sylls.map(s => s.semi) : []);
   rollLo = Math.min(-3, ...all) - 2; rollHi = Math.max(9, ...all) + 2;
@@ -357,6 +358,7 @@ function build() {
     svg.innerHTML = `<path fill="${layer ? '#c4871f' : '#5e6ad2'}" opacity=".8" d="M${pts.map(p => `${p[0].toFixed(1)},${(WAVE / 2 - p[1]).toFixed(1)}`).join('L')}L${pts.reverse().map(p => `${p[0].toFixed(1)},${(WAVE / 2 + p[1]).toFixed(1)}`).join('L')}Z"/>`;
     track.appendChild(svg);
   }
+  waveY = y.wave; drawCurve();
   for (const n of S.notes || []) {                         // the writer's notes: a pin on the ruler at each
     const d = el('pin' + (n.done ? ' done' : ''), { left: x(n.now) + 'px' }, `Note ${n.id}${n.done ? ' (dealt with)' : ''}: ${n.text}\nClick to go there and change its words.`);
     d.onpointerdown = e => { e.stopPropagation(); pause(); setF(frameOf(n.now)); openNote(n); };
@@ -563,6 +565,10 @@ function showSel() {
 const snap = (v, e) => e.shiftKey ? Math.round(v * 4) / 4 : Math.round(v);
 function scaleNotes() { const out = []; for (let o = -3; o <= 3; o++) for (const s of S.scale) out.push(o * 12 + s); return out; }
 track.addEventListener('pointerdown', e => {
+  if (e.target.classList.contains('lv')) {                 // a point on a level curve: it moves both ways
+    pause(); curveEdit = ((S.levels || {})[curveLayer()] || []).map(p => [...p]);
+    drag = { lv: +e.target.dataset.i, moved: false }; e.preventDefault(); return;
+  }
   const n = e.target.closest('.note'), d = e.target.closest('[data-key]');
   const was = playing; pause();
   if (n) {                                                // a syllable's note: pitch, or length by its right edge
@@ -606,6 +612,11 @@ function markTo(e) {
 const scrubTo = e => setF(frameOf((e.clientX - scroll.getBoundingClientRect().left + scroll.scrollLeft - PAD) / pps), true);
 addEventListener('pointermove', e => {
   if (!drag) return;
+  if (drag.lv != null) {
+    const yy = e.clientY - track.getBoundingClientRect().top;
+    curveEdit[drag.lv] = [Math.min(Math.max(snap(stepAt(e), e), 0), S.steps), Math.round(Math.min(Math.max(1 + (waveY - yy) / (WAVE / 2 - 3), 0), 2) * 20) / 20];
+    drag.moved = true; return drawCurve();
+  }
   if (drag.scrub) return scrubTo(e);
   if (drag.mark != null) return markTo(e);
   if (drag.note) {
@@ -625,6 +636,7 @@ addEventListener('pointerup', async () => {
   if (!drag) return;
   const d = drag; drag = null;
   if (d.scrub) return;
+  if (d.lv != null) { if (d.moved) saveCurve(curveEdit); else { curveEdit = null; } return; }
   if (d.mark != null) { if (marked) setF(frameOf(marked[0])); return; }
   while (sending) await new Promise(r => setTimeout(r, 20));
   if (d.note) { if (!same(d.before, d.last)) { await commit(d.path, d.before, d.last); build(); hear(d.note.ti); } return; }   // an untouched note keeps its element, so a double-click still lands on it
@@ -693,6 +705,30 @@ function showHear() {
 $('hear').onclick = () => { pause(); layer = HEAR[(HEAR.findIndex(h => h[0] === layer) + 1) % HEAR.length][0]; audioRev = -1; if (A) A.audio = null; showHear(); build(); };
 async function showWave() { const rev = S.rev, only = layer; try { const w = await api('/wave?rev=' + rev + hearQ()); if (rev === S.rev && only === layer) { wave = { rev, only, ...w }; build(); } } catch (e) {} }
 const showWaveSoon = () => { clearTimeout(waveT); waveT = setTimeout(showWave, 500); };
+// ---- level curves: a layer's level, bent over time, drawn over the waveform ----------------------
+let waveY = 0, curveEdit = null;                          // curveEdit: the points while one is being dragged
+const curveLayer = () => S.card ? (S.card.music ? 'music' : null) : layer;
+const lvY = v => waveY - (Math.min(Math.max(v, 0), 2) - 1) * (WAVE / 2 - 3);
+function drawCurve() {
+  track.querySelectorAll('.lv,.lvl').forEach(d => d.remove());
+  const key = curveLayer(); if (!key) return;
+  const pts = curveEdit || (S.levels || {})[key] || [];
+  const line = pts.length ? [[0, pts[0][1]], ...pts, [S.steps, pts[pts.length - 1][1]]] : [[0, 1], [S.steps, 1]];
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'wav lvl'); svg.setAttribute('width', x(S.steps) + PAD); svg.setAttribute('height', WAVE + 8); svg.style.top = waveY - WAVE / 2 - 4 + 'px';
+  svg.innerHTML = `<path fill="none" stroke="#f1d9ae" stroke-width="1.2" ${pts.length ? '' : 'stroke-dasharray="3 4" opacity=".5"'} d="M${line.map(p => `${x(p[0]).toFixed(1)},${(lvY(p[1]) - waveY + WAVE / 2 + 4).toFixed(1)}`).join('L')}"/>`;
+  track.appendChild(svg);
+  pts.forEach((p, i) => { const d = el('lv', { left: x(p[0]) + 'px', top: lvY(p[1]) + 'px' }, `The ${key} at level ${num(p[1])} here (1 is as mixed). Drag up or down, or sideways. Double-click to remove this point.`); d.dataset.i = i; });
+}
+const saveCurve = async pts => { try { S = (await api('/curve', { layer: curveLayer(), points: pts })).state; audioRev = -1; } catch (e) { toast(e.message, true); } curveEdit = null; build(); };
+track.addEventListener('dblclick', e => {
+  const key = curveLayer(); if (!key) return;
+  const pts = ((S.levels || {})[key] || []).map(p => [...p]);
+  if (e.target.classList.contains('lv')) { pts.splice(+e.target.dataset.i, 1); return saveCurve(pts); }
+  const yy = e.clientY - track.getBoundingClientRect().top;
+  if (Math.abs(yy - waveY) > WAVE / 2 + 4 || e.target.closest('[data-key],.turn,.pin')) return;
+  pts.push([Math.round(stepAt(e)), 1]); saveCurve(pts);
+});
 // ---- takes ---------------------------------------------------------------------------------------
 function showTakes(list) {
   const box = $('takelist'), r = $('takes').getBoundingClientRect();
