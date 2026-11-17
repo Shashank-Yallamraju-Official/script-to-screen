@@ -12,6 +12,9 @@ a shadow side on everything that stands in it, and a shadow behind each. `grade:
 `vignette:` darkens its corners. A piece with `depth: far` is drawn hazed and behind the rest; `depth: front` is a dark shape
 between us and the scene.
 
+An `arch` is a hole in the wall: it shows the place's `sky:` colour, and `sun: <0 to 1>` on one arch puts the sun in it at that
+height, so the hour is told by the sky and never by a clock.
+
 A place can also have a raised `bench: {from, to, rise, front, color}`: whoever stands between those slots sits up behind
 it, with a plate at their seat (an entity's `plate:` is what the plate says), where it stands (`at`, a slot), and optionally how wide it is (`wide`, in slots), how
 far `up` it sits (pixels: a plate on a table), a `color`, and `depth: front` to stand it between
@@ -35,14 +38,14 @@ from .view import ground, slot_x
 
 WALL_DEPTH, BACK_DEPTH, FRONT_DEPTH = 0.3, 0.15, -0.2
 FLOOR_UP = 46                                 # how far behind the entities' feet the wall meets the floor, in pixels
-ON_WALL = ("door", "window", "picture", "shelf", "thermostat", "vault", "sign", "page", "dome", "pegboard", "chain", "hooks", "ghost", "crest", "hammermark", "lockmark", "crownmark", "banner", "bookwall", "pen", "desklamp", "nails", "hasplate")
+ON_WALL = ("door", "window", "picture", "shelf", "thermostat", "vault", "sign", "page", "dome", "pegboard", "chain", "hooks", "ghost", "crest", "hammermark", "lockmark", "crownmark", "banner", "bookwall", "pen", "desklamp", "nails", "hasplate", "arch", "cornice")
 ON_FLOOR = ("rug", "shards", "crumbs", "mark")
 COLORS = dict(door="#cdbb9d", window="#b9c2c4", picture="#b7a58c", sofa="#9fb0aa", lamp="#b9a98c", plant="#8fa58a", table="#b49f84",
               shelf="#b49f84", rug="#c9b6a6", counter="#b9b3a2", fridge="#c5cbcc", thermostat="#d8d2c4", pedestal="#c2b8a6", vase="#5b7fa6",
               shards="#5b7fa6", plate="#f4f1e8", vault="#9aa3a8", sign="#b9b3a2",
               rack="#a89784", inkpad="#4a4a52", page="#efe9dc", dome="#c7d3d6", post="#9aa3a8", pegboard="#b49f84", crate="#b49f84",
               chain="#8f969b", gate="#8f969b", hooks="#8f969b", bag="#9c5a48", ropes="#b7a58c", crumbs="#d9a3ae", ghost="#c9c5bb",
-              gantry="#a8906c", wallstub="#b9b3a2", mark="#8f969b", parts="#9fb0aa", crest="#7a2e3b", hammermark="#6b5a4a", lockmark="#7f868c", crownmark="#b7a58c", bench="#b49f84", banner="#7a2e3b", bookwall="#7b5a4c", pen="#2e3440", desklamp="#c9a45a", nails="#8f969b", hasplate="#8f969b", inkwell="#27303f", books="#7b5a4c", pot="#8a5f47", tree="#5d8a55", sapling="#7fb069")
+              gantry="#a8906c", wallstub="#b9b3a2", mark="#8f969b", parts="#9fb0aa", crest="#7a2e3b", hammermark="#6b5a4a", lockmark="#7f868c", crownmark="#b7a58c", bench="#b49f84", banner="#7a2e3b", bookwall="#7b5a4c", pen="#2e3440", desklamp="#c9a45a", nails="#8f969b", hasplate="#8f969b", inkwell="#27303f", books="#7b5a4c", pot="#8a5f47", tree="#5d8a55", sapling="#7fb069", arch="#3a2a2e", cornice="#3a2a2e")
 
 
 def rgb(h):
@@ -240,6 +243,20 @@ def shapes(kind, w):
                                               ("light", rect(-w / 2 + (i * 23) % 28 + 10, -52 * (i + 1) + 8, 14, 34, 3)))]
     if kind == "inkwell":                                            # an ink bottle, as big as a column
         return [("body", rect(-66, -190, 132, 190, 26)), ("light", rect(-44, -142, 88, 70, 8)), ("body", rect(-30, -232, 60, 48, 6)), ("dark", rect(-38, -256, 76, 28, 8))]
+    if kind == "arch":                                               # an open arch: a hole in the wall, with the sky in it
+        w = w or 120
+        def opening(dx):
+            p = skia.Path()
+            p.moveTo(-w / 2 + dx, -170)
+            p.lineTo(-w / 2 + dx, -170 - 1.25 * w)
+            p.arcTo(skia.Rect.MakeLTRB(-w / 2 + dx, -170 - 1.25 * w - w / 2, w / 2 + dx, -170 - 1.25 * w + w / 2), 180, 180, False)
+            p.lineTo(w / 2 + dx, -170)
+            p.close()
+            return p
+        return [("dark", opening(-w * 0.07)), ("light", opening(w * 0.05))]         # the thickness of the wall shows down one side
+    if kind == "cornice":                                            # the ledge between one tier of arches and the next
+        w = w or 1200
+        return [("dark", rect(-w / 2, -428, w, 12, 2))]
     if kind == "pot":                                                # a planter, for a tree or a sapling
         return [("body", poly((-56, -70), (56, -70), (44, 0), (-44, 0))), ("dark", rect(-62, -84, 124, 18, 6)), ("dark", oval(0, -78, 48, 7))]
     if kind == "tree":                                               # a grown tree: years of it
@@ -280,6 +297,7 @@ class Painter:
             self.wall = self.floor = "#f5f3ee"
         self.ink = "#aaa497"
         self.window = place.get("window", "#fffdf6")                      # what is seen through a window: daylight, or a night sky
+        self.sky, self.sun = place.get("sky", self.window), place.get("sun", "#fff4d6")       # what is seen through an open arch
         self.dark = sum(rgb(self.wall)) < 330                               # in a dark room, solid things are a step lighter than the wall, not darker
         self.shade = "#aab3c8" if self.dark else "#2e2a24"
 
@@ -297,6 +315,8 @@ class Painter:
             color = mix(color, self.wall, 0.62)
         under, own = self.floor if on_floor else self.wall, piece.get("color")
         lit = self.window if kind == "window" else mix(under, self.shade, 0.28) if self.dark and kind != "lamp" else "#fffdf6"   # in the dark, only windows and lamps are bright
+        if kind == "arch":                                                  # through an arch you see the sky, whatever the hour
+            lit = self.sky
         for role, path in shapes(kind, piece.get("_w")):
             if self.style == "line":
                 if role == "line":
@@ -321,7 +341,13 @@ class Painter:
                     c.translate(7, 9)
                     c.drawPath(path, paint("#3a332a", 20))                   # cut paper sits a little off the wall
                     c.restore()
-                c.drawPath(path, paint(("#fbf8ef" if not self.dark else mix("#fbf8ef", self.wall, 0.22)) if role == "light" else mix(color, "#3a332a", 0.28) if role == "dark" else color))
+                c.drawPath(path, paint((self.sky if kind == "arch" else "#fbf8ef" if not self.dark else mix("#fbf8ef", self.wall, 0.22)) if role == "light" else mix(color, "#3a332a", 0.28) if role == "dark" else color))
+                if kind == "arch" and role == "light" and piece.get("sun"):  # and, in one of them, the sun: low for evening or morning, high for noon
+                    c.save()
+                    c.clipPath(path, True)
+                    w = piece.get("_w") or 120
+                    c.drawCircle(w * 0.08, -170 - float(piece["sun"]) * 1.25 * w, w * 0.3, paint(self.sun))
+                    c.restore()
             else:                                                           # wash: one hue, a step darker for what is solid, lighter for what is lit
                 if front:
                     c.drawPath(path, paint(mix(self.floor, "#2e2a24", 0.42 if role != "light" else 0.34)) if role != "line" else pen(self.floor, 0, 0))
