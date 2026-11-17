@@ -234,3 +234,38 @@ def frames(root, eid, accept=False, tolerance=2.5):
         both = np.vstack([strip(was[pick]), strip(now[pick])])           # before above, now below
         skia.Image.fromarray(np.ascontiguousarray(both), colorType=skia.kRGBA_8888_ColorType).save(str(png), skia.kPNG)
     return changed, png
+
+
+def beats(root, eid):
+    """An episode's beats on the bar grid, for looking at and for moving: every turn of every scene, with the bar it lands on,
+    how long it needs (`after`: bars from where it lands until the next thing could begin) and how much run-up the next line
+    would need before it (`lead`). A beat can be moved to any bar where `bar >= previous.bar + previous.after + its own lead`,
+    and the last must end by the scene's length. Cards are given as fixed blocks. -> plain data."""
+    from ..script import load_yaml
+    plan, look, cfg = parts(root, eid)
+    show = Show(root).cfg
+    bar_s = 60.0 / float(show["tempo"]) * float(show.get("beats_per_bar", 2))
+    out, at = [], 0.0
+    for p in plan:
+        length = p["frames"] / look.fps / bar_s
+        block = dict(id=p["id"], kind=p["kind"], starts=round(at, 3), bars=round(length, 3), beats=[])
+        if p["kind"] == "scene":
+            score = p["stage"].score
+            per = float(show["steps_per_beat"]) * float(show.get("beats_per_bar", 2))
+            raw = {t.get("id", i + 1): t for i, t in enumerate(load_yaml(score.place and next(s["path"] for s in _segments(root, eid) if s["id"] == p["id"])).get("turns") or [])}
+            for t in score.turns:
+                r = raw.get(t["id"], {})
+                said = r.get("say") or r.get("sing")
+                lands = t["start"] + (t["pause"] if said else 0.0)
+                what = "line" if said else "sound" if r.get("sfx") else "enter" if r.get("enter") else "exit" if r.get("exit") else "move" if r.get("do") else "hold"
+                block["beats"].append(dict(turn=t["id"], bar=round(lands / per, 3), after=round((t["start"] + t["length"] - t["waited"] - lands) / per, 3),
+                                           lead=round(t["pause"] / per, 3) if said else 0.0, kind=what, who=t["who"] or next(iter(r.get("enter") or r.get("do") or {}), None),
+                                           text=str(said or ""), why=t["why"], placed=r.get("bar") is not None))
+        out.append(block)
+        at += length
+    return dict(episode=eid, show=str(Show(root).cfg.get("title") or ""), bar_seconds=round(bar_s, 4), snap=1 / (float(show["steps_per_beat"]) * float(show.get("beats_per_bar", 2))), parts=out)
+
+
+def _segments(root, eid):
+    from ..script import series
+    return series(root).episode(eid)["segments"]

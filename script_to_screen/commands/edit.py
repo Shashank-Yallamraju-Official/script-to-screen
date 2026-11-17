@@ -11,10 +11,10 @@ from ruamel.yaml import YAML
 from ..readers import ledger
 from ..script import ScriptError, rehearsing, series
 from . import Refused
+from ..vocabulary.keys import KNOWN as KNOWN_KEYS
 from . import address
 
-TURN_KEYS = ("id", "who", "say", "sing", "tone", "enter", "exit", "side", "status", "sympathy", "do", "feel", "react", "sfx",
-             "rhythm", "melody", "stress", "pause", "hold", "relies_on", "why")
+TURN_KEYS = KNOWN_KEYS["turn"]                  # declared once, in vocabulary/keys.py
 
 
 def yaml():

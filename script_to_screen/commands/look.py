@@ -92,6 +92,19 @@ def frames(a):
                 exit=FAILED if changed else 0)
 
 
+@command("beats", "An episode's beats on the bar grid: where every turn lands, how long it needs, and how early the next could come. --json gives it as data, for the timeline.",
+         [A("episode", "an episode's id")], "s2s beats the-vote", group="look")
+def beats(a):
+    from ..presentation import readings
+    data = readings.beats(address.show_root(a.show), a.episode)
+    lines = []
+    for p in data["parts"]:
+        lines.append(f"  bar {p['starts']:>6g}  {p['id']}  ({p['bars']:g} bars)")
+        for b in p["beats"]:
+            lines.append(f"      {b['bar']:>6g}  turn {b['turn']:<3} {b['kind']:<6} {(b['who'] or ''):<12} {b['text'] or b['why'][:60]}")
+    return dict(text="\n".join(lines), **data)
+
+
 @command("shots", "Every camera shot in an episode, in order: when, how close, on whom, and why.", [A("episode", "an episode's id")], "s2s shots the-vote", group="look")
 def shots(a):
     from ..presentation import readings

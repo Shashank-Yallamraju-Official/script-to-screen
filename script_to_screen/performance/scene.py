@@ -335,7 +335,7 @@ class Scene:
             length = max([cursor] + [at for at, _ in ops]) + hold
             # the grid: a turn can ask to land on a bar (`bar: 24`), and a scene to be so many bars long (`bars: 32`). Whatever comes
             # before waits the difference, so beats fall where the music's would. A speaking turn's line starts on its bar.
-            turns_raw = self.script.get("turns") or []
+            turns_raw, waited = self.script.get("turns") or [], 0.0
             nxt = turns_raw[i + 1] if i + 1 < len(turns_raw) else None
             asked = nxt.get("bar") if nxt else self.script.get("bars")
             if asked is not None:
@@ -345,7 +345,7 @@ class Scene:
                     self.flag("error", nxt.get("id", i + 2) if nxt else tid, f"asked to {'land on bar' if nxt else 'end at bar'} {asked:g}, but the scene is already at bar {(t0 + length + lead) / self.bar:.2f}: "
                                                                     "shorten a hold before it, or ask for a later bar")
                 else:
-                    hold, length = hold + wait, length + wait
+                    hold, length, waited = hold + wait, length + wait, wait
             snaps = [(0.0, a)]
             for at in sorted({at for at, _ in ops}):
                 for when, fn in ops:
@@ -372,7 +372,7 @@ class Scene:
             if raw.get("through") is not None:       # whoever enters on this turn comes in through the window at that slot (and whatever hangs over it)
                 for e in raw.get("enter") or {}:
                     self.events.append((t0 * sec, f"through:{raw['through']}", e))
-            self.turns.append(dict(id=tid, index=i, start=t0, length=length, who=who, why=str(raw.get("why") or ""),
+            self.turns.append(dict(id=tid, index=i, start=t0, length=length, waited=waited, who=who, why=str(raw.get("why") or ""),
                                    pause=pause, hold=hold, latency=a[who]["latency"] if say else 0, say_at=say_at,
                                    reveal=reveal, react=react if late else 0, line=line, sylls=sylls,
                                    rhythm=raw.get("rhythm"), melody=raw.get("melody"), stress=raw.get("stress"),

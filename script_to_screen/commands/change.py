@@ -112,6 +112,32 @@ def set_why(a):
     return on_turn(a, fn)
 
 
+@command("retime", "Move several of a scene's beats at once: each turn to the bar it should land on (and `bars=N` for the scene's length). Checked together, so beats can swap places.",
+         [A("scene", "the scene"), A("beats", "turn=bar pairs, e.g. 8=24 9=27.68, and optionally bars=32", nargs="+")],
+         "s2s retime the-council 8=24 9=27.68", changes=True, group="change")
+def retime(a):
+    root, path = address.scene(a.scene, a.show)
+
+    def mutate(doc):
+        ch = []
+        for pair in a.beats:
+            k, _, v = pair.partition("=")
+            try:
+                v = float(v)
+            except ValueError:
+                raise Refused(f"'{pair}' is not turn=bar", hint="for example 8=24, or bars=32 for the scene's length")
+            v = int(v) if v == int(v) else round(v, 3)
+            if k == "bars":
+                ch += one(address.of(root, path), "bars", doc.get("bars"), v)
+                doc["bars"] = v
+                continue
+            i, t = edit.find_turn(doc, int(k) if k.isdigit() else k)
+            ch += one(address.of(root, path, t.get("id", i + 1)), "bar", t.get("bar"), v)
+            edit.put(t, "bar", v)
+        return dict(changes=ch)
+    return edit.apply(a, root, path, mutate)
+
+
 @command("put", "Set any one field of a turn to a value written as YAML. For what the named commands do not cover.",
          [TURN, A("field", "one of: " + ", ".join(k for k in edit.TURN_KEYS if k != "id")), A("value", "the value, as YAML; `null` removes the field")],
          "s2s put thermostat:2 do '{juno: {orient: otis}}'", changes=True, group="change")

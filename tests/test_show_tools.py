@@ -96,3 +96,25 @@ def test_a_match_shot_through_the_flag_tears_it_and_lets_light_through():
     assert slot == 4 and age > 0                                     # through the middle window, where the flag hangs
     whole, torn = place.sunlit(stage), place.sunlit(stage, 4.0)
     assert torn.getBounds().width() >= whole.getBounds().width() and torn != whole      # the hole lets a spot of light onto the floor
+
+
+def test_beats_say_where_each_turn_lands_and_how_much_room_it_needs():
+    data = readings.beats(CROWN, "the-vote")
+    scene = data["parts"][0]
+    by = {b["turn"]: b for b in scene["beats"]}
+    assert by[8]["bar"] == 24 and by[8]["kind"] == "line" and by[8]["lead"] > 0
+    for a, b in zip(scene["beats"], scene["beats"][1:]):             # as written, every beat can play
+        assert b["bar"] >= a["bar"] + a["after"] + b["lead"] - 1e-6
+
+
+def test_retime_moves_several_beats_together_and_refuses_what_cannot_play(tmp_path):
+    import shutil
+    from script_to_screen.commands import run
+    root = tmp_path / "crown"
+    shutil.copytree(CROWN, root, ignore=shutil.ignore_patterns("out"))
+    assert run(["retime", "the-council", "7=19", "8=23", "--show", str(root)]) == 0
+    from script_to_screen.performance.scene import Scene
+    sc = Scene(root / "episodes" / "e01" / "01-the-council.yaml")
+    spoken = {t["id"]: (t["start"] + t["pause"]) / sc.bar for t in sc.turns if t["who"]}
+    assert spoken[7] == 19 and spoken[8] == 23
+    assert run(["retime", "the-council", "8=20.5", "--show", str(root)]) != 0       # on top of the line before it
