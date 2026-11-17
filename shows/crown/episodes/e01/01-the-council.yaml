@@ -55,12 +55,10 @@ turns:
     hold: 6
   - id: 12
     do: {match: {posture: lean_in}}
-    camera: {"on": match, zoom: 2.4}       # the one close shot in the scene
     why: It tips, strikes its head, and is alight.
     hold: 7
   - id: 13
-    camera: wide
-    why: Back to the whole room. It swells, slowly, and nobody moves.
+    why: It swells, slowly, and nobody moves.
     hold: 22
   - id: 14
     sfx: [{at: 0, sound: blast, on: match}]

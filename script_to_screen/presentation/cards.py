@@ -311,12 +311,60 @@ class Travel:
         self.a, self.b = before, after                               # {day, at: the place on the land} for the scene before and the scene after
         self.last, self.first = last, first                           # their last and first frames, as images (last is None after a card)
         self.days = max(0, int(after["day"]) - int(before["day"]))
-        self.lapse = 0.0 if not self.days else min(7.0, 2.5 + 0.8 * math.log10(self.days + 1) * 2)
+        self.lapse = 0.0 if not self.days else min(10.0, 4.0 + 2.4 * math.log10(self.days + 1))
         self.lead = (self.TIP + self.RISE) if last is not None else 0.8
         self.seconds = self.lead + self.lapse + self.RISE + self.TIP
 
-    def sound(self):
-        return np.zeros(int(self.seconds * music.RATE))
+    def sound(self):                                                 # the anthem's low figure keeps going under it, and rings on into the next scene
+        return anthem.bed(self.seconds) * min(1.0, float(self.look.feel.get("music_volume", 0.6)) * 1.5)
+
+    def _clock(self, t):
+        """The time at `t`, in days (1.5 = noon on day 1). It leaves at dusk and arrives in the morning, slow at both ends and fast
+        between, so the first and last days can be watched and the ones between go by in a blur."""
+        d0, d1 = self.a["day"] + 0.72, self.b["day"] + 0.3
+        k = min(1.0, max(0.0, (t - self.lead) / self.lapse)) if self.lapse else 1.0
+        e = 0.5 * (2 * k) ** 3 if k < 0.5 else 1 - 0.5 * (2 - 2 * k) ** 3
+        return d0 + (d1 - d0) * e
+
+    def _sky(self, c, t, strength):
+        """The sun and the moon over the land, and its light on it. The sun rises in the east (the right) at a quarter of the way
+        through a day and sets in the west; the moon has the other half. When days go by faster than a frame can show, both smear
+        into arcs and the light evens out, as in any time-lapse."""
+        W, H = self.look.W, self.look.H
+        now, was = self._clock(t), self._clock(t - 1 / self.look.fps)
+        span = now - was
+        span += (1 - span) * min(1.0, max(0.0, (span - 0.03) / 0.12)) if span < 1 else 0.0      # once days go by several a second, show the whole day at once: no flicker
+        span = min(span, 1.0)
+        n = 1 if span < 0.004 else 40
+        horizon, light, lean, bodies = H * 0.35, 0.0, 0.0, []
+        for i in range(n):
+            f = (now - span + span * (i + 1) / n) % 1.0
+            up = math.sin(2 * math.pi * (f - 0.25))                  # the sun's height: above the horizon from 0.25 to 0.75
+            for body, h, ph in (("sun", up, (f - 0.25) % 1.0 * 2), ("moon", -up, (f - 0.75) % 1.0 * 2)):
+                if h <= -0.12:
+                    continue
+                bodies.append((body, W * (0.86 - 0.72 * ph), horizon + 26 - h * H * 0.27, 255 * strength / n ** 0.6))
+            day = smooth((up + 0.12) / 0.4)
+            light += (0.34 + 0.66 * day) / n                           # full by day; a third of it by moonlight
+            lean += (0.86 - 0.72 * ((f - 0.25) % 1.0 * 2 if up > 0 else (f - 0.75) % 1.0 * 2) - 0.5) / n      # which side the light is on
+        dim = (1 - light) * strength
+        if dim > 0.004:                                               # the land under it: darker and bluer by night, and darkest on the side away from the light
+            near, far = place_mix("#ffffff", "#3346c8", dim * 0.8), place_mix("#ffffff", "#3346c8", min(1.0, dim * 1.15))
+            a, b = (near, far) if lean < 0 else (far, near)
+            c.drawRect(skia.Rect.MakeWH(W, H), skia.Paint(BlendMode=skia.BlendMode.kMultiply, Shader=skia.GradientShader.MakeLinear(
+                [skia.Point(0, 0), skia.Point(W, 0)], [col(a), col(b)])))
+        dusk = 0.0 if n > 1 else max(0.0, 1 - abs(math.sin(2 * math.pi * (now % 1.0 - 0.25))) / 0.35)
+        if dusk * strength > 0.004:                                   # and gold when the sun is on the horizon
+            c.drawRect(skia.Rect.MakeWH(W, H), skia.Paint(BlendMode=skia.BlendMode.kMultiply, Color=col(place_mix("#ffffff", "#f2b25a", 0.45 * dusk * strength))))
+        c.save()
+        c.clipRect(skia.Rect.MakeWH(W, horizon))                      # they come up from behind the far edge of the land
+        for body, x, y, a in bodies:
+            if body == "sun":
+                c.drawCircle(x, y, 30, fill("#ffe9a0", a * 0.35))
+                c.drawCircle(x, y, 20, fill("#fff6d0", a))
+            else:
+                c.drawCircle(x, y, 17, fill("#dfe6ff", a))
+        c.restore()
 
     def _tipped(self, c, image, k):
         """A scene's frame, `k` of the way over from standing in front of us (0) to lying under us (1)."""
@@ -338,22 +386,25 @@ class Travel:
         t1 = self.lead                                                # the days start to pass
         t2 = t1 + self.lapse                                          # the camera sets off for the next place
         t3 = t2 + self.RISE                                           # it is over the place: the scene stands up
-        day = self.a["day"] + self.days * smooth((t - t1) / self.lapse) if self.lapse else self.b["day"]
+        day = self._clock(t)
         if t < t1 and self.last is not None:
             k = (t - self.TIP * 0.5) / (self.RISE + self.TIP * 0.5)
             self.land.draw(c, 500 + t, mix((ax, ay, close), whole, k), smooth(k), day, False)
+            self._sky(c, t, smooth(k) ** 2)
             if t < self.TIP:
                 self._tipped(c, self.last, t / self.TIP)
         elif t < t2:
             self.land.draw(c, 500 + t, whole, 1.0, day, False)
+            self._sky(c, t, 1.0)
         else:
             k = (t - t2) / (self.RISE + self.TIP * 0.5)
             self.land.draw(c, 500 + t, mix(whole, (bx, by, close), k), 1 - smooth(k), day, False)
+            self._sky(c, t, (1 - smooth(k)) ** 2)
             if t > t3:
                 self._tipped(c, self.first, 1 - (t - t3) / self.TIP)
         if self.days:                                                 # the count of days, while they pass
             a = smooth((t - t1 + 0.6) / 0.5) * (1 - smooth((t - t2 - 0.9) / 0.6))
-            c.drawString(f"Day {int(round(day))}", 70, self.look.H - 62, font(28), fill(self.land.PALE, 255 * a))
+            c.drawString(f"Day {int(day)}", 70, self.look.H - 62, font(28), fill(self.land.PALE, 255 * a))
 
 
 class Caption:

@@ -129,6 +129,40 @@ def _piece():
     return np.tanh(out / np.max(np.abs(out)) * 1.4) * 0.8
 
 
+def bed(seconds, ring=3.2):
+    """The anthem's low figure alone, going round its chords, for `seconds`: what plays under a journey over the land. It comes up
+    from nothing over its first bar, and ends on the bare last chord, held and let go slowly, so it rings on into whatever follows."""
+    n = int((seconds + ring + 0.5) * RATE)
+    track = np.zeros(n)
+
+    def put(at, x, gain=1.0):
+        i = int(at * RATE)
+        if 0 <= i < n:
+            track[i:i + len(x)] += x[: n - i] * gain
+
+    bars = int(seconds / BAR)
+    for bar in range(bars):
+        k = bar % 8
+        steps = [0, 7, 9 if MAJOR[k] else 8, 7, 0, 7]
+        for j, s in enumerate(steps):
+            put(bar * BAR + j * E, struck(_hz(ROOTS[k] + s - 12), 0.6 * (1.0 if j in (0, 3) else 0.7)))
+        put(bar * BAR, drum(0.45))
+        put(bar * BAR, voices(_hz(ROOTS[k]), BAR * 0.95, 0.22))
+        put(bar * BAR, voices(_hz(ROOTS[k] + 7), BAR * 0.95, 0.16))
+    last = bars * BAR                                                # the last chord: root and fifth, let go slowly
+    for s, v in ((-24, 0.7), (-12, 0.7), (-5, 0.45), (0, 0.5), (7, 0.35)):
+        put(last, bowed(_hz(s), max(0.4, seconds - last) + ring * 0.4, v * 0.45, attack=0.08, release=ring * 0.6, dull=1.3))
+    put(last, drum(0.4))
+    t = np.arange(n) / RATE
+    track *= np.clip(t / BAR, 0, 1) ** 1.5
+    rng = np.random.default_rng(5)
+    m = int(1.6 * RATE)
+    room = np.convolve(rng.standard_normal(m), np.ones(6) / 6, mode="same") * np.exp(-np.arange(m) / RATE / 0.42)
+    out = track + 0.3 * fftconvolve(track, room / np.sqrt(np.sum(room ** 2)), mode="full")[:n]
+    out[-int(0.4 * RATE):] *= np.linspace(1, 0, int(0.4 * RATE))
+    return np.tanh(out / np.max(np.abs(out)) * 1.2) * 0.62
+
+
 def render(seconds):
     """The anthem as samples, `seconds` long (plus its tail). Shorter than the piece, it is faded out early."""
     piece = _piece()
