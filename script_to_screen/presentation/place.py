@@ -410,6 +410,11 @@ def prepare(place, W):
     return layers
 
 
+def shade_of(place):
+    """The colour of a cast shadow in this place: its own `shade:` if it gives one, else its cool shadow colour, darkened."""
+    return place.get("shade") or mix(place.get("shadow") or "#120c14", "#120c14", 0.45)
+
+
 SHADE = 0.5                                   # how dark a cast shadow is, at full light
 
 
@@ -486,8 +491,13 @@ def _paint_behind(c, stage, cam):
         if lamp and name == "wall" and float(lamp.get("cast", 0)):          # the sun is behind the wall: the floor is in the wall's shade, but for what comes through the arches
             cast = float(lamp["cast"])
             lean = (0.5 if lamp.get("side", "left") == "left" else -0.5) * cast
-            r, g, b = rgb(mix(place.get("shadow") or "#120c14", "#120c14", 0.45))
+            r, g, b = rgb(shade_of(place))
             floor = skia.Rect.MakeLTRB(-stage.W, base, 2 * stage.W, 1.35 * stage.H)
+            if lamp.get("warm"):                                            # where the light lands it takes the light's colour: sun on a green floor is gold, not green
+                c.save()
+                c.clipRect(floor)
+                c.drawPath(sunlit(stage), paint(lamp.get("color", "#f6c26b"), 255 * float(lamp["warm"])))
+                c.restore()
             c.saveLayer(floor, skia.Paint(Alphaf=SHADE * float(lamp.get("strength", 0.7)),
                                          ColorFilter=skia.ColorFilters.Blend(skia.Color(r, g, b), skia.BlendMode.kSrcIn)))
             c.clipRect(floor)
