@@ -288,7 +288,7 @@ A show whose cast are objects (seals, matches, padlocks) with no faces, held in 
 |---|---|---|
 | Object bodies, outfits and per-character variations; an `Inked` canvas that draws a line round every solid shape | `presentation/bodies.py` | the entity sheet: `body`, `outfit`, `climbs`, ... |
 | A room's light, cast shadows, raised bench, drawn outlines, open arches and sky | `presentation/place.py` (the room), `presentation/draw.py` (`seat`, `light`, `swell`, `bench_front`, `fireball`) | the place file: `light`, `shadow`, `ink`, `bench`, `sky` |
-| The land: the title sequence over it, and travel between scenes by way of it | `presentation/land.py` (`Land`, `Travel`) | `land.yaml` (`places`, `history`, `camera`), each scene's `day:` in series.yaml, each place's `land:` |
+| The land: the title sequence over it, and travel between scenes by way of it | `presentation/land.py` (`Land`, `Travel`) | `land.yaml` (`places`, `history`, `camera`), each scene's `day:` in series.yaml, each place's `land:`. A title sequence between two scenes plays the days between them: the land changes as `history` says (`ruin`, `ring`, `reach`, `flags`, each gradual with `over:`), under a sun and moon; the travel card after it only comes down |
 | The anthem and the bed that plays under travel | `presentation/anthem.py` | `library/music.yaml: theme: anthem` |
 | Rendering an episode part by part | `presentation/episode.py` | see below |
 

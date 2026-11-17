@@ -70,7 +70,8 @@ def parts(root, eid):
         if sg["kind"] == "card" and sg["card"] == "travel":           # between two scenes, by way of the land
             before = next(s for s in reversed(segs[:n]) if s["kind"] == "scene")
             after = next(s for s in segs[n + 1:] if s["kind"] == "scene")
-            card = land.Travel(the_land(), where(before), where(after), frame_of(before, -1) if segs[n - 1] is before else None, frame_of(after, 0))
+            titled = segs[n - 1].get("card") == "title" and land_file.exists()      # the days already passed during the title sequence: this only comes down
+            card = land.Travel(the_land(), where(after) if titled else where(before), where(after), frame_of(before, -1) if segs[n - 1] is before else None, frame_of(after, 0))
             out.append(dict(id=sg["id"], kind="travel", frames=round(card.seconds * look.fps), draw=lambda c, F, card=card: card.draw(c, F / look.fps), sound=card.sound))
         elif sg["kind"] == "scene":
             st = stages[sg["id"]]
@@ -82,6 +83,9 @@ def parts(root, eid):
                     else cards.Title(look, show.cfg, episode, cast, step, cfg["title_seconds"]) if sg["card"] == "title"
                     else cards.Caption(look, sg.get("text"), sg.get("seconds")) if sg["card"] == "caption"
                     else cards.Credits(look, show.cfg, episode, cast, sheets, step, cfg["credits_seconds"]))
+            if sg["card"] == "title" and land_file.exists():           # between two scenes, the days from one to the other pass during it
+                around = [next((s for s in seq if s["kind"] == "scene" and s.get("day") is not None), None) for seq in (reversed(segs[:n]), segs[n + 1:])]
+                card.span = (int(around[0]["day"]), int(around[1]["day"])) if all(around) else None
             out.append(dict(id=sg["id"], kind=sg["card"], frames=round(card.seconds * look.fps), draw=lambda c, F, card=card: card.draw(c, F / look.fps),
                             sound=card.sound))
         out[-1]["into"] = sg.get("into") or ("cut" if sg["kind"] == "scene" and n and segs[n - 1].get("card") == "travel" else cfg["transition"])
@@ -199,7 +203,8 @@ def rhythm(root, eid):
     for b in range(1, n + 1):                                        # a flat stretch: the level of both stays within a narrow band
         band = lambda v: max(v[start:b]) - min(v[start:b])
         if b == n or band(loud + [loud[min(b, n - 1)]]) > 0.22 or band(move + [move[min(b, n - 1)]]) > 0.25:
-            if b - start >= 12:
+            scene_at = lambda q: any(p["kind"] == "scene" and p["starts"] <= q < p["starts"] + p["bars"] for p in out_parts)
+            if b - start >= 12 and scene_at(start) and scene_at(b - 1):      # in a scene: a card is carried by its music
                 flats.append(dict(starts=start, bars=b - start))
             start = b
     W, H, pad = 1600, 460, 50

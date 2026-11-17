@@ -5,39 +5,48 @@ bars: 20
 # The model's colours: a gold sheet on a deep indigo table, with a blue wall and bright cogs.
 palette: {table: "#17194d", sheet: "#f4e3a0", dark: "#d9b765", iron: "#4a5fc4", brass: "#f0a83a", inked: "#3f9d4a", pale: "#fffbe0"}
 title_bar: 18
-credit: {role: Created by, name: Shashank Yallamraju, from: 14.5, to: 17}
+credit: {role: Created by, name: Shashank Yallamraju, from: 9.5, to: 12.5}
 places:
-  signet: {at: [460, 262], entity: great-seal, color: "#c8324e", at_bar: 0.4, crown: true, smoke: true}      # the crown: it has just burned
+  signet: {at: [460, 262], entity: great-seal, color: "#c8324e", at_bar: -3, crown: true}                   # the crown
   lode:   {at: [460, 132], entity: long-needle, at_bar: 2.2}
   mallet: {at: [236, 330], entity: sledge, color: "#e0952f", at_bar: 4.4}
-  hasp:   {at: [700, 446], entity: heavy-lock, color: "#3f6fd0", at_bar: 7.6}
-  rue:    {at: [350, 446], entity: eraser, at_bar: 10.2}
-  bout:   {at: [168, 446], entity: old-pair, at_bar: 10.8}
-  cinder: {at: [460, 740], entity: match, at_bar: 13.6}
+  hasp:   {at: [700, 446], entity: heavy-lock, color: "#3f6fd0", at_bar: 8.2}
+  rue:    {at: [350, 446], entity: eraser, at_bar: 9.8}
+  bout:   {at: [168, 446], entity: old-pair, at_bar: 10.3}
+  cinder: {at: [460, 740], entity: match, at_bar: 11.6}
   plumb:  {at: [258, 620], entity: heavy-bob}
   brim:   {at: [404, 580], entity: deep-cup}
   whirl:  {at: [700, 590], entity: heavy-top}
   glass:  {at: [778, 750], entity: glass-one}
-# What changes on the land, and on which day. A travel card between two scenes plays these as the days pass.
+# What changes on the land, and on which day. When the title sequence sits between two scenes it plays these as the days between
+# them pass. `over: N` means it takes N days. Each follows from what the houses are:
+#   Mallet restores, so its colour reaches the crown first and the crown is rebuilt.
+#   Hasp locks down, so its colour reaches the crown next and a wall is closed round it.
 history:
-  - {day: 1, signet: {smoke: true}}                                   # the crown burns
+  - {day: 1, signet: {smoke: true, ruin: 1}}                          # the crown has burned
+  - {day: 4, over: 34, reach: [mallet, signet]}                       # Mallet sets out for it
+  - {day: 20, over: 40, reach: [hasp, signet]}                        # and Hasp
   - {day: 30, signet: {smoke: false}}                                 # it is out
-  - {day: 100, signet: {flags: [mallet, signet, hasp]}}               # rebuilt, under three flags
+  - {day: 38, over: 47, signet: {ruin: 0}}                            # rebuilt as it was: Mallet's work
+  - {day: 100, over: 12, signet: {ring: 1}}                           # a wall closed round it: Hasp's
+  - {day: 114, signet: {flags: [mallet, signet, hasp]}}               # three flags
 roads:                       # [from, to, the bar it starts to draw]
   - [signet, lode, 1]
   - [lode, [460, 0], 2]
   - [signet, mallet, 3]
   - [signet, hasp, 5]
   - [mallet, hasp, 5.5]
-wall: {y: 446, spans: [[0, 132], [386, 656], [744, 920]], breach: [206, 314], from: 6.5, to: 10.5}
+wall: {y: 446, spans: [[0, 132], [386, 656], [744, 920]], breach: [206, 314], from: 7.5, to: 10.5}
 camera:                      # [bar, x, y, zoom]: the place on the sheet the camera looks at, and how close
-  - [0, 460, 250, 2.2]
+  - [0, 460, 255, 2.2]        # over the crown, burning
   - [2, 460, 215, 1.9]
-  - [3.2, 460, 150, 1.9]
-  - [5.6, 250, 330, 1.9]
-  - [8.6, 690, 440, 1.8]
-  - [11.4, 260, 450, 1.8]
-  - [12.6, 300, 560, 1.7]
-  - [14.6, 460, 730, 2.0]
+  - [3.2, 460, 150, 1.9]      # Lode
+  - [5.2, 250, 330, 1.9]      # Mallet, as its colour sets out
+  - [7.2, 460, 275, 1.9]      # back along the road with it, to the crown: the scaffolding is going up
+  - [9, 690, 440, 1.8]        # on to Hasp
+  - [10.6, 280, 450, 1.8]     # along the wall: Rue, Bout
+  - [12.2, 460, 720, 1.9]     # Cinder, where it came from
+  - [13.8, 460, 285, 1.8]     # and back to the crown: the wall closes round it, the flags go up
+  - [15.8, 460, 285, 1.7]
   - [17.6, 460, 520, 0.92]
   - [20, 460, 500, 0.88]

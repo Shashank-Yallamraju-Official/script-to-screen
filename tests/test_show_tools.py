@@ -29,20 +29,27 @@ def test_an_inked_canvas_draws_a_line_round_a_solid_shape_and_not_round_a_shine(
     assert surf2.toarray(colorType=skia.kRGBA_8888_ColorType)[20, 30][3] < 200                   # a see-through shape gets no line
 
 
-def test_travel_leaves_at_dusk_and_arrives_in_the_morning_of_the_next_scenes_day():
+def test_the_days_between_two_scenes_pass_during_the_title_sequence():
     plan, look, cfg = episode.parts(CROWN, "the-vote")
-    card = next(p for p in plan if p["kind"] == "travel")["draw"].__defaults__[0]
-    first, last = card._clock(0.0), card._clock(card.seconds)
+    title = next(p for p in plan if p["kind"] == "title")["draw"].__defaults__[0]
+    assert title.span == (1, 120)
+    first, last = title._clock(0.0), title._clock(title.seconds)
     assert int(first) == 1 and 0.5 < first % 1 < 1.0                # the evening of day 1
     assert int(last) == 120 and 0.25 < last % 1 < 0.5               # the morning of day 120
-    assert all(card._clock(t + 0.1) >= card._clock(t) for t in np.arange(0, card.seconds, 0.1))      # time never runs backwards
+    assert all(title._clock(t + 0.1) >= title._clock(t) for t in np.arange(0, title.seconds, 0.1))      # time never runs backwards
+    travel = next(p for p in plan if p["kind"] == "travel")["draw"].__defaults__[0]
+    assert travel.days == 0                                          # so the travel card after it only comes down
 
 
-def test_the_land_changes_on_the_days_its_history_says():
+def test_the_land_changes_as_its_history_says():
     plan, look, cfg = episode.parts(CROWN, "the-vote")
-    land = next(p for p in plan if p["kind"] == "travel")["draw"].__defaults__[0].land
-    assert land.places(5)["signet"].get("smoke") and not land.places(5)["signet"].get("flags")
-    assert not land.places(110)["signet"].get("smoke") and land.places(110)["signet"]["flags"] == ["mallet", "signet", "hasp"]
+    land = next(p for p in plan if p["kind"] == "title")["draw"].__defaults__[0]
+    early, mid, late = (land.places(d)["signet"] for d in (5, 60, 118))
+    assert early.get("smoke") and early["ruin"] == 1 and not early.get("flags")
+    assert not mid.get("smoke") and 0 < mid["ruin"] < 1              # being rebuilt
+    assert late["ruin"] == 0 and late["ring"] == 1 and late["flags"] == ["mallet", "signet", "hasp"]
+    reach = {a: k for a, b, k in land.reaches(30)}
+    assert reach["mallet"] > reach["hasp"] > 0                       # Mallet set out first
 
 
 def test_the_council_scene_is_one_held_wide_shot():
@@ -76,4 +83,4 @@ def test_a_turn_lands_on_the_bar_it_asks_for_and_a_scene_is_as_long_as_it_says()
 def test_every_part_of_the_episode_is_a_whole_number_of_bars():
     plan, look, cfg = episode.parts(CROWN, "the-vote")
     bar = 60 / 84 * 2
-    assert [round(p["frames"] / look.fps / bar, 1) for p in plan] == [32.0, 20.0, 10.0, 40.0, 20.0]
+    assert [round(p["frames"] / look.fps / bar, 1) for p in plan] == [32.0, 20.0, 4.0, 40.0, 20.0]
