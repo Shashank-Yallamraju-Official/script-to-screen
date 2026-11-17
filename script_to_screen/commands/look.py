@@ -43,10 +43,28 @@ def sheet(a):
     return dict(file=str(png), frames=[address.of(root, path, t["id"]) for t in sc.turns], text=str(png))
 
 
+@command("moments", "A contact sheet of an episode at the moments you name (seconds), or one frame every so often. With --part, times count from that part's start.",
+         [A("episode", "an episode's id"), A("times", "seconds into the episode (or the part)", nargs="*", type=float), A("--every", "one frame every this many seconds", type=float),
+          A("--part", "a segment's id: look at just that part"), A("--cols", "frames per row", type=int, default=4)],
+         "s2s moments the-vote --part months-later --every 1", group="look")
+def moments(a):
+    from ..presentation import episode
+    root = address.show_root(a.show)
+    if not a.times and not a.every:
+        raise Refused("no moments named", hint="give times in seconds, or --every <seconds>")
+    try:
+        png = episode.sheet(root, a.episode, a.times, a.every, a.part, a.cols)
+    except ValueError as e:
+        raise Refused(str(e))
+    return dict(file=str(png), text=str(png))
+
+
 @command("render", "Render to video: one scene, an episode (its scenes, title card and credits as one film), or everything. Refuses while the show has errors.",
          [A("scene", "a scene", nargs="?"), A("--episode", "an episode's id, e.g. s01e01: render it as one film"), A("--all", "every scene", action="store_true"),
-          XRAY, A("--slate", "label every frame with its turn and step", action="store_true")],
-         "s2s render --episode s01e01", group="look")
+          XRAY, A("--slate", "label every frame with its turn and step", action="store_true"),
+          A("--draft", "with --episode: a quick look, not for showing. Half size, half the frames, no outlines on bodies", action="store_true"),
+          A("--only", "with --episode: just this stretch, in seconds, e.g. 30-48")],
+         "s2s render --episode s01e01 --draft", group="look")
 def render(a):
     if a.scene:
         root, path = address.scene(a.scene, a.show)
@@ -64,7 +82,8 @@ def render(a):
                     text="not rendered: fix these first\n" + "\n".join(f"  {p['scene']}" + (f":{p['turn']}" if p.get("turn") is not None else "") + f"  {p['msg']}" for p in problems if p["level"] == "error"))
     if a.episode:                                                # one film: scenes and cards in order, joined by transitions, one soundtrack
         from ..presentation import episode
-        film, made = episode.render(root, a.episode)
+        only = tuple(float(x) for x in a.only.split("-")) if a.only else None
+        film, made = episode.render(root, a.episode, only, a.draft)
         return dict(file=str(film), parts=made, problems=problems, seconds=round(sum(m["seconds"] for m in made), 1),
                     text="\n".join([f"warn: {p['scene']}: {p['msg']}" for p in problems] + [f"  {m['seconds']:>5}s  {m['kind']:<8} {m['id']}" for m in made]
                                    + [f"{film} {round(sum(m['seconds'] for m in made), 1)}s"]))

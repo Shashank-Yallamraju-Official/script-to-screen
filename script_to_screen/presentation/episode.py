@@ -89,25 +89,64 @@ def parts(root, eid):
     return out, look, cfg
 
 
-def render(root, eid, only=None):
-    """Render an episode to out/<episode>.mp4. `only` = (first, last) seconds renders just that stretch, for looking at a join."""
+def sheet(root, eid, times=None, every=None, part=None, cols=4, wide=480):
+    """A contact sheet of an episode: one small labelled frame for each of `times` (seconds), or one every `every` seconds.
+    With `part` (a segment's id) the times are counted from that part's start, and `every` covers just that part.
+    -> the PNG's path. The quick way to look at chosen moments without rendering the film."""
+    from . import bodies
+    from .draw import INK, fill, font
+    plan, look, cfg = parts(root, eid)
+    fps, starts, at = look.fps, {}, 0
+    for p in plan:
+        starts[p["id"]] = at
+        at += p["frames"]
+    if part and part not in starts:
+        raise ValueError(f"no part called '{part}' in {eid}; the parts are: " + ", ".join(starts))
+    first, length = (starts[part], next(p["frames"] for p in plan if p["id"] == part)) if part else (0, at)
+    if every:
+        times = [k * float(every) for k in range(int(length / fps / float(every)) + 1)]
+    frames = [min(at - 1, first + round(float(t) * fps)) for t in times or [0]]
+    scale = wide / look.W
+    w, h = wide, round(look.H * scale)
+    rows = (len(frames) + cols - 1) // cols
+    out, one = skia.Surface(cols * w, rows * (h + 22)), skia.Surface(look.W, look.H)
+    out.getCanvas().clear(col(PAPER))
+    for i, G in enumerate(frames):
+        p = next(q for q in reversed(plan) if starts[q["id"]] <= G)
+        p["draw"](one.getCanvas(), G - starts[p["id"]])
+        c, x, y = out.getCanvas(), (i % cols) * w, (i // cols) * (h + 22)
+        c.drawImageRect(one.makeImageSnapshot(), skia.Rect.MakeXYWH(x, y, w, h), skia.SamplingOptions(skia.FilterMode.kLinear))
+        c.drawString(f"{G / fps:.1f}s  {p['id']} +{(G - starts[p['id']]) / fps:.1f}s", x + 6, y + h + 16, font(13, mono=True), fill(INK))
+    png = root / "out" / f"{eid}_moments.png"
+    png.parent.mkdir(parents=True, exist_ok=True)
+    out.makeImageSnapshot().save(str(png), skia.kPNG)
+    return png
+
+
+def render(root, eid, only=None, draft=False):
+    """Render an episode to out/<episode>.mp4. `only` = (first, last) seconds renders just that stretch, for looking at a join.
+    `draft` is for checking, not for showing: half the size, half the frames, and no drawn outline on bodies, to out/<episode>.draft.mp4."""
+    from . import bodies
+    bodies.OUTLINES = not draft
     plan, look, cfg = parts(root, eid)
     W, H, fps = look.W, look.H, look.fps
-    out = root / "out" / f"{eid}.mp4"
+    out = root / "out" / (f"{eid}.draft.mp4" if draft else f"{eid}.mp4")
+    k_size, k_time = (0.5, 2) if draft else (1.0, 1)
     out.parent.mkdir(parents=True, exist_ok=True)
     silent, wav, tmp = out.with_suffix(".silent.mp4"), out.with_suffix(".wav"), out.with_suffix(".part.mp4")
     half = max(1, round(float(cfg["transition_seconds"]) * fps / 2))
     total = sum(p["frames"] for p in plan)
     lo, hi = (0, total) if only is None else (max(0, round(only[0] * fps)), min(total, round(only[1] * fps)))
-    ff = subprocess.Popen(["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgba", "-s", f"{W}x{H}", "-r", str(fps), "-i", "-",
+    ff = subprocess.Popen(["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgba", "-s", f"{int(W * k_size)}x{int(H * k_size)}", "-r", str(fps / k_time), "-i", "-",
                            "-c:v", "libx264", "-crf", "18", "-preset", "veryfast", "-pix_fmt", "yuv420p", str(silent)], stdin=subprocess.PIPE)
-    surface = skia.Surface(W, H)
+    surface = skia.Surface(int(W * k_size), int(H * k_size))
+    surface.getCanvas().scale(k_size, k_size)
     paper, last, at = skia.Paint(Color=col(PAPER)), None, 0
     for k, part in enumerate(plan):
         into, out_of = part["into"], (plan[k + 1]["into"] if k + 1 < len(plan) else "dip")
         for F in range(part["frames"]):
             G = at + F
-            if not lo <= G < hi:
+            if not lo <= G < hi or G % k_time:
                 continue
             c = surface.getCanvas()
             part["draw"](c, F)
@@ -120,7 +159,7 @@ def render(root, eid, only=None):
                 paper.setAlphaf(veil * veil * (3 - 2 * veil))
                 c.drawRect(skia.Rect.MakeWH(W, H), paper)
             if into == "fade" and last is not None and F < 2 * half:   # the part before dissolves into this one
-                c.drawImage(last, 0, 0, skia.SamplingOptions(), skia.Paint(Alphaf=1 - (F + 1) / (2 * half)))
+                c.drawImageRect(last, skia.Rect.MakeWH(W, H), skia.SamplingOptions(skia.FilterMode.kLinear), skia.Paint(Alphaf=1 - (F + 1) / (2 * half)))
             ff.stdin.write(surface.toarray(colorType=skia.kRGBA_8888_ColorType).tobytes())
         if k + 1 < len(plan) and plan[k + 1]["into"] == "fade":
             part["draw"](surface.getCanvas(), part["frames"] - 1)

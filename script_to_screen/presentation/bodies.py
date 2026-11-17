@@ -323,6 +323,9 @@ def _outfit(c, k, ent, body, v):
             c.drawPath(_poly((side * 3, top), (side * (ht * 0.9), top), (side * (ht * 0.9 + (hh - ht) * 0.45), top + (hem - top) * 0.5), (side * 6, top + (hem - top) * 0.5)), k.fill(trim))
 
 
+OUTLINES = True                                                  # a draft render turns the drawn outline on bodies off: it is the slowest thing in a frame
+
+
 def draw_body(c, ent, o, t, x, y, blur=0.0):
     """Draw entity `ent` as its body, standing at (x, y), in pose `o` at time `t`."""
     body = ent["body"]
@@ -336,7 +339,7 @@ def draw_body(c, ent, o, t, x, y, blur=0.0):
     c.save()
     c.translate(x, y)
     lit = o.get("lit")                                                   # (side the light comes from, how strong, its colour)
-    edge = o.get("ink")                                                  # an inked show: the whole body gets a drawn outline
+    edge = o.get("ink") if OUTLINES else None                                                  # an inked show: the whole body gets a drawn outline
     if lit or edge:
         outline = None
         if edge:
