@@ -104,6 +104,8 @@
   #takelist div { display: flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 5px; border: 1px solid var(--line); cursor: pointer; font-size: 12px; }
   #takelist div.here { border-color: #5e6ad2; } #takelist div span { flex: 1; } #takelist div b { font-weight: 400; color: #7f8590; padding: 0 2px; }
   #takelist input { all: unset; padding: 3px 8px; border: 1px solid var(--line); border-radius: 5px; font-size: 12px; color: var(--text); user-select: text; }
+  .kf { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; transform: rotate(45deg); background: #5e6ad2; border: 1px solid #aab1ee; box-sizing: border-box; cursor: ew-resize; z-index: 3; }
+  .kf.on { background: #fff; }
   .lv { position: absolute; width: 9px; height: 9px; margin: -5px 0 0 -5px; border-radius: 50%; background: #fff; border: 2px solid #c4871f; box-sizing: border-box; cursor: grab; z-index: 3; }
   .mark { position: absolute; top: 0; bottom: 0; background: #5e6ad21f; border-left: 1px solid #5e6ad2; border-right: 1px solid #5e6ad2; pointer-events: none; z-index: 1; }
   .wav { position: absolute; left: 0; pointer-events: none; }
@@ -164,6 +166,7 @@ const ICON = {
   pause: '<svg viewBox="0 0 16 16"><path d="M5 3v10M11 3v10" stroke-width="2.4"/></svg>',
   turns: '<svg viewBox="0 0 16 16"><rect x="2" y="4" width="5" height="8" rx="1"/><rect x="9" y="4" width="5" height="8" rx="1"/></svg>',
   say: '<svg viewBox="0 0 16 16"><path d="M3 3h10v7H8l-3 3v-3H3z"/></svg>',
+  cam: '<svg viewBox="0 0 16 16"><rect x="2" y="5" width="8.5" height="7" rx="1"/><path d="m10.5 8 3.5-2v6l-3.5-2"/></svg>',
   wave: '<svg viewBox="0 0 16 16"><path d="M2 8v0M4.5 6v4M7 3.5v9M9.5 5.5v5M12 7v2M14 8v0"/></svg>',
   roll: '<svg viewBox="0 0 16 16"><path d="M6 12.5V4l7-1.5V11"/><circle cx="4.2" cy="12.5" r="1.8"/><circle cx="11.2" cy="11" r="1.8"/></svg>',
   feel: '<svg viewBox="0 0 16 16"><path d="M2 12c2 0 2-8 4-8s2 8 4 8 2-5 4-5"/></svg>',
@@ -249,6 +252,7 @@ function build() {
     ['turns', ICON.turns, 'Turns: hover one to read why it happens. Drag its right edge to change how long it holds.', ROW],
     ...S.entities.map(e => [e.id, `<i style="background:${e.color}"></i>`, `${e.id}${e.kind ? ' (' + e.kind + ')' : ''}: what it feels. Filled pips show; hollow pips are held in. A diamond is a reaction in passing; an outlined box is a reaction that holds the scene.`, ROW]),
     ['say', ICON.say, S.bar ? 'Lines: drag one to move it to another bar (it snaps to eighths of a bar; hold Shift for finer). A line with no bar of its own drags its pause.' : 'Lines: drag one to change the pause before it starts. A gap marks where one bubble gives way to the next.', ROW],
+    ...(S.card && S.card.camera ? [['cam', ICON.cam, 'The camera\'s path over the land: a diamond at each stop. Drag one sideways to change when the camera gets there. Click one, then drag the picture to change where the camera looks, and \u2191 \u2193 to move closer or further. Double-click the lane to add a stop; double-click a diamond to remove it.', ROW]] : []),
     ...(S.card && S.card.sounds && S.card.sounds.length ? [['sfx', ICON.sound, 'Every placed sound in the episode. Open its part to move it.', ROW]] : []),
     ...(S.card && S.card.music ? [['sfx', ICON.roll, 'This part\'s music. Drag it to change where it lands, by eighths of a bar (hold Shift for finer). \u2191 \u2193 make it louder or quieter.', ROW]] : []),
     ...(S.turns.some(t => t.sfx.length) ? [['sfx', ICON.sound, 'Sounds placed by hand. Drag one to change when it starts; drag its edge to change how long it lasts (for an explosion, how long it swells first). Click it, then Tab, to reach its level.', ROW]] : []),
@@ -259,7 +263,7 @@ function build() {
   const H = top + 8;
   $('gutter').innerHTML = lanes.map(l => `<div style="top:${y[l[0]] - l[3] / 2}px;height:${l[3]}px" title="${l[2]}">${l[1]}</div>`).join('');
   $('gutter').style.height = H + 'px';
-  track.querySelectorAll('.turn,.cut,.beat,.felt,.say,.note,.rx,.own,.cue,.fx,.pin,.ln,.lv').forEach(d => d.remove());
+  track.querySelectorAll('.turn,.cut,.beat,.felt,.say,.note,.rx,.own,.cue,.fx,.pin,.ln,.lv,.kf').forEach(d => d.remove());
   track.style.width = x(S.steps) + PAD + 'px'; track.style.height = H + 'px'; $('head').style.height = H + 'px';
   const all = S.turns.flatMap(t => t.say ? t.say.sylls.map(s => s.semi) : []);
   rollLo = Math.min(-3, ...all) - 2; rollHi = Math.max(9, ...all) + 2;
@@ -358,6 +362,14 @@ function build() {
     svg.innerHTML = `<path fill="${layer ? '#c4871f' : '#5e6ad2'}" opacity=".8" d="M${pts.map(p => `${p[0].toFixed(1)},${(WAVE / 2 - p[1]).toFixed(1)}`).join('L')}L${pts.reverse().map(p => `${p[0].toFixed(1)},${(WAVE / 2 + p[1]).toFixed(1)}`).join('L')}Z"/>`;
     track.appendChild(svg);
   }
+  camY = y.cam || 0;
+  if (S.card && S.card.camera) S.card.camera.forEach((k, i) => {      // the camera's stops
+    const d = el('kf' + (camSel === i ? ' on' : ''), { left: x(k[0] * S.bar) + 'px', top: y.cam + 'px' }, `Stop ${i + 1}: the camera is here on bar ${num(k[0])}, ${num(k[3])} times close.\nDrag sideways to retime. Click, then drag the picture to move where it looks; \u2191 \u2193 for closer or further.`);
+    const all = S.card.camera;
+    mark(d, ['camera', i, 'bar'], i + 1 < all.length ? all[i + 1][0] - 0.125 : S.steps / S.bar, k[0], '#5e6ad2', i ? all[i - 1][0] + 0.125 : 0, 1 / S.bar);
+    d.dataset.cam = i;
+  });
+  else camSel = null;
   waveY = y.wave; drawCurve();
   for (const n of S.notes || []) {                         // the writer's notes: a pin on the ruler at each
     const d = el('pin' + (n.done ? ' done' : ''), { left: x(n.now) + 'px' }, `Note ${n.id}${n.done ? ' (dealt with)' : ''}: ${n.text}\nClick to go there and change its words.`);
@@ -642,6 +654,7 @@ addEventListener('pointerup', async () => {
   if (d.note) { if (!same(d.before, d.last)) { await commit(d.path, d.before, d.last); build(); hear(d.note.ti); } return; }   // an untouched note keeps its element, so a double-click still lands on it
   await commit(d.m.path, d.start, d.last);
   build();
+  if (d.m.path[0] === 'camera' && d.start === d.last) { camSel = camSel === d.m.path[1] ? null : d.m.path[1]; if (camSel != null) setF(frameOf(d.start * S.bar)); build(); }      // a click on a camera stop picks it (again: lets it go)
   if (d.addr && d.start === d.last) { pause(); setF(frameOf(+d.at), false); clearTimeout(ipT); await inPlay(); await pickAt(d.addr); }      // a click, not a drag, on a placed sound: the knob goes to it (Tab reaches its length and level)
   const wrong = S.problems.find(p => p.level === 'error');
   if (wrong && d.start !== d.last) toast((wrong.turn != null ? `Turn ${wrong.turn}: ` : '') + wrong.msg + '\nUndo takes it back.', true);
@@ -705,6 +718,26 @@ function showHear() {
 $('hear').onclick = () => { pause(); layer = HEAR[(HEAR.findIndex(h => h[0] === layer) + 1) % HEAR.length][0]; audioRev = -1; if (A) A.audio = null; showHear(); build(); };
 async function showWave() { const rev = S.rev, only = layer; try { const w = await api('/wave?rev=' + rev + hearQ()); if (rev === S.rev && only === layer) { wave = { rev, only, ...w }; build(); } } catch (e) {} }
 const showWaveSoon = () => { clearTimeout(waveT); waveT = setTimeout(showWave, 500); };
+// ---- the camera over the land: a stop picked in its lane, then moved by dragging the picture --------
+let camSel = null, camY = 0, camDrag = null;
+track.addEventListener('dblclick', e => {
+  if (!S.card || !S.card.camera) return;
+  if (e.target.dataset.cam != null) { camSel = null; return patch(['camera', 'drop'], +e.target.dataset.cam, true); }
+  const yy = e.clientY - track.getBoundingClientRect().top;
+  if (Math.abs(yy - camY) <= ROW / 2) patch(['camera', 'add'], Math.round(stepAt(e)) / S.bar, true);
+});
+view.addEventListener('pointerdown', e => {
+  if (camSel == null || !S.card || !S.card.camera) return;
+  const k = S.card.camera[camSel]; pause();
+  camDrag = { i: camSel, x0: e.clientX, y0: e.clientY, x: k[1], y: k[2], per: S.width / view.getBoundingClientRect().width / (1.39 * k[3]), last: null };
+  view.setPointerCapture(e.pointerId); e.preventDefault();
+});
+view.addEventListener('pointermove', e => {
+  if (!camDrag) return;
+  camDrag.last = [Math.round(camDrag.x - (e.clientX - camDrag.x0) * camDrag.per), Math.round(camDrag.y - (e.clientY - camDrag.y0) * camDrag.per / 0.6)];
+  patch(['camera', camDrag.i, 'xy'], camDrag.last);
+});
+view.addEventListener('pointerup', async () => { const d = camDrag; camDrag = null; if (d && d.last) { while (sending) await new Promise(r => setTimeout(r, 20)); patch(['camera', d.i, 'xy'], d.last, true); } });
 // ---- level curves: a layer's level, bent over time, drawn over the waveform ----------------------
 let waveY = 0, curveEdit = null;                          // curveEdit: the points while one is being dragged
 const curveLayer = () => S.card ? (S.card.music ? 'music' : null) : layer;
@@ -835,6 +868,9 @@ addEventListener('keydown', e => {
   else if (low === 'x') $('xray').click();
   else if (k === '[') openScene(-1);
   else if (k === ']') openScene(1);
+  else if ((k === 'ArrowUp' || k === 'ArrowDown') && S.card && camSel != null && S.card.camera) {      // a camera stop is picked: closer or further
+    const z = S.card.camera[camSel][3]; patch(['camera', camSel, 'z'], Math.round((z + (k === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 0.01 : 0.05)) * 100) / 100, true);
+  }
   else if ((k === 'ArrowUp' || k === 'ArrowDown') && S.card) {      // on a card, the music's level
     const m = S.card.music; if (m) commit(['card', 'music_vol'], m.vol, Math.min(2, Math.max(0, Math.round((m.vol + (k === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 0.01 : 0.05)) * 100) / 100)));
   }
@@ -846,6 +882,7 @@ addEventListener('keydown', e => {
   else if (k === '/') openFind();
   else if ((k === 'Backspace' || k === 'Delete') && pick) nudge('reset');
   else if (low === 'w' && pick && picked && picked.wider) nudge('widen');
+  else if (k === 'Escape' && camSel != null) { camSel = null; build(); }
   else if (k === 'Escape' && !pick && marked) { marked = null; showMark(); }
   else if (k === 'Escape' && pick) { clearTimeout(audT); clearTimeout(replayT); stopBefore(); aud = null; pickAt(null); }
   else if ((k === 'ArrowLeft' || k === 'ArrowRight') && e.altKey) {

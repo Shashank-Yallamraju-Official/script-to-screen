@@ -270,15 +270,18 @@ class Session:
                         title=f"{part['id']} (the whole episode)", file="series.yaml", index=self.i, count=len(self.paths), entities=[], emotions={}, turns=turns, problems=[],
                         music=[], carried=[], offscreen=[], ledger={}, card=dict(id=self.WHOLE, kind="episode", music=None, lines=lines, sounds=sounds))
         sg = next(s for s in series(self.root).episode(self.seg["episode"])["segments"] if s["id"] == self.card)
-        hand = {**(sg.get("tune") or {}), **self.sketch}
+        hand = {**(sg.get("tune") or {}), **{k: v for k, v in self.sketch.items() if k in self.MUSIC}}
         name, why = self.CARD[part["kind"]]
+        camera = [list(map(float, k)) for k in part["card"].land["camera"]] if self.over_land(part) else None
+        if "length" in self.sketch:
+            steps = self.sketch["length"][1]
         music = name and dict(name=name, at=float(hand.get("music_at", 0)), vol=float(hand.get("music_vol", 1)), fade_in=float(hand.get("music_in", 0)), fade_out=float(hand.get("music_out", 0)),
                               len=min(len(self.card_sound()) / sound.RATE / step, steps * 2))
-        turn = dict(id=part["kind"], index=0, start=0, length=steps, why=why, who=None, bar=None, sfx=[], pause=0, hold=0, say=None, lanes={}, reacts=[], stretches=[], orphans=0)
+        turn = dict(id=part["kind"], index=0, start=0, length=steps, why=why, who=None, bar=None, sfx=[], pause=0, hold=steps if camera else 0, say=None, lanes={}, reacts=[], stretches=[], orphans=0)
         return dict(rev=self.rev, info_rev=self.info_rev, id=self.card, can_undo=bool(done), can_redo=bool(undone), status="draft", fps=look.fps, step=step, tempo=float(show["tempo"]),
                     spb=show["steps_per_beat"], scale=[], lead=self.lead, bar=bar, bars=None, width=look.W, height=look.H, total=part["frames"], steps=steps,
                     title=f"{self.card} ({part['kind']})", file="series.yaml", index=self.i, count=len(self.paths), entities=[], emotions={}, turns=[turn], problems=[],
-                    music=[], carried=[], offscreen=[], ledger={}, card=dict(id=self.card, kind=part["kind"], music=music))
+                    music=[], carried=[], offscreen=[], ledger={}, card=dict(id=self.card, kind=part["kind"], music=music, camera=camera))
 
     def card_sound(self):
         part = self.part()
@@ -335,11 +338,68 @@ class Session:
         self.rev += 1
         return 0
 
+    @staticmethod
+    def over_land(part):
+        """Is this part the title sequence over the land, whose camera follows a written path?"""
+        return part["kind"] == "title" and hasattr(part.get("card"), "land")
+
+    def camera_patch(self, op, commit):
+        """The camera's path over the land (land.yaml `camera: [[bar, x, y, zoom], ...]`): a stop retimed, moved, brought closer, added or
+        removed; or the sequence made longer or shorter. While dragging, the picture follows; on release it is written and journaled."""
+        part, where, value = self.part(), op["path"], op["value"]
+        show = load_yaml(self.root / "show.yaml")
+        per = show["steps_per_beat"] * int(show.get("beats_per_bar") or 1)
+        file = self.root / "land.yaml"
+        before = file.read_text()
+        doc = edit.yaml().load(before)
+        keys, end = doc["camera"], float(doc.get("bars", anthem.BARS))
+        if where[0] == "turns":                                   # the sequence's length, in half bars; a last stop at the end moves with it
+            bars = max(4.0, round(float(value) / per * 2) / 2)
+            self.sketch["length"] = (part["id"], bars * per)
+            if float(keys[-1][0]) == end and bars > float(keys[-2][0]):
+                keys[-1][0] = tune.tidy(bars)
+            doc["bars"] = tune.tidy(bars)
+        elif where[1] == "add":
+            bar = min(max(float(value), float(keys[0][0]) + 0.125), float(keys[-1][0]) - 0.125)
+            at = part["card"]._camera(bar * part["card"].bar)
+            i = next(k for k, key in enumerate(keys) if float(key[0]) > bar)
+            keys.insert(i, tune._flow(CommentedSeq([tune.tidy(bar), round(at[0]), round(at[1]), round(at[2], 2)])))
+        elif where[1] == "drop":
+            if not 0 < int(value) < len(keys) - 1:
+                raise ValueError("the first and last stops stay: the camera has to start and end somewhere")
+            del keys[int(value)]
+        else:
+            i, what = int(where[1]), where[2]
+            if what == "bar":
+                lo = float(keys[i - 1][0]) + 0.125 if i else 0.0
+                hi = float(keys[i + 1][0]) - 0.125 if i + 1 < len(keys) else end
+                keys[i][0] = tune.tidy(min(max(float(value), lo), hi))
+            elif what == "xy":
+                keys[i][1], keys[i][2] = round(float(value[0])), round(float(value[1]))
+            elif what == "z":
+                keys[i][3] = round(min(max(float(value), 0.5), 4.0), 2)
+            else:
+                raise ValueError("a camera stop has a bar, a place it looks at, and a closeness")
+        part["card"].land["camera"] = [list(map(float, k)) for k in keys]         # the picture follows at once
+        self._shots = {}
+        self.rev += 1
+        if not commit:
+            return 0
+        after = edit.dump(doc)
+        self.sketch = {}
+        if after != before:
+            edit.write(file, after)
+            edit.record(self.root, "nudge", None, file, [dict(address=f"land.{'.'.join(map(str, where))}", field="camera", before=None, after=edit.plain(value))], before, after, by="hand")
+        self.stamps = self.stamp()
+        return 0
+
     def card_patch(self, ops, commit):
         """A card's music moved or made louder or quieter. While dragging it only shows; on release it is written to series.yaml
         as a hand-set value on that segment, and journaled."""
         if self.card == self.WHOLE:
             return self.length_patch(ops, commit)
+        if ops[-1]["path"][0] in ("camera", "turns") and self.over_land(self.part()):
+            return self.camera_patch(ops[-1], commit)
         for op in ops:
             if op["path"][0] != "card" or op["path"][1] not in self.MUSIC:
                 raise ValueError("a card's music can be moved, and made louder or quieter; nothing else of a card is editable here yet")
