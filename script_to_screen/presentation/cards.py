@@ -17,6 +17,7 @@ import skia
 
 from . import anthem, master, music
 from .bodies import draw_body
+from .place import mix as place_mix, rgb as place_rgb
 from .draw import INK, PAPER, RULE, col, draw_token, fill, font, stroke
 from .motion import back, smooth
 from .view import MARGIN, ground
@@ -98,12 +99,18 @@ class Title:
 
 
 class Land:
-    """A title sequence over the show's land (`land.yaml`): the camera travels the map while it draws itself, each house's
-    object rises at its place as the music reaches it, and the show's name arrives on the last chord.
+    """A title sequence over the show's land (`land.yaml`), as a model on a table seen from above and to one side.
 
-    land.yaml says where things are (`places`, `roads`, `wall`), when each rises (`at`, in bars of the anthem), and the
-    camera's path (`camera: [[bar, x, y, zoom], ...]`). Nothing is written on the map: the only words are the title.
+    The land is a sheet lying flat. The camera swoops from one place to the next. As it reaches a place, a cog under
+    it turns, a platform lifts out of the sheet, and that house's object rises on it under its own colours. The wall
+    is laid, standing up from the sheet, as the camera follows it. Where something has burned, it smokes. The show's
+    name arrives on the last chord of the anthem.
+
+    land.yaml says where things are (`places`, `roads`, `wall`), which places this sequence visits and when
+    (`at_bar`, in bars of the anthem; a place without one stays dark), what is burning (`smoke`), and the camera's
+    path (`camera: [[bar, x, y, zoom], ...]`). Nothing is written on the map but the credit and the title.
     """
+    TABLE, SHEET, DARK, IRON, BRASS, INKED, PALE = "#1f181b", "#c9b58f", "#8f7d62", "#4a525e", "#9a7b3f", "#5b4636", "#efe3c8"
 
     def __init__(self, look, show, episode, land, sheets):
         self.look, self.show, self.episode, self.land, self.sheets = look, show, episode, land, sheets
@@ -125,55 +132,142 @@ class Land:
     def draw(self, c, t):
         look, land = self.look, self.land
         W, H = look.W, look.H
-        c.clear(col(PAPER))
+        F, K, TILT, H0 = 760.0, 0.85, 0.6, H * 0.6
         cx, cy, zoom = self._camera(t)
+        ahead = self._camera(t + 0.25)
+        roll = max(-3.5, min(3.5, (ahead[0] - cx) * 0.03))           # it banks into a turn
+
+        def proj(x, y, z=0.0):
+            den = max(140.0, F - K * (y - cy))
+            sc = F / den * zoom
+            return W / 2 + (x - cx) * sc, H0 + (y - cy) * TILT * sc - z * sc, sc
+
         at = {k: p["at"] for k, p in land["places"].items()}
+        when = lambda p: float(p["at_bar"]) * self.bar if "at_bar" in p else None
+        c.clear(col(self.TABLE))
         c.save()
-        c.translate(W / 2, H / 2)
-        c.scale(zoom, zoom)
-        c.translate(-cx, -cy)
-        ink, soft = stroke(INK, 5, 150), stroke(RULE, 5)
-        for a, b, bar0 in land.get("roads") or []:                    # a road draws itself out from where it starts
+        c.rotate(roll, W / 2, H / 2)
+        # --- the sheet, lying flat: everything here is drawn in map units and laid back by the matrix ---
+        m = skia.Matrix()
+        m.setAll(zoom * F, -(W / 2) * K, (W / 2) * F, 0, zoom * TILT * F - H0 * K, H0 * F, 0, -K, F)
+        m.preTranslate(-cx, -cy)
+        c.save()
+        c.concat(m)
+        c.drawRect(skia.Rect.MakeLTRB(-26, -26, 946, 866), fill(self.DARK))
+        c.drawRect(skia.Rect.MakeLTRB(0, 0, 920, 840), fill(self.SHEET))
+        wall = land.get("wall") or {}
+        if wall:
+            c.drawRect(skia.Rect.MakeLTRB(0, wall["y"], 920, 840), fill("#3b3026", 92))           # behind the wall the sheet is in shadow
+        for g in range(0, 921, 92):                                   # a surveyor's grid
+            c.drawLine(g, 0, g, 840, stroke(self.INKED, 1.2, 46))
+        for g in range(0, 841, 84):
+            c.drawLine(0, g, 920, g, stroke(self.INKED, 1.2, 46))
+        for a, b, bar0 in land.get("roads") or []:                    # a road inks itself out from where it starts
             k = smooth((t - float(bar0) * self.bar) / (2 * self.bar))
             if k > 0:
                 (x0, y0), (x1, y1) = (at[a] if isinstance(a, str) else a), (at[b] if isinstance(b, str) else b)
-                c.drawLine(x0, y0, x0 + (x1 - x0) * k, y0 + (y1 - y0) * k, soft)
-        wall = land.get("wall")
-        if wall:                                                      # the wall is laid from one end to the other, leaving its gaps
-            reach = 40 + 860 * smooth((t - float(wall["from"]) * self.bar) / ((float(wall["to"]) - float(wall["from"])) * self.bar))
-            for x0, x1 in wall["spans"]:
-                if reach > x0:
-                    x1 = min(x1, reach)
-                    c.drawRect(skia.Rect.MakeLTRB(x0, wall["y"] - 9, x1, wall["y"] + 9), fill(INK, 215))
-                    for x in range(int(x0) + 14, int(x1) - 4, 18):
-                        c.drawLine(x, wall["y"] - 9, x, wall["y"] + 9, stroke(PAPER, 1.5, 120))
-            for i in range(16):                                       # rubble in the breach
-                x, y = wall["breach"][0] + (i * 53) % (wall["breach"][1] - wall["breach"][0]), wall["y"] - 13 + (i * 37) % 26
+                c.drawLine(x0, y0, x0 + (x1 - x0) * k, y0 + (y1 - y0) * k, stroke(self.INKED, 9, 210))
+                c.drawLine(x0, y0, x0 + (x1 - x0) * k, y0 + (y1 - y0) * k, stroke(self.SHEET, 2.5, 150))
+        reach = -1.0
+        if wall:
+            reach = 920 * smooth((t - float(wall["from"]) * self.bar) / ((float(wall["to"]) - float(wall["from"])) * self.bar))
+            for i in range(22):                                       # rubble in the breach
+                x, y = wall["breach"][0] + (i * 53) % (wall["breach"][1] - wall["breach"][0]), wall["y"] - 22 + (i * 37) % 44
                 if reach > x:
-                    c.drawRect(skia.Rect.MakeXYWH(x, y, 6 + i % 3 * 3, 5 + i % 2 * 3), fill(INK, 110))
-        for name, p in land["places"].items():                        # each house's object rises where it lives
-            k = (t - float(p["at_bar"]) * self.bar) / 0.75
-            if k <= 0:
+                    c.drawRect(skia.Rect.MakeXYWH(x, y, 7 + i % 3 * 4, 6 + i % 2 * 4), fill(self.IRON, 200))
+        for name, p in land["places"].items():                        # the cog under each place it visits
+            t0 = when(p)
+            if t0 is None or t < t0 - 0.6:
                 continue
             x, y = p["at"]
-            grow = back(k, 1.3) if k < 1 else 1.0
-            c.drawLine(x - 30, y, x + 30, y, ink)
-            sheet = dict(self.sheets[p["entity"]])
-            sheet["size"] = float(sheet.get("size", 1.0)) * float(p.get("size", 0.42))
-            draw_body(c, sheet, dict(slot=x / 100.0, facing=float(p.get("facing", 1)), lx=0.0, ly=0.0, sx=1.0, sy=grow, lean=0.0, alpha=min(1.0, k * 3), going=1.0, travel=0.0, flip=0.0),
-                      t, x, y)
-            if p.get("crown"):
-                top = y - 156 * sheet["size"] - 12
-                c.drawPath(skia.Path().moveTo(x - 15, top).lineTo(x - 18, top - 17).lineTo(x - 8, top - 9).lineTo(x, top - 22).lineTo(x + 8, top - 9)
-                           .lineTo(x + 18, top - 17).lineTo(x + 15, top).close(), stroke(INK, 3, 255 * min(1.0, k)))
+            spin = 260 * (1 - smooth((t - t0 + 0.6) / 2.2)) + 14 * (t - t0) * (1 if hash(name) % 2 else -1)
+            gear = skia.Path()
+            for i in range(24):
+                r = 58 if i % 2 else 48
+                a0, a1 = math.radians(spin + i * 15), math.radians(spin + (i + 1) * 15)
+                (gear.moveTo if i == 0 else gear.lineTo)(x + r * math.cos(a0), y + r * math.sin(a0))
+                gear.lineTo(x + r * math.cos(a1), y + r * math.sin(a1))
+            gear.close()
+            alpha = 255 * smooth((t - t0 + 0.6) / 0.5)
+            c.drawPath(gear, fill(self.BRASS, alpha))
+            c.drawCircle(x, y, 36, fill(self.INKED, alpha))
+            for i in range(4):
+                a0 = math.radians(spin + i * 90)
+                c.drawLine(x, y, x + 36 * math.cos(a0), y + 36 * math.sin(a0), stroke(self.BRASS, 5, alpha))
         c.restore()
+        # --- what stands up from the sheet, farthest first ---
+        standing = []
+        if wall:
+            for x0, x1 in wall["spans"]:
+                if reach > x0:
+                    standing.append((wall["y"], "wall", (x0, min(x1, reach))))
+        for name, p in land["places"].items():
+            if when(p) is not None and t > when(p):
+                standing.append((p["at"][1], "place", (name, p)))
+        for y, kind, what in sorted(standing, key=lambda s: s[0]):
+            if kind == "wall":
+                x0, x1 = what
+                tall = 40 * smooth((reach - x0) / 60)
+                quad = lambda pts, paint: c.drawPath(skia.Path().addPoly([skia.Point(*proj(*q)[:2]) for q in pts], True), paint)
+                quad([(x0, y, 0), (x1, y, 0), (x1, y, tall), (x0, y, tall)], fill(self.IRON))
+                quad([(x0, y - 14, tall), (x1, y - 14, tall), (x1, y, tall), (x0, y, tall)], fill(place_mix(self.IRON, "#ffffff", 0.22)))
+                for x in range(int(x0) + 18, int(x1) - 4, 22):
+                    (ax, ay, _), (bx, by, _) = proj(x, y, 0), proj(x, y, tall)
+                    c.drawLine(ax, ay, bx, by, stroke("#2c323b", 1.5, 170))
+                continue
+            name, p = what
+            x, y = p["at"]
+            k = (t - when(p)) / 1.3
+            lift = 18 * smooth(k / 0.45)                              # the platform lifts out of the sheet
+            (bx, by, sc), (tx, ty, _) = proj(x, y, 0), proj(x, y, lift)
+            rx, ry = 40 * sc, 40 * sc * TILT
+            c.drawRect(skia.Rect.MakeLTRB(tx - rx, ty, tx + rx, by), fill("#4d3f31"))
+            c.drawOval(skia.Rect.MakeXYWH(bx - rx, by - ry, 2 * rx, 2 * ry), fill("#4d3f31"))
+            c.drawOval(skia.Rect.MakeXYWH(tx - rx, ty - ry, 2 * rx, 2 * ry), fill("#7a6650"))
+            rise = (k - 0.3) / 0.7
+            if rise > 0:                                              # and the house's object rises on it
+                grow = back(rise, 1.3) if rise < 1 else 1.0
+                sheet = dict(self.sheets[p["entity"]])
+                sheet["size"] = float(sheet.get("size", 1.0)) * float(p.get("size", 0.42))
+                pole = proj(x + 46, y, lift)
+                c.drawLine(pole[0], pole[1], pole[0], pole[1] - 78 * sc * grow, stroke(self.PALE, 2.2 * sc))        # its colours, on a pole
+                flag = skia.Path().moveTo(pole[0], pole[1] - 78 * sc * grow).lineTo(pole[0] + 26 * sc, pole[1] - 70 * sc * grow).lineTo(pole[0], pole[1] - 60 * sc * grow).close()
+                c.drawPath(flag, fill(sheet["color"]))
+                c.save()
+                c.translate(tx, ty)
+                c.scale(sc, sc)
+                draw_body(c, sheet, dict(slot=x / 100.0, facing=float(p.get("facing", 1)), lx=0.0, ly=0.0, sx=1.0, sy=grow, lean=0.0, alpha=min(1.0, rise * 3), going=1.0,
+                                         travel=0.0, flip=0.0, lit=(-1, 0.7, "#f6c26b")), t, 0, 0, min(5.0, abs(y - cy) / 110))
+                c.restore()
+                if p.get("crown"):
+                    top = ty - 156 * sheet["size"] * sc - 10 * sc
+                    c.drawPath(skia.Path().moveTo(tx - 15 * sc, top).lineTo(tx - 18 * sc, top - 17 * sc).lineTo(tx - 8 * sc, top - 9 * sc).lineTo(tx, top - 22 * sc)
+                               .lineTo(tx + 8 * sc, top - 9 * sc).lineTo(tx + 18 * sc, top - 17 * sc).lineTo(tx + 15 * sc, top).close(), stroke(self.PALE, 3 * sc, 255 * min(1.0, rise)))
+            if p.get("smoke"):                                        # it burned
+                for i in range(7):
+                    age = (t * 0.32 + i / 7) % 1.0
+                    sx, sy, s2 = proj(x - 20 + 16 * math.sin(i * 2.1 + t * 0.7) + 26 * age, y, 60 + 230 * age)
+                    c.drawCircle(sx, sy, (12 + 34 * age) * s2, skia.Paint(AntiAlias=True, Color=col("#2b2528", 120 * (1 - age) * min(1.0, k)),
+                                                                        MaskFilter=skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 7)))
+        c.restore()
+        # --- the air between us and it: distance fades, the corners fall away ---
+        r, g, b = place_rgb(self.TABLE)
+        c.drawRect(skia.Rect.MakeWH(W, H * 0.42), skia.Paint(Shader=skia.GradientShader.MakeLinear(
+            [skia.Point(0, 0), skia.Point(0, H * 0.42)], [skia.Color(r, g, b, 235), skia.Color(r, g, b, 0)])))
+        c.drawRect(skia.Rect.MakeWH(W, H), skia.Paint(Shader=skia.GradientShader.MakeRadial(
+            skia.Point(W / 2, H * 0.55), W * 0.75, [skia.Color(8, 5, 8, 0), skia.Color(8, 5, 8, 0), skia.Color(8, 5, 8, 190)], [0.0, 0.55, 1.0])))
+        by = self.land.get("credit")
+        if by:                                                        # one credit, beside the land, before the name
+            a = smooth((t - float(by["from"]) * self.bar) / 0.6) * (1 - smooth((t - float(by["to"]) * self.bar) / 0.6))
+            c.drawString(str(by["role"]).upper(), 70, H - 96, font(15), fill(self.PALE, 190 * a))
+            c.drawString(str(by["name"]), 70, H - 62, font(28), fill(self.PALE, 255 * a))
         lands = float(land.get("title_bar", 18)) * self.bar            # the name arrives on the last chord
         k = smooth((t - lands + 0.5) / 1.0)
         if k > 0:
-            c.drawRect(skia.Rect.MakeWH(W, H), fill(PAPER, 205 * k))
-            name = str(self.show.get("title") or "Untitled")
-            _centred(c, name, H * 0.50, font(104), fill(INK, 255 * smooth((t - lands) / 0.5)), W)
-            _centred(c, str(self.episode.get("title") or ""), H * 0.50 + 62, font(30), fill(GREY, 255 * smooth((t - lands - 0.9) / 0.6)), W)
+            c.drawRect(skia.Rect.MakeWH(W, H), fill(self.TABLE, 170 * k))
+            name = str(self.show.get("title") or "Untitled").upper()
+            _centred(c, name, H * 0.50, font(104), fill(self.PALE, 255 * smooth((t - lands) / 0.5)), W)
+            _centred(c, str(self.episode.get("title") or ""), H * 0.50 + 62, font(30), fill(self.BRASS, 255 * smooth((t - lands - 0.9) / 0.6)), W)
 
 
 class Caption:
