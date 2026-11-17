@@ -410,6 +410,42 @@ def prepare(place, W):
     return layers
 
 
+SHADE = 0.5                                   # how dark a cast shadow is, at full light
+
+
+def sunlit(stage):
+    """Where the sun (or moon) behind the room reaches the floor: the shape of each open arch, thrown across the floor the way
+    the room's shadows fall. A flag hung over an arch stops the light where it covers it. -> one path, in stage pixels."""
+    kept = getattr(stage, "_sunlit", None)
+    if kept is not None:
+        return kept
+    place = stage.look.place
+    if getattr(stage, "_place", None) is None:
+        stage._place = prepare(place, stage.W)
+    lamp, base = place.get("light") or {}, ground(stage.H) - FLOOR_UP
+    cast = float(lamp.get("cast", 0))
+    lean = (0.5 if lamp.get("side", "left") == "left" else -0.5) * cast
+
+    def on_wall(piece, role):                                              # a piece's shapes of one role, where they are on the wall
+        out = skia.Path()
+        for r, path in shapes(piece["kind"], piece.get("_w")):
+            if r == role:
+                out.addPath(path, piece["_x"], base - float(piece.get("up", 0)))
+        return out
+
+    holes = skia.Path()
+    for piece in stage._place["wall"]:
+        if piece["kind"] == "arch":
+            holes = skia.Op(holes, on_wall(piece, "light"), skia.PathOp.kUnion_PathOp)
+    for piece in stage._place["wall"]:
+        if piece["kind"] == "banner":
+            holes = skia.Op(holes, on_wall(piece, "body"), skia.PathOp.kDifference_PathOp)
+    thrown = skia.Path()
+    holes.transform(skia.Matrix().setAll(1, -lean, lean * base, 0, -cast, base * (1 + cast), 0, 0, 1), thrown)      # a point h up the wall lands cast*h out on the floor
+    stage._sunlit = thrown
+    return thrown
+
+
 def draw_behind(c, stage, cam):
     """The room and everything in it that stands behind the entities. Nothing in a room moves, so while the camera holds still the
     room is painted once and kept as a picture; it is painted afresh only while the camera is moving."""
@@ -447,14 +483,16 @@ def _paint_behind(c, stage, cam):
                 painter.light(c, piece, 0)
             c.restore()
         lamp = place.get("light")
-        if lamp and name == "wall" and float(lamp.get("cast", 0)):          # what stands against the wall throws its shadow across the floor too
+        if lamp and name == "wall" and float(lamp.get("cast", 0)):          # the sun is behind the wall: the floor is in the wall's shade, but for what comes through the arches
             cast = float(lamp["cast"])
             lean = (0.5 if lamp.get("side", "left") == "left" else -0.5) * cast
             r, g, b = rgb(mix(place.get("shadow") or "#120c14", "#120c14", 0.45))
-            c.saveLayer(skia.Rect.MakeLTRB(-stage.W, base, 2 * stage.W, 1.35 * stage.H), skia.Paint(Alphaf=0.56 * float(lamp.get("strength", 0.7)),
+            floor = skia.Rect.MakeLTRB(-stage.W, base, 2 * stage.W, 1.35 * stage.H)
+            c.saveLayer(floor, skia.Paint(Alphaf=SHADE * float(lamp.get("strength", 0.7)),
                                          ColorFilter=skia.ColorFilters.Blend(skia.Color(r, g, b), skia.BlendMode.kSrcIn)))
-            c.clipRect(skia.Rect.MakeLTRB(-stage.W, base, 2 * stage.W, 1.35 * stage.H))
-            for piece in layers[name]:
+            c.clipRect(floor)
+            c.drawPath(skia.Op(skia.Path().addRect(floor), sunlit(stage), skia.PathOp.kDifference_PathOp), paint("#000000"))
+            for piece in layers[name]:                                      # and what stands against the wall throws its own shadow into that light
                 if piece["kind"] in ("pot", "tree", "sapling"):
                     c.save()
                     c.translate(piece["_x"], base)

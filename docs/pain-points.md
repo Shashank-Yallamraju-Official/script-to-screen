@@ -21,4 +21,4 @@ Status: **open** (still hurts), **eased** (a workaround exists), **fixed** (gone
 | 12 | 2026-11-16 | `s2s moments` failed to draw and left the old sheet in place | A stale picture read as the new one | **fixed**: the old sheet is removed before drawing |
 | 13 | 2026-11-16 | `--only` wrote its stretch over the whole film | The real film was replaced by ten seconds of it | **fixed**: a stretch goes to `<episode>.stretch.mp4` |
 | 14 | 2026-11-16 | The map's cogs turned a different way on each run (Python's per-run string hashing) | Frames were not repeatable; parts rendered in separate processes could disagree | **fixed**: a fixed checksum decides |
-| 15 | 2026-11-16 | Scenes have no sound at all between spoken lines: complete digital silence, found by `s2s listen` | Each scene may feel dead between lines against the music before and after | open: a creative call (room tone or not) |
+| 15 | 2026-11-16 | Scenes have no sound at all between spoken lines: complete digital silence, found by `s2s listen` | Each scene may feel dead between lines against the music before and after | **fixed**: a place can have `air: warm | cold`, a quiet bed under the scene |

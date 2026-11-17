@@ -67,6 +67,24 @@ def swell(seconds):
     return (hum * (1 + 0.4 * k * np.sin(2 * np.pi * (5 + 14 * k) * t)) + hiss * k) * k ** 1.5 * 0.55
 
 
+def air(n, kind="warm"):
+    """The sound of a place with nothing happening in it, `n` samples long: `warm` is still evening air, low and soft; `cold` is a
+    thin draught through bare stone, higher and emptier. It comes up over the first seconds and is let go at the end, never cut."""
+    from scipy.signal import butter, sosfilt
+    rng = np.random.default_rng(21 if kind == "warm" else 22)
+    t = np.arange(n) / RATE
+    noise = rng.standard_normal(n)
+    if kind == "cold":
+        x = sosfilt(butter(2, [500, 1500], "bandpass", fs=RATE, output="sos"), noise) * 1.3 + sosfilt(butter(2, 180, "lowpass", fs=RATE, output="sos"), noise) * 1.6
+        x *= 0.7 + 0.3 * np.sin(2 * np.pi * 0.11 * t) * np.sin(2 * np.pi * 0.037 * t + 1.0)          # it comes and goes
+        level = 0.010
+    else:
+        x = sosfilt(butter(2, 420, "lowpass", fs=RATE, output="sos"), noise) * 2.2 + sosfilt(butter(2, [1800, 4200], "bandpass", fs=RATE, output="sos"), noise) * 0.25
+        x *= 0.85 + 0.15 * np.sin(2 * np.pi * 0.07 * t)
+        level = 0.012
+    return x * level * np.clip(t / 2.0, 0, 1) * np.clip((n / RATE - t) / 1.5, 0, 1)
+
+
 def wav_bytes(samples):
     buf = io.BytesIO()
     with wave.open(buf, "wb") as wv:
@@ -115,6 +133,9 @@ def mix(stage):
         p = sound_for(stage.look.sounds, name)
         if p and float(p.get("vol", 0)) > 0:
             add(effects, at, effect(p) * (aside if quiet else 1.0))
+    kind = (stage.look.place or {}).get("air")                   # the room is never dead quiet: the air of the place, under everything
+    if kind:
+        effects += air(n, kind)
     settings, vol = stage.look.music, float(feel.get("music_volume", 0.6))
     cues = stage.score.music if vol > 0 else []                  # the score names the cue; the look says what it sounds like
     tune = music.render(cues, stage.score.step, n, settings) * vol

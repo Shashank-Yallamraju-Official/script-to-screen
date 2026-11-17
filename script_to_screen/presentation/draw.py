@@ -485,10 +485,11 @@ def light(c, stage, states, room, bench, seated, up, t):
     k = float(lamp.get("strength", 0.7))
     cast = float(lamp.get("cast", 0))
     if cast:
-        lean, y0 = -side * 0.5 * cast, ground(H) + 10
+        lean, y0 = -side * 0.5 * cast, ground(H) - place.FLOOR_UP + 46 * cast
         r, g, b = place.rgb(place.mix(cool, "#120c14", 0.45) if cool else "#120c14")
-        c.saveLayer(skia.Rect.MakeLTRB(-W, ground(H) - 30, 2 * W, 1.4 * H), skia.Paint(Alphaf=0.56 * k,       # only the floor: a layer the size of the frame is slow
+        c.saveLayer(skia.Rect.MakeLTRB(-W, ground(H) - 30, 2 * W, 1.4 * H), skia.Paint(Alphaf=place.SHADE * k,       # only the floor: a layer the size of the frame is slow
                                      ColorFilter=skia.ColorFilters.Blend(skia.Color(r, g, b), skia.BlendMode.kSrcIn)))
+        c.clipPath(place.sunlit(stage), True)                    # a shadow shows only where light would have fallen: the rest of the floor is already in the wall's shade
         if bench:                                                # the bench's own, and everyone at it
             tall = float(bench.get("rise", 58)) + float(bench.get("front", 30)) + 9
             x0, x1 = slot_x(float(bench["from"]), W) - 70, slot_x(float(bench["to"]), W) + 70

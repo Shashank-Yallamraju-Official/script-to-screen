@@ -9,9 +9,10 @@ wall: "#b9c6ea"
 floor: "#8294c9"
 sky: ["#8f9fd6", "#dfe6f6"]
 sun: "#ffffff"
-light: {at: 6.4, up: 250, color: "#eef4f9", reach: 640, strength: 0.4, side: right, cast: 0.8}       # a pale early sun, through the arches on the right
+light: {at: 6.4, up: 250, color: "#eef4f9", reach: 640, strength: 0.4, side: right, cast: 0.42}       # a pale early sun, through the arches on the right
 ink: "#17194d"                 # drawn outlines on everything, as in a comic
 shadow: "#6f7fd0"              # the side away from the sun goes to this
+air: cold                       # the sound of the room when nobody speaks
 vignette: 0.32
 bench: {from: 0.65, to: 7.35, rise: 58, front: 30, color: "#8d8fc0"}
 pieces:
