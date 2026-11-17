@@ -62,6 +62,8 @@
   #ep { display: flex; gap: 2px; padding: 4px 10px; background: var(--panel); border-bottom: 1px solid var(--line); min-height: 22px; box-sizing: border-box; }
   #ep button { flex-basis: 0; min-width: 26px; height: 18px; padding: 0 6px; display: flex; align-items: center; gap: 5px; overflow: hidden; white-space: nowrap; border-radius: 4px; border: 1px solid var(--line); background: none; color: #7f8590; font: 500 10px Inter, system-ui, sans-serif; cursor: pointer; }
   #ep button svg { width: 11px; height: 11px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+  #ep button em { font-style: normal; margin-left: auto; color: #7f8590; } #ep button em.off { color: #e0a43a; }
+  #ep button#meter { flex: 0 0 auto; }
   #ep button:hover { color: #d7dae0; } #ep button.here { border-color: #5e6ad2; color: #d7dae0; background: #5e6ad222; }
   #tl { display: flex; background: var(--panel); }
   #gutter { width: 34px; flex: none; position: relative; border-right: 1px solid var(--line); }
@@ -80,6 +82,7 @@
   .beat { position: absolute; width: 1px; background: #ffffff0a; pointer-events: none; }
   .beat.bar { background: #ffffff12; } .beat.phrase { background: #ffffff38; }
   .fx { position: absolute; height: 18px; margin-top: -9px; border-radius: 5px; cursor: ew-resize; overflow: hidden; z-index: 2; background: #c4871f55; border: 1px solid #c4871f; box-sizing: border-box; color: #f1d9ae; font: 500 10px/16px Inter, system-ui, sans-serif; padding: 0 6px; white-space: nowrap; }
+  .fx .fd { position: absolute; top: 1px; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: #f1d9ae; cursor: ew-resize; z-index: 3; }
   .fx.sel { outline: 2px solid #fff; outline-offset: 1px; }
   .fx .grip.left { left: 0; right: auto; } .fx .grip.left::after { left: 2px; right: auto; }
   .felt { position: absolute; height: 14px; margin-top: -7px; border-radius: 4px; display: flex; align-items: center; padding-left: 5px; overflow: hidden; }
@@ -96,6 +99,11 @@
   .note.live { outline: 2px solid #fff; }
   .sel { outline: 2px solid #fff; outline-offset: 1px; }
   #head { position: absolute; top: 0; width: 1px; background: var(--accent); pointer-events: none; z-index: 5; }
+  #takelist { position: fixed; display: none; flex-direction: column; gap: 4px; padding: 8px; border-radius: 8px; background: var(--raise); border: 1px solid var(--line); z-index: 9; min-width: 190px; }
+  #takelist div { display: flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 5px; border: 1px solid var(--line); cursor: pointer; font-size: 12px; }
+  #takelist div.here { border-color: #5e6ad2; } #takelist div span { flex: 1; } #takelist div b { font-weight: 400; color: #7f8590; padding: 0 2px; }
+  #takelist input { all: unset; padding: 3px 8px; border: 1px solid var(--line); border-radius: 5px; font-size: 12px; color: var(--text); user-select: text; }
+  .mark { position: absolute; top: 0; bottom: 0; background: #5e6ad21f; border-left: 1px solid #5e6ad2; border-right: 1px solid #5e6ad2; pointer-events: none; z-index: 1; }
   .wav { position: absolute; left: 0; pointer-events: none; }
   .pin { position: absolute; top: 2px; width: 9px; height: 12px; margin-left: -1px; background: #e0a43a; clip-path: polygon(0 0, 100% 0, 100% 62%, 22% 62%, 22% 100%, 0 100%); cursor: pointer; z-index: 6; }
   .pin.done { background: #5a5f69; }
@@ -126,6 +134,7 @@
     <span class="sep"></span>
     <button id="undo" title="Undo (Ctrl/Cmd+Z)"><svg viewBox="0 0 16 16"><path d="M5 3 2 6l3 3M2 6h7a4 4 0 0 1 0 8H6"/></svg></button>
     <button id="redo" title="Redo (Ctrl/Cmd+Shift+Z)"><svg viewBox="0 0 16 16"><path d="m11 3 3 3-3 3M14 6H7a4 4 0 0 0 0 8h3"/></svg></button>
+    <button id="takes" title="Takes: keep the whole show's tuning as it stands under a name, and switch between takes to compare them. Switching is one undo step."><svg viewBox="0 0 16 16"><path d="M8 2 2 5l6 3 6-3zM2 8l6 3 6-3M2 11l6 3 6-3"/></svg></button>
     <button id="render"><svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M5 3v10M11 3v10M2 6h3M2 10h3M11 6h3M11 10h3"/></svg></button>
   </div>
   <div id="ep"></div>
@@ -134,6 +143,7 @@
     <div id="scroll"><div id="track"><canvas id="ruler"></canvas><div id="head"></div></div></div>
   </div>
 </div>
+<div id="takelist"></div>
 <div id="toast"></div>
 <script>
 const $ = id => document.getElementById(id);
@@ -293,6 +303,12 @@ function build() {
         `${fx.sound}: starts ${num(fx.at)} steps into turn ${t.id}` + (fx.len ? `, ${lead ? 'swells for' : 'lasts'} ${num(fx.len)} steps` : '') + `, level ${num(fx.vol)}\nDrag to move it. Drag its edge to change how long. Click, then Tab, for its level.`);
       d.textContent = fx.sound; d.dataset.addr = `${S.id}:${t.id}.x${fx.n}.at`; d.dataset.at = fx.start;
       mark(d, ['turns', t.index, 'sfx', fx.n, 'at'], 400, fx.at, '#c4871f', -64);
+      const longPx = Math.max(long * pps - 1, 12);
+      for (const [name, v, says] of [['fade_in', fx.fade_in, 'Fades in'], ['fade_out', fx.fade_out, 'Fades out']]) {      // a dot at each top corner: drag it inward for a longer fade
+        const f = document.createElement('div'); f.className = 'fd'; f.style.left = (name === 'fade_in' ? Math.min(v * pps, longPx - 4) + 4 : Math.max(longPx - v * pps, 4) - 4) + 'px';
+        f.title = `${says} over ${num(v)} steps. Drag ${name === 'fade_in' ? 'right' : 'left'} for a longer fade.`; d.appendChild(f);
+        mark(f, ['turns', t.index, 'sfx', fx.n, name], 64, v, '#c4871f', 0, name === 'fade_in' ? 1 : -1);
+      }
       if (fx.len) { const g = document.createElement('div'); g.className = 'grip' + (lead ? ' left' : ''); d.appendChild(g); mark(g, ['turns', t.index, 'sfx', fx.n, 'len'], 96, fx.len, '#c4871f', 1, lead ? -1 : 1); }
     }
     if (t.say) {
@@ -318,6 +334,12 @@ function build() {
       `${m.name}: lands ${m.at ? num(Math.abs(m.at)) + (Math.abs(m.at) === 1 ? ' bar ' : ' bars ') + (m.at > 0 ? 'after' : 'before') : 'as'} this part starts, level ${num(m.vol)}\nDrag to move where it lands. \u2191 \u2193 make it louder or quieter (Shift for finer).`);
     d.textContent = `${m.name} \u00b7 ${num(m.vol)}`;
     mark(d, ['card', 'music_at'], 64, m.at, '#c4871f', -16, 1 / S.bar);
+    const cardPx = (S.steps - m.at * S.bar) * pps;           // the fade-out ends where the card does
+    for (const [name, v, says] of [['music_in', m.fade_in, 'Eases in'], ['music_out', m.fade_out, 'Fades out, ending as this part ends,']]) {
+      const f = document.createElement('div'); f.className = 'fd'; f.style.left = (name === 'music_in' ? v * S.bar * pps + 4 : cardPx - v * S.bar * pps - 4) + 'px';
+      f.title = `${says} over ${num(v)} ${v === 1 ? 'bar' : 'bars'}. Drag ${name === 'music_in' ? 'right' : 'left'} for a longer fade.`; d.appendChild(f);
+      mark(f, ['card', name], 32, v, '#c4871f', 0, (name === 'music_in' ? 1 : -1) / S.bar);
+    }
   }
   track.querySelectorAll('.wav').forEach(d => d.remove());    // the sound's shape, mirrored about the lane's middle
   if (!wave || wave.rev !== S.rev || wave.only !== layer) showWaveSoon();      // until the new shape arrives, the last one stays
@@ -333,7 +355,8 @@ function build() {
     d.onpointerdown = e => { e.stopPropagation(); pause(); setF(frameOf(n.now)); openNote(n); };
   }
   showEpisodeSoon();
-  $('render').title = 'Render this scene to video';
+  if (marked && marked[0] >= S.steps) marked = null;
+  showMark();
   $('undo').disabled = !S.can_undo; $('redo').disabled = !S.can_redo;
   const where = `Scene ${S.index + 1} of ${S.count}: ${S.title} (${S.file})`;
   $('prev').title = 'Previous scene ([)\n' + where; $('next').title = 'Next scene (])\n' + where;
@@ -545,6 +568,8 @@ track.addEventListener('pointerdown', e => {
     selected = d.dataset.key; track.querySelectorAll('[data-key]').forEach(m => m.classList.toggle('sel', m.dataset.key === selected));
     showSel();
     drag = { m: d._m, x0: e.clientX, start: d._m.value, last: d._m.value, was, addr: d.dataset.addr, at: d.dataset.at };
+  } else if (e.shiftKey) {                               // Shift-drag on empty timeline marks a stretch: play stays inside it, Render makes only it
+    drag = { mark: stepAt(e) }; markTo(e);
   } else {
     selected = null; track.querySelectorAll('.sel').forEach(m => m.classList.remove('sel')); showSel();
     drag = { scrub: true }; scrubTo(e);
@@ -557,10 +582,25 @@ track.addEventListener('dblclick', e => {                 // cycle a syllable's 
   arr[n._n.i] = (arr[n._n.i] + 1) % 3;
   commit(path, q.stress, arr).then(() => hear(t.index));
 });
+let marked = null;                                       // a marked stretch, in steps: [from, to]
+const stepAt = e => (e.clientX - scroll.getBoundingClientRect().left + scroll.scrollLeft - PAD) / pps;
+function showMark() {
+  track.querySelectorAll('.mark').forEach(d => d.remove());
+  if (marked) el('mark', { left: x(marked[0]) + 'px', width: (marked[1] - marked[0]) * pps + 'px' });
+  const bars = marked && S.bar ? `bars ${num(marked[0] / S.bar)} to ${num(marked[1] / S.bar)}` : 'the marked stretch';
+  $('render').title = marked ? `Render only ${bars} to a video file. Escape clears the mark.` : (S.card ? 'Render this part to a video file' : 'Render this scene to video') + '. Shift-drag on the timeline to mark a stretch and render only that.';
+}
+function markTo(e) {
+  const g = S.bar || 1, a = Math.min(drag.mark, stepAt(e)), b = Math.max(drag.mark, stepAt(e));
+  marked = [Math.max(0, Math.floor(a / g) * g), Math.min(S.steps, Math.ceil(b / g) * g)];
+  if (marked[1] <= marked[0]) marked = null;
+  showMark();
+}
 const scrubTo = e => setF(frameOf((e.clientX - scroll.getBoundingClientRect().left + scroll.scrollLeft - PAD) / pps), true);
 addEventListener('pointermove', e => {
   if (!drag) return;
   if (drag.scrub) return scrubTo(e);
+  if (drag.mark != null) return markTo(e);
   if (drag.note) {
     const arr = drag.arr.slice(), i = drag.note.i;
     if (drag.len) arr[i] = Math.max(0.25, drag.arr[i] + snap((e.clientX - drag.x0) / pps, e));
@@ -578,6 +618,7 @@ addEventListener('pointerup', async () => {
   if (!drag) return;
   const d = drag; drag = null;
   if (d.scrub) return;
+  if (d.mark != null) { if (marked) setF(frameOf(marked[0])); return; }
   while (sending) await new Promise(r => setTimeout(r, 20));
   if (d.note) { if (!same(d.before, d.last)) { await commit(d.path, d.before, d.last); build(); hear(d.note.ti); } return; }   // an untouched note keeps its element, so a double-click still lands on it
   await commit(d.m.path, d.start, d.last);
@@ -601,24 +642,34 @@ async function step(which) {                              // the journal is on t
 $('undo').onclick = () => step('undo'); $('redo').onclick = () => step('redo');
 $('render').onclick = async () => {
   pause(); $('spin').style.display = 'block'; $('render').disabled = true;
-  try { const r = await api('/render', {}); toast('Rendered ' + r.file + '\nClick to open.', false, () => open('/video?t=' + Date.now())); } catch (e) { toast(e.message, true); }
+  try { const r = await api('/render', marked ? { from: frameOf(marked[0]), to: frameOf(marked[1]) } : {}); toast('Rendered ' + r.file + '\nClick to open.', false, () => open('/video?t=' + Date.now() + (r.range ? '&range=1' : ''))); } catch (e) { toast(e.message, true); }
   $('spin').style.display = 'none'; $('render').disabled = false;
 };
 // ---- the episode: every part in order, each as wide as it is long. Click one to open it -------
 const PART = { scene: ICON.turns, title: ICON.roll, credits: ICON.roll, travel: '<svg viewBox="0 0 16 16"><path d="M2 12 6 5l3 4 2-3 3 6z"/></svg>', caption: ICON.say };
 const PART_SAYS = { scene: 'a scene', title: 'the title sequence', travel: 'a journey over the land', credits: 'the credits', caption: 'a caption' };
-let epT = 0, epRev = -1;
+let epT = 0, epRev = -1, levels = null;
+async function measure() {
+  $('spin').style.display = 'block';
+  try { levels = await api('/levels'); } catch (e) { toast(e.message, true); }
+  $('spin').style.display = 'none'; if (!levels) return;
+  const vs = Object.values(levels).filter(v => v != null).sort((a, b) => a - b), mid = vs[Math.floor(vs.length / 2)];
+  $('ep').querySelectorAll('button[data-id]').forEach(b => { b.querySelectorAll('em').forEach(e => e.remove()); const v = levels[b.dataset.id]; if (v == null) return;
+    const e = document.createElement('em'); e.textContent = v.toFixed(0); if (Math.abs(v - mid) > 3) e.className = 'off'; e.title = `${v} dB; the middle part of the episode is at ${mid} dB`; b.appendChild(e); });
+}
 async function showEpisode() {
   if (epRev === S.rev) return; epRev = S.rev;
   let parts; try { parts = await api('/episode'); } catch (e) { return; }
-  $('ep').innerHTML = parts.map(p => `<button data-id="${p.id}" class="${p.here ? 'here' : ''}" style="flex-grow:${Math.max(p.bars, 1)}" title="${p.id}: ${PART_SAYS[p.kind] || p.kind}\nStarts on bar ${num(p.at)} of the episode and runs ${num(p.bars)} bars.${p.here ? '' : '\nClick to open it.'}">${PART[p.kind] || ''}<span>${p.id}</span></button>`).join('');
+  levels = null;
+  $('ep').innerHTML = `<button id="meter" title="Measure how loud each part is. Each part then shows its average level in decibels (closer to 0 is louder); a part more than 3 dB from the episode's middle value turns amber. The numbers clear when anything changes.">${ICON.wave}</button>` + parts.map(p => `<button data-id="${p.id}" class="${p.here ? 'here' : ''}" style="flex-grow:${Math.max(p.bars, 1)}" title="${p.id}: ${PART_SAYS[p.kind] || p.kind}\nStarts on bar ${num(p.at)} of the episode and runs ${num(p.bars)} bars.${p.here ? '' : '\nClick to open it.'}">${PART[p.kind] || ''}<span>${p.id}</span></button>`).join('');
 }
 const showEpisodeSoon = () => { clearTimeout(epT); epT = setTimeout(showEpisode, 400); };
 $('ep').addEventListener('click', async e => {
   const b = e.target.closest('button'); if (!b || b.classList.contains('here')) return;
+  if (b.id === 'meter') return measure();
   pause();
   try { S = (await api('/open', { part: b.dataset.id })).state; } catch (err) { return toast(err.message, true); }
-  dropFrames(0); selected = null; pick = picked = null; cands = []; F = 0; fit(); build(); scroll.scrollLeft = 0;
+  dropFrames(0); selected = null; pick = picked = null; cands = []; marked = null; F = 0; fit(); build(); scroll.scrollLeft = 0;
 });
 // ---- what is heard: everything, or one layer alone; and its shape under the timeline -------------
 const HEAR = [[null, 'everything'], ['voices', 'the voices alone'], ['sounds', 'the sounds alone'], ['music', 'the music alone']];
@@ -631,6 +682,21 @@ function showHear() {
 $('hear').onclick = () => { pause(); layer = HEAR[(HEAR.findIndex(h => h[0] === layer) + 1) % HEAR.length][0]; audioRev = -1; if (A) A.audio = null; showHear(); build(); };
 async function showWave() { const rev = S.rev, only = layer; try { const w = await api('/wave?rev=' + rev + hearQ()); if (rev === S.rev && only === layer) { wave = { rev, only, ...w }; build(); } } catch (e) {} }
 const showWaveSoon = () => { clearTimeout(waveT); waveT = setTimeout(showWave, 500); };
+// ---- takes ---------------------------------------------------------------------------------------
+function showTakes(list) {
+  const box = $('takelist'), r = $('takes').getBoundingClientRect();
+  box.innerHTML = list.map(t => `<div class="${t.here ? 'here' : ''}" data-name="${t.name.replace(/"/g, '&quot;')}" title="${t.here ? 'This is the show as it stands now.' : 'Switch the whole show to this take. Undo brings you back.'}\nKept ${t.at}"><span></span><b title="Throw this take away">\u00d7</b></div>`).join('') + '<input placeholder="name this take" title="Keep the show as it stands now under this name. Enter keeps it.">';
+  box.querySelectorAll('div').forEach((d, i) => d.querySelector('span').textContent = list[i].name);
+  box.style.display = 'flex'; box.style.right = innerWidth - r.right + 'px'; box.style.bottom = innerHeight - r.top + 6 + 'px';
+  box.querySelector('input').onkeydown = async e => { if (e.key === 'Enter' && e.target.value.trim()) takeDo({ save: e.target.value }); else if (e.key === 'Escape') box.style.display = 'none'; };
+}
+async function takeDo(body) {
+  pause();
+  try { const r = await api('/take', body); S = r.state; if (body.open) { dropFrames(0); pick = picked = null; } build(); showTakes(r.takes); } catch (e) { toast(e.message, true); }
+}
+$('takes').onclick = async () => { const box = $('takelist'); if (box.style.display === 'flex') return box.style.display = 'none'; try { showTakes(await api('/takes')); } catch (e) { toast(e.message, true); } };
+$('takelist').addEventListener('click', e => { const d = e.target.closest('div[data-name]'); if (!d) return; if (e.target.tagName === 'B') takeDo({ drop: d.dataset.name }); else if (!d.classList.contains('here')) takeDo({ open: d.dataset.name }); });
+addEventListener('pointerdown', e => { if (!e.target.closest('#takelist') && !e.target.closest('#takes')) $('takelist').style.display = 'none'; });
 // ---- notes: M drops a pin at the playhead ------------------------------------------------------
 let noting = null;
 function openNote(n) { noting = n || {}; const i = $('note'); i.style.display = 'inline-block'; i.value = n ? n.text : ''; setTimeout(() => i.focus(), 0); }
@@ -643,7 +709,7 @@ $('note').addEventListener('keydown', async e => {
 async function openScene(dir) {
   pause();
   try { S = (await api('/open', { step: dir })).state; } catch (e) { return toast(e.message, true); }
-  dropFrames(0); selected = null; pick = picked = null; F = 0; fit(); build(); scroll.scrollLeft = 0;
+  dropFrames(0); selected = null; pick = picked = null; marked = null; F = 0; fit(); build(); scroll.scrollLeft = 0;
 }
 $('prev').onclick = () => openScene(-1); $('next').onclick = () => openScene(1);
 $('xray').onclick = () => { xray = !xray; $('xray').classList.toggle('on', xray); dropFrames(0); fill(); };
@@ -660,7 +726,7 @@ async function ready(f) {
 async function play(fromRangeStart) {
   if (playing) return;
   playing = true; stopAt = null; $('play').innerHTML = ICON.pause;
-  range = aud || (loop ? turnFrames(turnAt(F)) : [0, S.total]);
+  range = aud || (marked ? [frameOf(marked[0]), Math.min(S.total, frameOf(marked[1]))] : loop ? turnFrames(turnAt(F)) : [0, S.total]);
   if (fromRangeStart === true || F >= range[1] - 1) setF(range[0]);
   if (audioRev !== S.rev) {
     audioRev = S.rev;                      // fetched whole, so the browser can seek anywhere in it
@@ -733,6 +799,7 @@ addEventListener('keydown', e => {
   else if (k === '/') openFind();
   else if ((k === 'Backspace' || k === 'Delete') && pick) nudge('reset');
   else if (low === 'w' && pick && picked && picked.wider) nudge('widen');
+  else if (k === 'Escape' && !pick && marked) { marked = null; showMark(); }
   else if (k === 'Escape' && pick) { clearTimeout(audT); clearTimeout(replayT); stopBefore(); aud = null; pickAt(null); }
   else if ((k === 'ArrowLeft' || k === 'ArrowRight') && e.altKey) {
     const d = showSel(); if (!d) return; const v = Math.min(Math.max(d._m.value + (k === 'ArrowLeft' ? -0.25 : 0.25), d._m.lo), d._m.hi);

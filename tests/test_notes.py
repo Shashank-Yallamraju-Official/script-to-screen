@@ -29,3 +29,20 @@ def test_a_note_stays_on_its_moment_when_timings_move_and_can_be_read_and_closed
     assert sess.state()["notes"][0]["text"] == "reworded"
     sess.pin(0, "", nid=1)
     assert sess.state()["notes"] == []
+
+
+def test_a_take_keeps_the_whole_tuning_and_switching_to_it_is_one_undo_step(show):
+    sess = Session(show.scene("room", [ENTER, LINE]))
+    hold = lambda: sess.state()["turns"][1]["hold"]
+    first = hold()
+    sess.take(save="Before")
+    sess.patch([dict(path=["turns", 1, "hold"], value=first + 7)], commit=True)
+    sess.nudge("show.settle", "set", 9)
+    sess.take(save="Long hold")
+    assert [(t["name"], t["here"]) for t in sess.takes()] == [("Before", False), ("Long hold", True)]
+    sess.take(open="Before")
+    assert hold() == first and [t["here"] for t in sess.takes()] == [True, False]
+    sess.step("undo")                                                    # both files it changed come back together
+    assert hold() == first + 7 and [t["here"] for t in sess.takes()] == [False, True]
+    sess.take(drop="Before")
+    assert [t["name"] for t in sess.takes()] == ["Long hold"]

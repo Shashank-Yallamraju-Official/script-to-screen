@@ -278,7 +278,7 @@ def chain(t, doc=None):
         turn = edit.find_turn(doc, w["turn"])[1]
         item = turn["sfx"][w["n"] - 1]
         add("sfx", "hand", ((turn.get("tune") or {}).get("sfx_" + name) or {}).get(w["n"]))
-        default = {"at": 0, "vol": 1, "len": tuning.SFX_LEN.get(str(item["sound"]))}[name]
+        default = {"at": 0, "vol": 1, "fade_in": 0, "fade_out": 0, "len": tuning.SFX_LEN.get(str(item["sound"]))}[name]
         add("sfx", "written" if item.get(name) is not None else "default", item.get(name, default))
     elif t.scope == "reaction":
         turn = edit.find_turn(doc, w["turn"])[1]

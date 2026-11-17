@@ -38,7 +38,7 @@ def turn_value(raw, scene_doc, key, default):
     return float(default)
 
 
-SFX = ("at", "len", "vol")                           # what can be set by hand on one placed sound, keyed by its number in the turn (from 1)
+SFX = ("at", "len", "vol", "fade_in", "fade_out")                           # what can be set by hand on one placed sound, keyed by its number in the turn (from 1)
 SFX_LEN = {"swell": 16, "blast": 16}                # how long a placed sound lasts, in steps, unless it says: two bars of come-up
 
 
@@ -58,7 +58,9 @@ def sounds_of(raw):
         out.append(dict(n=n, sound=sound, on=fx.get("on", fx.get(True)),      # YAML reads a bare `on:` as true
                         at=float(hand("at") if hand("at") is not None else fx.get("at", 0)),
                         len=float(length) if length is not None else None,
-                        vol=float(hand("vol") if hand("vol") is not None else fx.get("vol", 1))))
+                        vol=float(hand("vol") if hand("vol") is not None else fx.get("vol", 1)),
+                        fade_in=float(hand("fade_in") if hand("fade_in") is not None else fx.get("fade_in", 0)),
+                        fade_out=float(hand("fade_out") if hand("fade_out") is not None else fx.get("fade_out", 0))))
     return out
 
 

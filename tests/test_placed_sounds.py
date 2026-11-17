@@ -107,3 +107,23 @@ def test_one_layer_can_be_heard_alone_and_the_sound_has_a_shape(sess):
     assert shape["per"] == 4 and len(shape["peaks"]) >= int(sess.scene.steps * 4) and 0 < max(shape["peaks"]) <= 1
     at = int(np.argmax(shape["peaks"])) / 4
     assert sess.state()["turns"][2]["start"] - 1 <= at                                                 # and its tallest point is the explosion
+
+
+def test_a_sound_and_a_cards_music_can_fade(sess):
+    x = np.ones(sound.RATE)
+    y = sound.faded(x, 0.25, 0.5)
+    assert y[0] == 0 and y[-1] == 0 and y[sound.RATE // 2 - 100] == 1 and x[0] == 1                     # and the sound it was given is untouched
+    before = heard(sess.stage)
+    sess.patch([dict(path=["turns", 2, "sfx", 1, "fade_in"], value=12)], commit=True)
+    assert sess.state()["turns"][2]["sfx"][0]["fade_in"] == 12 and yaml.safe_load(sess.path.read_text())["turns"][2]["tune"] == {"sfx_fade_in": {1: 12}}
+    assert not np.array_equal(before, heard(sess.stage))
+    series = yaml.safe_load((sess.root / "series.yaml").read_text())
+    series["seasons"][0]["episodes"][0]["segments"].append(dict(id="end", card="credits"))
+    (sess.root / "series.yaml").write_text(yaml.safe_dump(series))
+    sess.sync()
+    sess.open_part("end")
+    sess.patch([dict(path=["card", "music_out"], value=2)], commit=True)
+    assert sess.state()["card"]["music"]["fade_out"] == 2
+    plan, look, _ = parts(sess.root, "e")
+    x, end = plan[-1]["sound"](), int(plan[-1]["frames"] / look.fps * sound.RATE)
+    assert np.abs(x[end:]).max() == 0 and np.abs(x[end - 3 * sound.RATE:end - 2 * sound.RATE]).max() > 0  # silent by the card's end, sounding before it

@@ -91,8 +91,10 @@ def parts(root, eid):
         if sg["kind"] == "card":                                         # a card's music can be set by hand: where it lands (in bars, later or earlier) and how loud it is
             hand = sg.get("tune") or {}
             out[-1]["music_at"] = float(hand.get("music_at", 0)) * anthem.BAR
-            if float(hand.get("music_vol", 1)) != 1:
-                out[-1]["sound"] = lambda made=out[-1]["sound"], vol=float(hand["music_vol"]): made() * vol
+            vol, fin, fout = float(hand.get("music_vol", 1)), float(hand.get("music_in", 0)) * anthem.BAR, float(hand.get("music_out", 0)) * anthem.BAR
+            if vol != 1 or fin or fout:                              # louder or quieter; eased in; faded out by the time the card ends
+                out[-1]["sound"] = lambda made=out[-1]["sound"], vol=vol, fin=fin, fout=fout, end=int(out[-1]["frames"] / look.fps * sound.RATE): \
+                    sound.faded(made(), fin, fout, end if fout else None) * vol
         out[-1]["into"] = sg.get("into") or ("cut" if sg["kind"] == "scene" and n and segs[n - 1].get("card") == "travel" else cfg["transition"])
     return out, look, cfg
 

@@ -39,7 +39,7 @@ def in_play(score, steps, window=4.0):
             long = fx["len"] or 4.0
             lead = long if fx["sound"] == "blast" else 0.0       # an explosion's length is the swell before it
             if fx["start"] - lead - window <= steps <= fx["start"] + (long - lead) + window:
-                for name in ("at", "len", "vol"):
+                for name in ("at", "len", "vol", "fade_in", "fade_out"):
                     add(f"{score.id}:{other['id']}.x{fx['n']}.{name}", f"the {fx['sound']}", (fx["start"] - lead, fx["start"] + max(long - lead, 4.0)))
     if turn.get("bar") is not None:                              # 1c. the bar this turn lands on
         add(f"{here}.bar", f"turn {turn['id']} lands on bar {turn['bar']:g}", (turn["start"], turn["start"] + turn["length"]))

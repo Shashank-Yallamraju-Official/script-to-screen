@@ -108,6 +108,22 @@ def riser(hz0, hz1, dur, vol, timbre=None):
     return music.riser(hz0, hz1, dur, vol)
 
 
+def faded(x, fade_in=0.0, fade_out=0.0, end=None):
+    """A sound brought up from nothing over its first `fade_in` seconds, and down to nothing over the `fade_out` seconds before
+    `end` (a sample; by default its last)."""
+    if fade_in <= 0 and fade_out <= 0:
+        return x
+    x = x.copy()
+    a = min(int(fade_in * RATE), len(x))
+    x[:a] *= np.linspace(0, 1, a)
+    if fade_out > 0:
+        end = len(x) if end is None else max(0, min(int(end), len(x)))
+        b = min(int(fade_out * RATE), end)
+        x[end - b:end] *= np.linspace(1, 0, b)
+        x[end:] = 0
+    return x
+
+
 def mix(stage, only=None):
     """The whole scene's sound, or (`only`: voices, sounds or music) one of its three layers alone. Voices (one note per syllable), effects (one per event) and music (the score's
     cues, voiced in the mode their meaning calls for) are made as three buses, then mixed and mastered together."""
@@ -133,13 +149,17 @@ def mix(stage, only=None):
     for at, name, _, quiet in stage.score.events:
         fx = placed.get((round(at, 4), name)) or {}
         level, long = kind_level(name) * float(fx.get("vol", 1)), float(fx.get("len") or 16) * step
+        fin, fout = float(fx.get("fade_in", 0)) * step, float(fx.get("fade_out", 0)) * step
         if name == "blast":                                      # an explosion: not one of the small sounds, and never quiet
-            add(effects, at, blast() * level)
             lead = min(long, at)                                 # the come-up: a rising hum, two bars unless it says
-            add(effects, at - lead, swell(lead) * level)
+            bang, hum = blast(), swell(lead)
+            whole = np.zeros(int(lead * RATE) + len(bang))
+            whole[:len(hum)] += hum
+            whole[int(lead * RATE):] += bang
+            add(effects, at - lead, faded(whole, fin, fout) * level)
             continue
-        if name == "swell":                                      # the come-up alone: it rises and stops dead, with nothing after it
-            add(effects, at, swell(long) * level)
+        if name == "swell":                                      # the come-up alone: it rises and stops dead, unless it is asked to fade
+            add(effects, at, faded(swell(long), fin, fout) * level)
             continue
         p = sound_for(stage.look.sounds, name)
         if p and float(p.get("vol", 0)) > 0:

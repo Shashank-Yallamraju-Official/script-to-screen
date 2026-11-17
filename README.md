@@ -612,6 +612,12 @@ reaction, a hold. Click a stretch and the **knob** appears on that value.
 | Drag a line | Change the pause before it starts. In a show with bars, a line that has a `bar:` moves to another bar instead (it snaps to eighths of a bar; Shift for finer), and what comes before it waits |
 | Drag a sound in the sounds lane | Change when it starts. Drag its edge to change how long it lasts (for an explosion, how long it swells first) |
 | Click a sound, then Tab | Put the knob on its start, its length, then its level. `/` then "louder" finds the level of every sound of that kind |
+| Drag the dot at a sound's top corner | Fade it in (left dot) or out (right dot). A card's music has the same two dots |
+| M | Drop a note at the playhead, for the assistant to read (`s2s notes`). It stays on its moment when timings move; Enter with no words removes it |
+| H; or the button beside Play | Hear, and see in the waveform lane, everything, or the voices, the sounds or the music alone |
+| Shift-drag on the timeline | Mark a stretch. Play stays inside it, and Render makes a video of only that (out/<part>.range.mp4). Escape clears it |
+| The layers button | Takes: keep the whole show's tuning under a name, and switch between takes. Switching is one undo step. Takes stay on this computer (.s2s/takes) |
+| The meter at the start of the strip | Measure each part's average level in decibels; a part more than 3 dB from the middle one turns amber |
 | Click a part in the strip above the timeline | Open another part of the episode: a scene, the title sequence, a journey over the land, the credits |
 | On a card: drag its music; Up, Down | Change where the music lands, by eighths of a bar; make it louder or quieter. Written to that segment in series.yaml as `tune: {music_at, music_vol}` |
 | Drag the right edge of an outlined box in an entity's lane | Change how long a featured reaction holds the scene |

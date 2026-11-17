@@ -26,7 +26,7 @@ import skia
 
 from ..presentation import anthem, sound
 from ..presentation import episode as film
-from ..presentation.draw import hits
+from ..presentation.draw import draw_frame, hits
 from ..presentation.framecache import FrameCache
 from ..presentation.render import out_path
 from ..presentation.stage import Look, Stage
@@ -170,7 +170,7 @@ class Session:
     # ---- the episode's other parts: its title sequence, its journeys over the land, its credits -----------
     CARD = dict(title=("anthem", "The title sequence: the anthem, whole."), travel=("anthem (low figure)", "A journey over the land, down to the next scene."),
                 credits=("anthem", "The credits."), caption=(None, "A caption."))
-    MUSIC = dict(music_at=(-16.0, 64.0, 0.0), music_vol=(0.0, 2.0, 1.0))      # a card's hand-set values: lowest, highest, and what it is when not set
+    MUSIC = dict(music_at=(-16.0, 64.0, 0.0), music_vol=(0.0, 2.0, 1.0), music_in=(0.0, 32.0, 0.0), music_out=(0.0, 32.0, 0.0))      # a card's hand-set values: lowest, highest, and what it is when not set
 
     def plan(self):
         """The episode this scene is in, as its parts in order. Worked out when first asked for, and again when a file has changed."""
@@ -190,6 +190,19 @@ class Session:
             bars = p["frames"] / look.fps / anthem.BAR
             out.append(dict(id=p["id"], kind=p["kind"], at=round(at, 2), bars=round(bars, 2), here=p["id"] == (self.card or self.seg["id"])))
             at += bars
+        return out
+
+    def levels(self):
+        """How loud each part of the episode is: its average level in decibels, leaving out its silences."""
+        out = {}
+        for p in self.plan()[0]:
+            if "heard" not in p:
+                p["heard"] = p["sound"]()
+            x = p["heard"][: int(p["frames"] / self.plan()[1].fps * sound.RATE)]
+            n = sound.RATE * 4 // 10                                      # in blocks of 0.4 s
+            power = (x[: len(x) // n * n].reshape(-1, n) ** 2).mean(axis=1) if len(x) >= n else np.array([float((x ** 2).mean())])
+            loud = power[power > 1e-6]                                    # quieter than -60 dB is silence, and is left out
+            out[p["id"]] = round(float(10 * np.log10(loud.mean())), 1) if len(loud) else None
         return out
 
     def open_part(self, pid):
@@ -212,7 +225,7 @@ class Session:
         sg = next(s for s in series(self.root).episode(self.seg["episode"])["segments"] if s["id"] == self.card)
         hand = {**(sg.get("tune") or {}), **self.sketch}
         name, why = self.CARD[part["kind"]]
-        music = name and dict(name=name, at=float(hand.get("music_at", 0)), vol=float(hand.get("music_vol", 1)),
+        music = name and dict(name=name, at=float(hand.get("music_at", 0)), vol=float(hand.get("music_vol", 1)), fade_in=float(hand.get("music_in", 0)), fade_out=float(hand.get("music_out", 0)),
                               len=min(len(self.card_sound()) / sound.RATE / step, steps * 2))
         done, undone = edit.stacks(self.root, by="hand")
         turn = dict(id=part["kind"], index=0, start=0, length=steps, why=why, who=None, bar=None, sfx=[], pause=0, hold=0, say=None, lanes={}, reacts=[], stretches=[], orphans=0)
@@ -301,6 +314,76 @@ class Session:
         size = max(1, int(st["step"] / per * sound.RATE))
         n = min(len(x) // size, int(st["steps"] * per) + 1)
         return dict(per=per, peaks=[round(float(v), 3) for v in x[: n * size].reshape(n, size).max(axis=1)])
+
+    # ---- takes: the whole show's tuning as it stood, kept under a name ----------------------------------
+    def _takes(self):
+        return self.root / ".s2s" / "takes"
+
+    def _now(self):
+        return {str(p.relative_to(self.root)): p.read_text() for p in self.files() if p.exists()}
+
+    def takes(self):
+        """Every take, oldest first, and whether it is what the show says now."""
+        now, out = self._now(), []
+        for f in sorted(self._takes().glob("*.json"), key=lambda f: f.stat().st_mtime):
+            t = json.loads(f.read_text())
+            out.append(dict(name=t["name"], at=t["at"], here=all(now.get(k) == v for k, v in t["files"].items())))
+        return out
+
+    def take(self, save=None, open=None, drop=None):
+        """Keep the show as it stands under a name; or switch the show to a take (one undo step); or throw a take away."""
+        slug = lambda name: "".join(c if c.isalnum() else "-" for c in str(name).strip().lower()) or "take"
+        if save and str(save).strip():
+            self._takes().mkdir(parents=True, exist_ok=True)
+            (self._takes() / f"{slug(save)}.json").write_text(json.dumps(dict(name=str(save).strip(), at=time.strftime("%Y-%m-%d %H:%M"), files=self._now()), ensure_ascii=False))
+        elif drop:
+            (self._takes() / f"{slug(drop)}.json").unlink(missing_ok=True)
+        elif open:
+            t = json.loads((self._takes() / f"{slug(open)}.json").read_text())
+            group = f"take-{time.time()}"
+            for rel, text in t["files"].items():
+                path = self.root / rel
+                before = path.read_text() if path.exists() else None
+                if before is not None and before != text:
+                    edit.write(path, text)
+                    edit.record(self.root, "take", None, path, [dict(address=rel, field="take", before=None, after=t["name"])], before, text, by="hand", group=group)
+            self.load()
+
+    def render_range(self, F0, F1):
+        """A stretch of the part that is open, as a video file of its own: out/<part>.range.mp4."""
+        import io
+        import wave as wav
+        if self.card:
+            (_, look, _), part = self.plan(), self.part()
+            W, H, fps, total, draw, name = look.W, look.H, look.fps, part["frames"], part["draw"], self.card
+        else:
+            st = self.stage
+            W, H, fps, total, draw, name = st.W, st.H, st.fps, st.total, (lambda c, F: draw_frame(c, st, F)), self.seg["id"]
+        F0, F1 = max(0, int(F0)), min(total, int(F1))
+        if F1 - F0 < 2:
+            raise ValueError("that range is empty")
+        out = self.root / "out" / f"{name}.range.mp4"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        silent, sound_file, tmp = out.with_suffix(".silent.mp4"), out.with_suffix(".wav"), out.with_suffix(".part.mp4")
+        ff = subprocess.Popen(["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgba", "-s", f"{W}x{H}", "-r", str(fps), "-i", "-",
+                               "-c:v", "libx264", "-crf", "18", "-preset", "veryfast", "-pix_fmt", "yuv420p", str(silent)], stdin=subprocess.PIPE)
+        surface = skia.Surface(W, H)
+        for F in range(F0, F1):
+            draw(surface.getCanvas(), F)
+            ff.stdin.write(surface.toarray(colorType=skia.kRGBA_8888_ColorType).tobytes())
+        ff.stdin.close()
+        if ff.wait() != 0:
+            raise ValueError("ffmpeg failed")
+        with wav.open(io.BytesIO(self.audio())) as w:
+            x = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).astype(np.float64) / 32767.0
+        sound_file.write_bytes(sound.wav_bytes(x[int(F0 / fps * sound.RATE): int(F1 / fps * sound.RATE)]))
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(silent), "-i", str(sound_file), "-map", "0:v", "-map", "1:a",
+                        "-c:v", "copy", "-c:a", "aac", "-b:a", "160k", str(tmp)], check=True)
+        tmp.replace(out)
+        silent.unlink()
+        sound_file.unlink()
+        self.ranged = out
+        return out
 
     def pins(self):
         """The writer's notes on the part that is open, each where it is now."""
@@ -574,12 +657,18 @@ def make_handler(sess):
                         return self.send(sess.poll())
                     if url.path == "/frame":                 # build=A is the scene as it stood when the knob was put on a value
                         return self.send(sess.frame(int(q["f"][0]), flag("full"), flag("xray"), q.get("build") == ["A"]), "image/jpeg")
+                    if url.path == "/levels":
+                        return self.send(sess.levels())
+                    if url.path == "/takes":
+                        return self.send(sess.takes())
                     if url.path == "/episode":               # every part of the episode this scene is in
                         return self.send(sess.episode())
                     if url.path == "/audio":                 # only=voices|sounds|music is one layer alone
                         return self.send(sess.audio(q.get("only", [None])[0], q.get("build") == ["A"]), "audio/wav")
                     if url.path == "/wave":                  # the shape of the sound, for the lane under the timeline
                         return self.send(sess.wave(q.get("only", [None])[0]))
+                    if url.path == "/video" and flag("range"):
+                        return self.send(sess.ranged.read_bytes(), "video/mp4")
                     if url.path == "/video":
                         return self.send(out_path(sess.stage).read_bytes(), "video/mp4")
                 self.send(dict(error="not found"), status=404)
@@ -596,6 +685,10 @@ def make_handler(sess):
             n = int(self.headers.get("Content-Length") or 0)
             body = json.loads(self.rfile.read(n) or b"{}")
             try:
+                if self.path == "/render" and (body.get("to") or sess.card):      # a marked stretch, or a card, which has no film of its own
+                    with sess.lock:
+                        out = sess.render_range(body.get("from", 0), body.get("to") or 10 ** 9)
+                    return self.send(dict(file=str(out.relative_to(sess.root)), range=True))
                 if self.path == "/render":
                     with sess.lock:
                         sid, root = sess.seg["id"], sess.root
@@ -622,6 +715,9 @@ def make_handler(sess):
                     elif self.path in ("/undo", "/redo"):
                         sess.step(self.path[1:])
                         out["dirty_from"] = 0
+                    elif self.path == "/take":                # keep the show as it stands, switch to a take, or drop one
+                        sess.take(body.get("save"), body.get("open"), body.get("drop"))
+                        out["dirty_from"], out["takes"] = 0, sess.takes()
                     elif self.path == "/note":                # a note pinned to a moment
                         sess.pin(int(body.get("f", 0)), body.get("text"), body.get("id"))
                     elif self.path == "/open" and body.get("part"):      # open a part of the episode by name: a scene, or a card

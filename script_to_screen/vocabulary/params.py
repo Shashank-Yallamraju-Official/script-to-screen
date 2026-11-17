@@ -140,6 +140,10 @@ PARAMS = {p.key: p for p in [
       "timing", fine=0.25, exercised_by=("sfx",), words=("shorter", "longer", "tail", "swell", "build", "come-up")),
     _("sfx.vol", "Level", "How loud this one sound is, against others of its kind. 1 is as its kind is set.", "times", 0, 2, 0.05, "a turn's `sfx:` item, `vol:`",
       "timing", fine=0.01, exercised_by=("sfx",), words=("louder", "quieter", "this one")),
+    _("sfx.fade_in", "Fades in", "Steps over which this sound comes up from nothing as it starts.", "steps", 0, 64, 1, "a turn's `sfx:` item, `fade_in:`",
+      "timing", fine=0.25, exercised_by=("sfx",), words=("fade in", "ease in", "gentler start")),
+    _("sfx.fade_out", "Fades out", "Steps over which this sound dies away to nothing at its end.", "steps", 0, 64, 1, "a turn's `sfx:` item, `fade_out:`",
+      "timing", fine=0.25, exercised_by=("sfx",), words=("fade out", "tail", "die away", "softer stop")),
     # ---- a sound: library/sounds.yaml -------------------------------------------------------------------
     _("sound.vol", "Volume", "Volume (0 is off).", "level", 0, 1, 0.01, "library/sounds.yaml <sound>.vol", "sound", words=("louder", "quieter", "mute")),
     _("sound.freq", "Pitch", "Starting pitch in Hz.", "Hz", 40, 2000, 5, "library/sounds.yaml <sound>.freq", "sound", words=("higher", "lower", "thud", "ping")),
