@@ -16,6 +16,7 @@ The test for an entry: *a small change needed edits in several places, or broke 
 | `episode.py` held assembly, rendering and four ways of looking | 500 lines; every new reading made it longer | The readings (`moments`, `listen`, `rhythm`, `shots`, `frames`) live in `presentation/readings.py` |
 | Frames were not repeatable | The map's cogs turned a different way each run | Fixed checksums; the kept frames depend on it |
 | A speed test failed on CI about one push in two | `test_the_knob_is_fast` allowed 180 ms; the shared machine took 231 | It allows more on CI, where the machine is slower and varies |
+| The Series Bible was behind the show | It lacked the look (the three rules of the room), the arrow through the flag, and what the land does in the 120 days | Brought up to date on 2026-11-17, with the docs |
 | The kept-frames check averaged over the whole frame | It missed the hole in the flag and the patch: small, local changes | It now goes by the most-changed patch of each frame; proved against the frames from before the change |
 
 ## Still owed, most costly first
@@ -34,4 +35,3 @@ The test for an entry: *a small change needed edits in several places, or broke 
 12. **A level curve is placed in steps, not on a turn,** so it does not follow a retimed scene; and the mix reads a scene's `levels:` from its file, not from the score, so a score that has been through JSON loses them.
 13. **Hand-set card values are read in three places** (`episode.parts`, the editor's card state, the editor's writer), each with its own defaults.
 14. **The whole-episode view plays joins as plain cuts;** the film's dips and fades are made only when rendering.
-15. **The Series Bible is behind the show.** It does not yet have the look (the three rules of the room), the arrow, or the land's history. Not code, but the same kind of debt.

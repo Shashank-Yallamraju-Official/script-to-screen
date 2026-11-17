@@ -541,7 +541,7 @@ of the architecture, done for the tuning commands first.
 
 | Question | Recommendation | Why it is open |
 |---|---|---|
-| **Keep pins?** (decided: no. An address such as `the-vase:2+6` names a moment well enough) | ~~Yes, minimal~~: P, one line of text, stored in the scene's `pins:` list. It is the only non-number the editor writes | It is the one place the editor accepts typing, which cuts against "only to tweak params" |
+| **Keep pins?** (decided: no, at first: an address such as `the-vase:2+6` names a moment well enough. Reversed later: `M` drops a note, kept in the show's `notes.yaml` and not in the scene; see phases.md, N10) | ~~Yes, minimal~~: P, one line of text, stored in the scene's `pins:` list. It is the only non-number the editor writes | It is the one place the editor accepts typing, which cuts against "only to tweak params" |
 | **Default scope of a nudge** | Narrowest, always; widening is deliberate | The alternative, "remember my last scope", saves keystrokes and risks silent show-wide changes |
 | **Motion per entity** | Not yet; show-wide only, with the cascade ready for it | Per-character motion is characterisation, which may belong to tells and the writing loop |
 | **Should widening look for a pattern?** "You shortened 9 of 11 breaths after accusations" | Leave to the assistant, reading `s2s tune list` | It is inference, and the tool holds no AI (decision 13) |
