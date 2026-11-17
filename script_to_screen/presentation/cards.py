@@ -131,12 +131,29 @@ class Land:
                 return [p + (q - p) * k for p, q in zip(a, b)]
         return list(keys[-1][1:])
 
-    def draw(self, c, t):
-        look, land = self.look, self.land
+    def places(self, day=None):
+        """The places as they stand on `day`: land.yaml's `history` ([{day, <place>: {smoke, flags}}]) laid over them, in order."""
+        out = {k: dict(p) for k, p in self.land["places"].items()}
+        if day is None:
+            return out
+        for p in out.values():
+            p.pop("smoke", None)
+        for entry in sorted(self.land.get("history") or [], key=lambda e: e["day"]):
+            if entry["day"] <= day:
+                for k, change in entry.items():
+                    if k != "day":
+                        out[k].update(change)
+                        out[k]["_since"] = {**out[k].get("_since", {}), **{n: entry["day"] for n in change}}
+        return out
+
+    def draw(self, c, t, cam=None, view=1.0, day=None, words=True):
+        """`cam` (x, y, zoom) and `view` (1 = the model seen from one side, 0 = from straight above) are for a card that flies
+        the camera itself; `day` shows the land as it stands on that day."""
+        look, land = self.look, dict(self.land, places=self.places(day))
         W, H = look.W, look.H
-        F, K, TILT, H0 = 760.0, 0.85, 0.6, H * 0.6
-        cx, cy, zoom = self._camera(t)
-        ahead = self._camera(t + 0.25)
+        F, K, TILT, H0 = 760.0, 0.85 * view, 1.0 - 0.4 * view, H * (0.5 + 0.1 * view)
+        cx, cy, zoom = cam or self._camera(t)
+        ahead = cam or self._camera(t + 0.25)
         roll = max(-3.5, min(3.5, (ahead[0] - cx) * 0.03))           # it banks into a turn
 
         def proj(x, y, z=0.0):
@@ -237,7 +254,17 @@ class Land:
                     top = ty - 156 * sheet["size"] * sc - 10 * sc
                     c.drawPath(skia.Path().moveTo(tx - 15 * sc, top).lineTo(tx - 18 * sc, top - 17 * sc).lineTo(tx - 8 * sc, top - 9 * sc).lineTo(tx, top - 22 * sc)
                                .lineTo(tx + 8 * sc, top - 9 * sc).lineTo(tx + 18 * sc, top - 17 * sc).lineTo(tx + 15 * sc, top).close(), stroke(self.PALE, 3 * sc, 255 * min(1.0, rise)))
-            if p.get("smoke"):                                        # it burned
+            flags = p.get("flags")
+            if flags:                                                 # whose it is now: a pennant for each
+                up = 1.0 if day is None else smooth((day - p["_since"]["flags"]) / 6.0)
+                for i, who in enumerate(flags):
+                    fx = x + (i - (len(flags) - 1) / 2) * 30
+                    (ax, ay, s2), (qx, qy, _) = proj(fx, y + 34, lift), proj(fx, y + 34, lift + 58 * up)
+                    c.drawLine(ax, ay, qx, qy, stroke(self.PALE, 2.5 * s2))
+                    c.drawPath(skia.Path().addPoly([skia.Point(qx, qy), skia.Point(qx + 20 * s2, qy + 7 * s2), skia.Point(qx, qy + 15 * s2)], True),
+                               fill(land["places"][who].get("color") or self.sheets[land["places"][who]["entity"]]["color"], 255 * up))
+            if p.get("smoke") or p.get("_since", {}).get("smoke") is not None:      # it burned; once it is out, the smoke thins and goes
+                k = k if p.get("smoke") else 1 - smooth((day - p["_since"]["smoke"]) / 12.0)
                 for i in range(7):
                     age = (t * 0.32 + i / 7) % 1.0
                     sx, sy, s2 = proj(x - 20 + 16 * math.sin(i * 2.1 + t * 0.7) + 26 * age, y, 60 + 230 * age)
@@ -247,9 +274,11 @@ class Land:
         # --- the air between us and it: distance fades, the corners fall away ---
         r, g, b = place_rgb(self.TABLE)
         c.drawRect(skia.Rect.MakeWH(W, H * 0.42), skia.Paint(Shader=skia.GradientShader.MakeLinear(
-            [skia.Point(0, 0), skia.Point(0, H * 0.42)], [skia.Color(r, g, b, 235), skia.Color(r, g, b, 0)])))
+            [skia.Point(0, 0), skia.Point(0, H * 0.42)], [skia.Color(r, g, b, int(235 * view)), skia.Color(r, g, b, 0)])))
         c.drawRect(skia.Rect.MakeWH(W, H), skia.Paint(Shader=skia.GradientShader.MakeRadial(
             skia.Point(W / 2, H * 0.55), W * 0.75, [skia.Color(8, 5, 8, 0), skia.Color(8, 5, 8, 0), skia.Color(8, 5, 8, 190)], [0.0, 0.55, 1.0])))
+        if not words:
+            return
         by = self.land.get("credit")
         if by:                                                        # one credit, beside the land, before the name
             a = smooth((t - float(by["from"]) * self.bar) / 0.6) * (1 - smooth((t - float(by["to"]) * self.bar) / 0.6))
@@ -262,6 +291,69 @@ class Land:
             name = str(self.show.get("title") or "Untitled").upper()
             _centred(c, name, H * 0.50, font(104), fill(self.PALE, 255 * smooth((t - lands) / 0.5)), W)
             _centred(c, str(self.episode.get("title") or ""), H * 0.50 + 62, font(30), fill(self.BRASS, 255 * smooth((t - lands - 0.9) / 0.6)), W)
+
+
+class Travel:
+    """From one scene to the next, by way of the land (`{card: travel}` between two scenes in series.yaml).
+
+    The scene we are leaving tips over until we are looking straight down on it, and we rise until the whole land is in view. The
+    days between the two scenes go by, counted, and the land changes as they do (land.yaml `history`). Then the camera finds where
+    the next scene is, goes there, comes down, and the scene stands up in front of us.
+
+    Everything is worked out from the scenes either side: their `day:` in series.yaml, and their place's `land:` (which place on the
+    land it is). After a card instead of a scene (the title sequence, say) there is nothing to leave: it begins with the whole land.
+    """
+    WHOLE = (460.0, 500.0, 0.88)
+    TIP, RISE = 1.6, 2.6
+
+    def __init__(self, land, before, after, last, first):
+        self.land, self.look = land, land.look
+        self.a, self.b = before, after                               # {day, at: the place on the land} for the scene before and the scene after
+        self.last, self.first = last, first                           # their last and first frames, as images (last is None after a card)
+        self.days = max(0, int(after["day"]) - int(before["day"]))
+        self.lapse = 0.0 if not self.days else min(7.0, 2.5 + 0.8 * math.log10(self.days + 1) * 2)
+        self.lead = (self.TIP + self.RISE) if last is not None else 0.8
+        self.seconds = self.lead + self.lapse + self.RISE + self.TIP
+
+    def sound(self):
+        return np.zeros(int(self.seconds * music.RATE))
+
+    def _tipped(self, c, image, k):
+        """A scene's frame, `k` of the way over from standing in front of us (0) to lying under us (1)."""
+        W, H = self.look.W, self.look.H
+        k = smooth(k)
+        floor, squash, wide, shrink = H * 0.72, 1 - 0.86 * k, 1 + 0.2 * k, 1 - 0.55 * k
+        m = skia.Matrix()
+        m.setPolyToPoly([skia.Point(0, 0), skia.Point(W, 0), skia.Point(W, H), skia.Point(0, H)],
+                        [skia.Point(W / 2 - W / 2 * wide * shrink, floor - floor * squash * shrink), skia.Point(W / 2 + W / 2 * wide * shrink, floor - floor * squash * shrink),
+                         skia.Point(W / 2 + W / 2 * shrink, floor + (H - floor) * squash * shrink), skia.Point(W / 2 - W / 2 * shrink, floor + (H - floor) * squash * shrink)])
+        c.save()
+        c.concat(m)
+        c.drawImage(image, 0, 0, skia.SamplingOptions(skia.FilterMode.kLinear), skia.Paint(Alphaf=1 - smooth((k - 0.45) / 0.5)))
+        c.restore()
+
+    def draw(self, c, t):
+        (ax, ay), (bx, by), whole, close = self.a["at"], self.b["at"], self.WHOLE, 3.6
+        mix = lambda p, q, k: tuple(u + (v - u) * smooth(k) for u, v in zip(p, q))
+        t1 = self.lead                                                # the days start to pass
+        t2 = t1 + self.lapse                                          # the camera sets off for the next place
+        t3 = t2 + self.RISE                                           # it is over the place: the scene stands up
+        day = self.a["day"] + self.days * smooth((t - t1) / self.lapse) if self.lapse else self.b["day"]
+        if t < t1 and self.last is not None:
+            k = (t - self.TIP * 0.5) / (self.RISE + self.TIP * 0.5)
+            self.land.draw(c, 500 + t, mix((ax, ay, close), whole, k), smooth(k), day, False)
+            if t < self.TIP:
+                self._tipped(c, self.last, t / self.TIP)
+        elif t < t2:
+            self.land.draw(c, 500 + t, whole, 1.0, day, False)
+        else:
+            k = (t - t2) / (self.RISE + self.TIP * 0.5)
+            self.land.draw(c, 500 + t, mix(whole, (bx, by, close), k), 1 - smooth(k), day, False)
+            if t > t3:
+                self._tipped(c, self.first, 1 - (t - t3) / self.TIP)
+        if self.days:                                                 # the count of days, while they pass
+            a = smooth((t - t1 + 0.6) / 0.5) * (1 - smooth((t - t2 - 0.9) / 0.6))
+            c.drawString(f"Day {int(round(day))}", 70, self.look.H - 62, font(28), fill(self.land.PALE, 255 * a))
 
 
 class Caption:

@@ -66,7 +66,7 @@ def find_root(path):
 
 
 STATUSES = ("draft", "staged", "tuned", "locked")
-CARDS = ("title", "credits", "caption")
+CARDS = ("title", "credits", "caption", "travel")
 _override = {}                              # root -> series data being rehearsed (see `rehearsing`)
 
 
@@ -104,7 +104,7 @@ class Series:
                                                         season=season["id"], episode=episode["id"]))
                         continue
                     seg = dict(id=str(sg["id"]), kind=kind, path=(self.root / str(sg[kind])).resolve(), file=str(sg[kind]),
-                               status=sg.get("status", "draft"), logline=sg.get("logline"), into=sg.get("into"),
+                               status=sg.get("status", "draft"), logline=sg.get("logline"), into=sg.get("into"), day=sg.get("day"),
                                season=season["id"], episode=episode["id"], index=len(self.segments))
                     if seg["id"] in self.by_id:
                         raise ScriptError(f"series.yaml: two segments are called '{seg['id']}'")

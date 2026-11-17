@@ -43,8 +43,35 @@ def parts(root, eid):
     sheets = {e: tuning.overlay(load_yaml(root / "entities" / f"{e}.yaml")) for e in cast}
     step = 60.0 / float(show.cfg["tempo"]) / show.cfg["steps_per_beat"]
     out = []
-    for sg in episode["segments"]:
-        if sg["kind"] == "scene":
+    land_file = root / "land.yaml"
+    model = None
+
+    def the_land():
+        nonlocal model
+        if model is None:
+            data = load_yaml(land_file)
+            model = cards.Land(look, show.cfg, episode, data, {p["entity"]: tuning.overlay(load_yaml(root / "entities" / f"{p['entity']}.yaml")) for p in data["places"].values()})
+        return model
+
+    def frame_of(sg, F):                                             # one frame of a scene, as a picture
+        surf = skia.Surface(look.W, look.H)
+        draw_frame(surf.getCanvas(), stages[sg["id"]], F if F >= 0 else stages[sg["id"]].total + F)
+        return surf.makeImageSnapshot()
+
+    def where(sg):                                                   # a scene's day, and its place on the land
+        spot = (load_yaml(root / "places" / f"{load_yaml(sg['path']).get('place')}.yaml") or {}).get("land")
+        if sg.get("day") is None or spot is None:
+            raise ValueError(f"series.yaml: a travel card needs '{sg['id']}' to have a `day:`, and its place a `land:` (which place on the land it is)")
+        return dict(day=int(sg["day"]), at=the_land().land["places"][spot]["at"])
+
+    segs = episode["segments"]
+    for n, sg in enumerate(segs):
+        if sg["kind"] == "card" and sg["card"] == "travel":           # between two scenes, by way of the land
+            before = next(s for s in reversed(segs[:n]) if s["kind"] == "scene")
+            after = next(s for s in segs[n + 1:] if s["kind"] == "scene")
+            card = cards.Travel(the_land(), where(before), where(after), frame_of(before, -1) if segs[n - 1] is before else None, frame_of(after, 0))
+            out.append(dict(id=sg["id"], kind="travel", frames=round(card.seconds * look.fps), draw=lambda c, F, card=card: card.draw(c, F / look.fps), sound=card.sound))
+        elif sg["kind"] == "scene":
             st = stages[sg["id"]]
             out.append(dict(id=sg["id"], kind="scene", frames=st.total, draw=lambda c, F, st=st: draw_frame(c, st, F),
                             sound=lambda st=st: _samples(sound.mix(st))))
@@ -58,7 +85,7 @@ def parts(root, eid):
                     else cards.Credits(look, show.cfg, episode, cast, sheets, step, cfg["credits_seconds"]))
             out.append(dict(id=sg["id"], kind=sg["card"], frames=round(card.seconds * look.fps), draw=lambda c, F, card=card: card.draw(c, F / look.fps),
                             sound=card.sound))
-        out[-1]["into"] = sg.get("into") or cfg["transition"]
+        out[-1]["into"] = sg.get("into") or ("cut" if sg["kind"] == "scene" and n and segs[n - 1].get("card") == "travel" else cfg["transition"])
     return out, look, cfg
 
 

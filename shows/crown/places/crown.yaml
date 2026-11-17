@@ -6,6 +6,7 @@
 #   the bench and its plates          a council, each member at its own seat
 #   the flag, under the crown         who rules: Signet
 name: The crown
+land: signet                   # where this is on the land
 wall: "#f2cf7e"
 floor: "#63a455"
 sky: ["#b9a3dc", "#f8e59c"]

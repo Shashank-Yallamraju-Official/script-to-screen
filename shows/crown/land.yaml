@@ -7,10 +7,10 @@ palette: {table: "#17194d", sheet: "#f4e3a0", dark: "#d9b765", iron: "#4a5fc4", 
 title_bar: 18
 credit: {role: Created by, name: Shashank Yallamraju, from: 14.5, to: 17}
 places:
-  signet: {at: [460, 262], entity: great-seal, at_bar: 0.4, crown: true, smoke: true}      # the crown: it has just burned
+  signet: {at: [460, 262], entity: great-seal, color: "#c8324e", at_bar: 0.4, crown: true, smoke: true}      # the crown: it has just burned
   lode:   {at: [460, 132], entity: long-needle, at_bar: 2.2}
-  mallet: {at: [236, 330], entity: sledge, at_bar: 4.4}
-  hasp:   {at: [700, 446], entity: heavy-lock, at_bar: 7.6}
+  mallet: {at: [236, 330], entity: sledge, color: "#e0952f", at_bar: 4.4}
+  hasp:   {at: [700, 446], entity: heavy-lock, color: "#3f6fd0", at_bar: 7.6}
   rue:    {at: [350, 446], entity: eraser, at_bar: 10.2}
   bout:   {at: [168, 446], entity: old-pair, at_bar: 10.8}
   cinder: {at: [460, 740], entity: match, at_bar: 13.6}
@@ -18,6 +18,11 @@ places:
   brim:   {at: [404, 580], entity: deep-cup}
   whirl:  {at: [700, 590], entity: heavy-top}
   glass:  {at: [778, 750], entity: glass-one}
+# What changes on the land, and on which day. A travel card between two scenes plays these as the days pass.
+history:
+  - {day: 1, signet: {smoke: true}}                                   # the crown burns
+  - {day: 30, signet: {smoke: false}}                                 # it is out
+  - {day: 100, signet: {flags: [mallet, signet, hasp]}}               # rebuilt, under three flags
 roads:                       # [from, to, the bar it starts to draw]
   - [signet, lode, 1]
   - [lode, [460, 0], 2]

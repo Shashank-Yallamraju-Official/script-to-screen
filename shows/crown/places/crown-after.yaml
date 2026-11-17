@@ -4,6 +4,7 @@
 #   saplings in the planters   the trees were lost, and not long ago
 #   three flags                who rules now: Mallet, Signet and Hasp
 name: The crown, rebuilt
+land: signet                   # where this is on the land
 wall: "#b9c6ea"
 floor: "#8294c9"
 sky: ["#8f9fd6", "#dfe6f6"]

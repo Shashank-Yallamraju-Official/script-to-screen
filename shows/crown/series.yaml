@@ -8,8 +8,8 @@ seasons:
         title: "One: the vote"
         logline: A council is about to vote when a single match gets into the chamber. Months later the same vote cannot be carried.
         segments:
-          - {id: the-council, scene: episodes/e01/01-the-council.yaml}
+          - {id: the-council, scene: episodes/e01/01-the-council.yaml, day: 1}
           - {id: the-vote-title, card: title, into: cut}
-          - {id: months-later, card: caption, text: Months later, seconds: 3.5, into: dip}
-          - {id: the-council-again, scene: episodes/e01/02-the-council-again.yaml, into: dip}
+          - {id: months-later, card: travel, into: fade}          # over the land while the days pass, and down to the next scene
+          - {id: the-council-again, scene: episodes/e01/02-the-council-again.yaml, day: 120}
           - {id: the-vote-credits, card: credits}
