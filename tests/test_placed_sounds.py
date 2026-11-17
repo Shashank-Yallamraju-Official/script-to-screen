@@ -165,3 +165,23 @@ def test_a_layers_level_can_be_bent_over_time(sess):
     assert sess.state()["levels"] == {} and "levels" not in sess.path.read_text()
     with pytest.raises(ValueError):
         sess.curve("everything", [[0, 1]])
+
+
+def test_ripple_moves_every_later_pinned_line_and_without_it_they_stay(show):
+    with open(show.root / "show.yaml", "a") as f:
+        f.write("\nbeats_per_bar: 2\n")
+    second = dict(id=3, who="b", say="No.", bar=8, why="He denies it.")
+    third = dict(id=4, who="a", say="Yes.", bar=11, why="She insists.")
+    s = Session(show.scene("room", [ENTER, LINE, second, third], bars=14))
+    bars = lambda: [t["bar"] for t in s.state()["turns"]]
+    assert bars() == [None, 4, 8, 11]
+    s.patch([dict(path=["turns", 1, "bar"], value=5)], commit=True)                              # roll: only this line moves
+    assert bars() == [None, 5, 8, 11] and s.state()["bars"] == 14
+    s.patch([dict(path=["turns", 1, "bar"], value=7)], commit=True, ripple=True)                 # ripple: two bars later, and so is everything after
+    assert bars() == [None, 7, 10, 13] and s.state()["bars"] == 16
+    assert yaml.safe_load(s.path.read_text())["turns"][3]["bar"] == 11                           # what was written stays; the move is a hand-set value
+    s.step("undo")
+    assert bars() == [None, 5, 8, 11] and s.state()["bars"] == 14                                # and it is one undo step
+    s.patch([dict(path=["turns", 1, "bar"], value=6)], ripple=True)                              # dragging shows it at once, without piling up
+    s.patch([dict(path=["turns", 1, "bar"], value=7)], ripple=True)
+    assert bars() == [None, 7, 10, 13]

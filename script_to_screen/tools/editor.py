@@ -59,7 +59,7 @@ def hand(doc, t, value, changes, was):
         changes.append(dict(address=t.address, field=t.name, before=was, after=value))
 
 
-def apply_ops(root, path, sid, doc, score, ops):
+def apply_ops(root, path, sid, doc, score, ops, ripple=False):
     """Apply timeline edits to a scene document as hand-set values (`tune:` blocks).
     -> (the lowest turn position touched, the changes made).
 
@@ -81,7 +81,18 @@ def apply_ops(root, path, sid, doc, score, ops):
             n = int(where[3])
             hand(doc, tune.Target(root, "sfx." + where[4], "sfx", path, scene=sid, turn=tid, n=n), value, changes, tune.tidy(played["sfx"][n - 1][where[4]]))
         elif len(where) == 3 and where[2] in NUMBERS:
-            hand(doc, tune.Target(root, "turn." + where[2], "turn", path, scene=sid, turn=tid), value, changes, tune.tidy(played[where[2]]))
+            was = tune.tidy(played[where[2]])
+            hand(doc, tune.Target(root, "turn." + where[2], "turn", path, scene=sid, turn=tid), value, changes, was)
+            per = score.grid["steps_per_beat"] * int(load_yaml(Path(root) / "show.yaml").get("beats_per_bar") or 0)
+            moved = (float(tune.tidy(value)) - float(was or 0)) * (1.0 if where[2] == "bar" else 1.0 / per if per else 0.0)      # in bars
+            if ripple and per and moved:                         # ripple: every later line that is pinned to a bar moves by as much, and the scene grows to match
+                for j in range(i + 1, len(doc["turns"])):
+                    later = tuning.bar_of(doc["turns"][j])
+                    if later is not None:
+                        hand(doc, tune.Target(root, "turn.bar", "turn", path, scene=sid, turn=doc["turns"][j].get("id", j + 1)), later + moved, changes, tune.tidy(later))
+                if doc.get("bars") is not None:
+                    changes.append(dict(address=sid, field="bars", before=doc["bars"], after=tune.tidy(float(doc["bars"]) + moved)))
+                    doc["bars"] = tune.tidy(float(doc["bars"]) + moved)
         elif len(where) == 3 and where[2] in LISTS and value is not None:
             name, field = LIST_OF[where[2]]
             for k, (syl, v) in enumerate(zip(played["sylls"], value)):
@@ -646,14 +657,14 @@ class Session:
     def frame_of(self, i):
         return round(self.scene.turns[i]["start"] * self.scene.step * self.stage.fps)
 
-    def patch(self, ops, commit=False):
+    def patch(self, ops, commit=False, ripple=False):
         """A timeline edit. While dragging it is a preview in memory; on release (`commit`) it is
         applied on top of the file as it now stands, written as hand-set values, and journaled."""
         if self.card:
             return self.card_patch(ops, commit)
         self._locked()
         if not commit:
-            first, _ = apply_ops(self.root, self.path, self.seg["id"], self.doc, self.scene, ops)
+            first, _ = apply_ops(self.root, self.path, self.seg["id"], self.doc, self.scene, ops, ripple)
             dirty = self.frame_of(first)
             self.work()
             return dirty
@@ -661,7 +672,7 @@ class Session:
         doc = edit.yaml().load(before_text)                      # the file as it is now, not as it was when opened
         if self.clean[0] != before_text:                         # it changed underneath: work it out as it now stands
             self.clean = (before_text, Scene(self.path, script=doc, carry=self.carry).score)
-        first, changes = apply_ops(self.root, self.path, self.seg["id"], doc, self.clean[1], ops)
+        first, changes = apply_ops(self.root, self.path, self.seg["id"], doc, self.clean[1], ops, ripple)
         after_text = edit.dump(doc)
         self.doc = doc
         if after_text != before_text:
@@ -896,7 +907,7 @@ def make_handler(sess):
                 with sess.lock:
                     out = {}
                     if self.path == "/patch":
-                        out["dirty_from"] = sess.patch(body["ops"], bool(body.get("commit")))
+                        out["dirty_from"] = sess.patch(body["ops"], bool(body.get("commit")), bool(body.get("ripple")))
                     elif self.path == "/pick":
                         return self.send(sess.pick())
                     elif self.path == "/nudge":

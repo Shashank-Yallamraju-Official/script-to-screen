@@ -125,6 +125,7 @@
     <span class="sep"></span>
     <button id="play" title="Play or pause (Space)"></button>
     <button id="loop" title="Loop (L): the current turn, or, with the knob on a value, the moment around it, with a short gap between passes"><svg viewBox="0 0 16 16"><path d="M3 7V6a2 2 0 0 1 2-2h7M10 2l2 2-2 2M13 9v1a2 2 0 0 1-2 2H4M6 14l-2-2 2-2"/></svg></button>
+    <button id="ripple"><svg viewBox="0 0 16 16"><path d="M2 3v10M5 8h9M11 5l3 3-3 3"/></svg></button>
     <button id="xray" title="X-ray (X): the director's view. Everything below the ground line is for you, not the audience. The bar is an entity's weight in the room. Ringed pips are what it feels; filled pips are what shows."><svg viewBox="0 0 16 16"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg></button>
     <button id="hear"></button>
     <button id="carry"><svg viewBox="0 0 16 16"><path d="M2 8h8M7 5l3 3-3 3M13 3v10"/></svg></button>
@@ -561,7 +562,7 @@ async function patch(path, value, commit = false) {
   sending = true;
   while (queue.length) {
     const op = queue.shift();
-    try { const r = await api('/patch', { ops: [{ path: op.path, value: op.value }], commit: op.commit }); if (r.dirty_from != null) dropFrames(r.dirty_from); S = r.state; build(); if (op.commit && pick) pickAt(pick, true); }
+    try { const r = await api('/patch', { ops: [{ path: op.path, value: op.value }], commit: op.commit, ripple }); if (r.dirty_from != null) dropFrames(r.dirty_from); S = r.state; build(); if (op.commit && pick) pickAt(pick, true); }
     catch (e) { toast(e.message, true); try { S = await api('/state'); dropFrames(0); build(); } catch (x) {} }
   }
   sending = false;
@@ -738,6 +739,14 @@ view.addEventListener('pointermove', e => {
   patch(['camera', camDrag.i, 'xy'], camDrag.last);
 });
 view.addEventListener('pointerup', async () => { const d = camDrag; camDrag = null; if (d && d.last) { while (sending) await new Promise(r => setTimeout(r, 20)); patch(['camera', d.i, 'xy'], d.last, true); } });
+// ---- ripple: does a change push everything after it, or stay inside its own gap? ----------------
+let ripple = false;
+function showRipple() {
+  $('ripple').classList.toggle('on', ripple);
+  $('ripple').title = (ripple ? 'Ripple is on (R): moving a line to another bar, or changing a hold or a pause, moves every later pinned line by as much, and the scene grows or shrinks to match.'
+    : 'Ripple is off (R): a change stays inside its own gap. Later lines keep the bars they are pinned to.') + ' Click to switch.';
+}
+$('ripple').onclick = () => { ripple = !ripple; showRipple(); };
 // ---- level curves: a layer's level, bent over time, drawn over the waveform ----------------------
 let waveY = 0, curveEdit = null;                          // curveEdit: the points while one is being dragged
 const curveLayer = () => S.card ? (S.card.music ? 'music' : null) : layer;
@@ -865,6 +874,7 @@ addEventListener('keydown', e => {
   else if (low === 'l') $('loop').click();
   else if (low === 'm' && !mod) { pause(); openNote(); }
   else if (low === 'h' && !mod) $('hear').click();
+  else if (low === 'r' && !mod) $('ripple').click();
   else if (low === 'x') $('xray').click();
   else if (k === '[') openScene(-1);
   else if (k === ']') openScene(1);
@@ -909,7 +919,7 @@ setInterval(async () => {                                // follow the files: pi
 (async () => {
   S = await api('/state');
   view.width = S.width; view.height = S.height; view.style.aspectRatio = S.width + '/' + S.height;
-  $('play').innerHTML = ICON.play; showHear();
+  $('play').innerHTML = ICON.play; showHear(); showRipple();
   fit(); build(); window._ready = true;
 })();
 </script>

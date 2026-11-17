@@ -618,6 +618,10 @@ reaction, a hold. Click a stretch and the **knob** appears on that value.
 | Shift-drag on the timeline | Mark a stretch. Play stays inside it, and Render makes a video of only that (out/<part>.range.mp4). Escape clears it |
 | The layers button | Takes: keep the whole show's tuning under a name, and switch between takes. Switching is one undo step. Takes stay on this computer (.s2s/takes) |
 | The meter at the start of the strip | Measure each part's average level in decibels; a part more than 3 dB from the middle one turns amber |
+| The film button at the start of the strip | The whole episode as one timeline: play through the joins, see every line and sound in its place, drop notes anywhere. Double-click a part to open it; drag the credits' right edge for their length |
+| With one layer chosen (H), double-click the waveform lane | Add a point to that layer's level curve; drag a point to bend the level over time; double-click a point to remove it. On a card the curve is its music's |
+| On the title sequence: the camera lane | A diamond at each stop of the camera's path. Drag to retime; click one, then drag the picture to move where the camera looks, Up and Down for closer or further; double-click to add or remove a stop. The title block's right edge sets its length |
+| R; or the button beside Loop | Ripple: when on, moving a line to another bar or changing a hold or pause moves every later pinned line by as much, and the scene's length with it. Off, a change stays inside its own gap |
 | Click a part in the strip above the timeline | Open another part of the episode: a scene, the title sequence, a journey over the land, the credits |
 | On a card: drag its music; Up, Down | Change where the music lands, by eighths of a bar; make it louder or quieter. Written to that segment in series.yaml as `tune: {music_at, music_vol}` |
 | Drag the right edge of an outlined box in an entity's lane | Change how long a featured reaction holds the scene |
