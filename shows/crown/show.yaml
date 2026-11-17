@@ -24,11 +24,11 @@ style:
 
 # How tight the camera may get, and how restless it may be.
 camera:
-  single: 3.0                # zoom for a shot of one
-  two: 1.9                   # ... of two standing close
-  group: 1.45                # ... of a group
+  single: 1.0                # no close shots by rule: the camera holds the whole room. A scene asks for a single by hand, rarely
+  two: 1.0
+  group: 1.0
   min_shot: 1.8              # no shot is shorter than this many seconds
-  tilt: 4.0                  # degrees the frame tips for a hard bad surprise (0 = never)
+  tilt: 0.0                  # the frame never tips
 width: 1280
 height: 720
 fps: 60
@@ -36,7 +36,7 @@ fps: 60
 # The tempo grid. Every timing in a scene is counted in steps, so pauses, holds and syllables
 # land on the beat. At 120 beats per minute with 4 steps per beat, one step is an eighth of a
 # second. A scene can set its own `tempo`. Fractions of a step are allowed for fine nudges.
-tempo: 120
+tempo: 96
 steps_per_beat: 4
 scale: [0, 2, 4, 7, 9]      # the notes voices sing in, as semitones above the voice's own pitch
 
@@ -60,7 +60,7 @@ gain: {slope: 2.0, min: 0.34, max: 1.5}
 # Steps. pause = before a line starts; hold = after a turn finishes; settle = a turn with no line.
 # bubble_break = a pause this long or longer inside a line starts a new bubble. A full stop is a
 # pause of 2 and a comma of 1, so by default sentences get their own bubbles and clauses do not.
-timing: {pause: 2, hold: 8, settle: 4, bubble_break: 2}
+timing: {pause: 5, hold: 12, settle: 6, bubble_break: 2}       # unhurried: a breath before each line and a long one after
 
 # A tell counts as learned by the audience once it has shown in this many separate scenes.
 ledger: {learn_after: 3}

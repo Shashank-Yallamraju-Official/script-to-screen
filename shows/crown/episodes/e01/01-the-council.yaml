@@ -6,9 +6,8 @@ place: crown
 turns:
   - id: 1
     enter: {great-seal: {slot: 4, orient: out}, seal: {slot: 1, orient: great-seal}, seal-two: {slot: 2, orient: great-seal}, seal-three: {slot: 6, orient: great-seal}, seal-four: {slot: 7, orient: great-seal}}
-    camera: wide
     why: Five seals in council, under one emblem. Everything is in its place.
-    hold: 8
+    hold: 13
   - id: 2
     who: great-seal
     say: By order of the crown. The council sits.
@@ -25,7 +24,7 @@ turns:
     who: great-seal
     say: Once sealed, it is not unsealed.
     why: The only line that says how much it matters.
-    hold: 5
+    hold: 8
   - id: 6
     who: seal
     say: It must be every seal.
@@ -34,26 +33,24 @@ turns:
     who: great-seal
     say: Every seal is present.
     why: Nobody is missing. Nobody else is supposed to be here.
-    hold: 3
+    hold: 5
   - id: 8
     who: great-seal
     say: By order of the crown. We vote.
     why: The vote is called.
-    hold: 2
+    hold: 3
   - id: 9
     enter: {match: {from: right, orient: great-seal}}
-    camera: wide
     why: A match is in the chamber. How it got in is not shown.
-    hold: 3
+    hold: 5
   - id: 10
     who: seal-four
     do: {seal-four: {orient: match}}
     say: Who admitted
-    camera: wide
     why: The nearest seal sees it. The question is the mystery, and it is not finished.
     hold: 0
   - id: 11
     do: {match: {posture: lean_in}}
-    camera: match
+    camera: {"on": match, zoom: 2.4}       # the one close shot in the scene
     why: It tips, strikes its head, and is alight. The scene ends on the flame.
-    hold: 11
+    hold: 18

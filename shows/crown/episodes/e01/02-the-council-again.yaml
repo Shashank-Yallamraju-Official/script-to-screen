@@ -6,9 +6,8 @@ place: crown-after
 turns:
   - id: 1
     enter: {hammer: {slot: 0, orient: great-seal}, hammer-two: {slot: 1, orient: great-seal}, seal: {slot: 3, orient: great-seal}, great-seal: {slot: 4, orient: out}, seal-two: {slot: 5, orient: great-seal}, lock: {slot: 7, orient: great-seal}, lock-two: {slot: 8, orient: great-seal}}
-    camera: wide
     why: The same room. Three emblems where there was one, and hammers and locks on the bench beside the seals.
-    hold: 12
+    hold: 19
   - id: 2
     who: great-seal
     say: By order of the crown. The council sits.
@@ -25,11 +24,10 @@ turns:
     who: great-seal
     say: It must be every member.
     why: The rule has one word changed. It used to be every seal.
-    hold: 4
+    hold: 6
   - id: 6
     who: great-seal
     say: We vote.
-    camera: wide
     why: The vote is called again.
   - id: 7
     who: seal
@@ -46,19 +44,18 @@ turns:
   - id: 10
     who: hammer-two
     say: Carry it.
-    camera: wide
     why: Both hammers. Everyone now waits for the locks.
-    hold: 10
+    hold: 16
   - id: 11
     who: lock
     say: "No."
     why: Hasp speaks last, and says what it usually says.
-    hold: 4
+    hold: 6
   - id: 12
     who: lock-two
     say: "No."
     why: Both locks.
-    hold: 6
+    hold: 10
   - id: 13
     who: great-seal
     say: It is not every member.
@@ -70,6 +67,5 @@ turns:
   - id: 15
     who: great-seal
     say: The council will sit again. At a later date.
-    camera: wide
     why: Adjourned, with nothing decided.
-    hold: 12
+    hold: 19
