@@ -1,10 +1,21 @@
-# The crown: the council chamber. The council sits up behind a bench, each at its own seat. The flag on the wall is the
-# ruler's: Signet's, under the crown.
+# The crown: the council chamber, on Signet's desk. Ledgers on end are its walls, ink bottles its columns, and the desk
+# lamp is its sun. Warm, rich and closed. The council sits up behind a bench; the flag is the ruler's: Signet's.
 name: The crown
-wall: "#e6ddd6"
-floor: "#cdbfb6"
-bench: {from: 0.65, to: 7.35, rise: 58, front: 30, color: "#a08a70"}
+wall: "#5a3039"
+floor: "#33252a"
+light: {at: 3.0, up: 250, color: "#f6c26b", reach: 600, strength: 0.85, side: left}       # one warm lamp, from the upper left
+vignette: 0.6
+bench: {from: 0.65, to: 7.35, rise: 58, front: 30, color: "#7c5a45"}
 pieces:
-  - {kind: banner, at: 4.0, wide: 1.5, color: "#7a2e3b"}
-  - {kind: crownmark, at: 4.0, color: "#e9dcc8"}
-  - {kind: crest, at: 4.0, color: "#7a2e3b"}
+  - {kind: bookwall, at: 0.2, wide: 3.4, depth: far, color: "#8a5a50"}
+  - {kind: bookwall, at: 7.9, wide: 3.2, depth: far, color: "#7a5560"}
+  - {kind: pen, at: 6.5, depth: far, color: "#3a3644"}
+  - {kind: desklamp, at: 2.4, color: "#d2a24e"}
+  - {kind: page, at: 0.7, wide: 1.2}
+  - {kind: page, at: 7.7, wide: 1.2}
+  - {kind: banner, at: 4.0, wide: 1.5, color: "#a12c3d"}
+  - {kind: crownmark, at: 4.0, color: "#f3e3c2"}
+  - {kind: crest, at: 4.0, color: "#a12c3d"}
+  - {kind: inkwell, at: -0.5, color: "#2a2f3d"}
+  - {kind: inkwell, at: 8.5, color: "#2a2f3d"}
+  - {kind: books, at: -1.2, depth: front}

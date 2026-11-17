@@ -7,6 +7,11 @@ plate, and the pieces of the houses' homes: rack, inkpad, page, dome, post, pegb
 bag, ropes, crumbs, ghost, gantry, wallstub, mark, parts, and the council chamber's: crest, hammermark, lockmark,
 crownmark, bench, banner).
 
+A place can have one `light: {at, up, color, reach, strength, side}`: a pool of that colour on the wall and floor, a lit side and
+a shadow side on everything that stands in it, and a shadow behind each. `grade: {color, amount}` tints the whole frame and
+`vignette:` darkens its corners. A piece with `depth: far` is drawn hazed and behind the rest; `depth: front` is a dark shape
+between us and the scene.
+
 A place can also have a raised `bench: {from, to, rise, front, color}`: whoever stands between those slots sits up behind
 it, with a plate at their seat (an entity's `plate:` is what the plate says), where it stands (`at`, a slot), and optionally how wide it is (`wide`, in slots), how
 far `up` it sits (pixels: a plate on a table), a `color`, and `depth: front` to stand it between
@@ -30,14 +35,14 @@ from .view import ground, slot_x
 
 WALL_DEPTH, BACK_DEPTH, FRONT_DEPTH = 0.3, 0.15, -0.2
 FLOOR_UP = 46                                 # how far behind the entities' feet the wall meets the floor, in pixels
-ON_WALL = ("door", "window", "picture", "shelf", "thermostat", "vault", "sign", "page", "dome", "pegboard", "chain", "hooks", "ghost", "crest", "hammermark", "lockmark", "crownmark", "banner")
+ON_WALL = ("door", "window", "picture", "shelf", "thermostat", "vault", "sign", "page", "dome", "pegboard", "chain", "hooks", "ghost", "crest", "hammermark", "lockmark", "crownmark", "banner", "bookwall", "pen", "desklamp", "nails", "hasplate")
 ON_FLOOR = ("rug", "shards", "crumbs", "mark")
 COLORS = dict(door="#cdbb9d", window="#b9c2c4", picture="#b7a58c", sofa="#9fb0aa", lamp="#b9a98c", plant="#8fa58a", table="#b49f84",
               shelf="#b49f84", rug="#c9b6a6", counter="#b9b3a2", fridge="#c5cbcc", thermostat="#d8d2c4", pedestal="#c2b8a6", vase="#5b7fa6",
               shards="#5b7fa6", plate="#f4f1e8", vault="#9aa3a8", sign="#b9b3a2",
               rack="#a89784", inkpad="#4a4a52", page="#efe9dc", dome="#c7d3d6", post="#9aa3a8", pegboard="#b49f84", crate="#b49f84",
               chain="#8f969b", gate="#8f969b", hooks="#8f969b", bag="#9c5a48", ropes="#b7a58c", crumbs="#d9a3ae", ghost="#c9c5bb",
-              gantry="#a8906c", wallstub="#b9b3a2", mark="#8f969b", parts="#9fb0aa", crest="#7a2e3b", hammermark="#6b5a4a", lockmark="#7f868c", crownmark="#b7a58c", bench="#b49f84", banner="#7a2e3b")
+              gantry="#a8906c", wallstub="#b9b3a2", mark="#8f969b", parts="#9fb0aa", crest="#7a2e3b", hammermark="#6b5a4a", lockmark="#7f868c", crownmark="#b7a58c", bench="#b49f84", banner="#7a2e3b", bookwall="#7b5a4c", pen="#2e3440", desklamp="#c9a45a", nails="#8f969b", hasplate="#8f969b", inkwell="#27303f", books="#7b5a4c")
 
 
 def rgb(h):
@@ -221,6 +226,30 @@ def shapes(kind, w):
         arc = skia.Path()
         arc.addRoundRect(skia.Rect.MakeLTRB(-13, -330, 13, -292), 13, 13)
         return [("body", oval(0, -300, 46, 46)), ("light", oval(0, -300, 38, 38)), ("body", arc), ("light", rect(-6, -322, 12, 24, 6)), ("body", rect(-20, -304, 40, 28, 4))]
+    if kind == "bookwall":                                           # ledgers standing on end: at this scale, a wall
+        w = w or 360
+        out, x, i = [], -w / 2, 0
+        while x < w / 2 - 20:
+            bw, bh = 34 + (i * 17) % 30, 250 + (i * 53) % 130
+            out += [("body" if i % 3 else "dark", rect(x, -bh, bw, bh, 5)), ("light", rect(x + 6, -bh + 34, bw - 12, 12, 3)), ("line", poly((x + 6, -bh + 60), (x + bw - 6, -bh + 60), (x + 6, -bh + 60)))]
+            x, i = x + bw + 3, i + 1
+        return out
+    if kind == "books":                                              # ledgers lying in a stack
+        w = w or 240
+        return [s for i in range(4) for s in (("body" if i % 2 else "dark", rect(-w / 2 + (i * 23) % 28, -52 * (i + 1), w - 26, 50, 8)),
+                                              ("light", rect(-w / 2 + (i * 23) % 28 + 10, -52 * (i + 1) + 8, 14, 34, 3)))]
+    if kind == "inkwell":                                            # an ink bottle, as big as a column
+        return [("body", rect(-66, -190, 132, 190, 26)), ("light", rect(-44, -142, 88, 70, 8)), ("body", rect(-30, -232, 60, 48, 6)), ("dark", rect(-38, -256, 76, 28, 8))]
+    if kind == "pen":                                                # a pen leaning against the wall
+        return [("body", poly((-150, 0), (-128, -8), (120, -388), (98, -380))), ("light", poly((-150, 0), (-128, -8), (-112, -34), (-134, -26))),
+                ("dark", poly((98, -380), (120, -388), (132, -408), (110, -400)))]
+    if kind == "desklamp":                                           # the lamp over the desk: here, the sun
+        return [("dark", rect(-4, -560, 8, 180)), ("body", poly((-34, -392), (34, -392), (92, -318), (-92, -318))), ("light", oval(0, -316, 60, 12))]
+    if kind == "nails":                                              # a row of nail heads: Mallet's work
+        w = w or 300
+        return [("body", oval(x, -214, 5, 5)) for x in range(int(-w / 2), int(w / 2) + 1, 42)]
+    if kind == "hasplate":                                           # a hasp and staple on the wall: Hasp's work
+        return [("body", rect(-40, -300, 80, 34, 6)), ("dark", oval(-22, -283, 5, 5)), ("dark", oval(22, -283, 5, 5)), ("body", rect(-10, -272, 20, 34, 8)), ("light", rect(-4, -262, 8, 16, 4))]
     if kind == "banner":                                             # a flag hung from the top of the wall, for whoever rules
         w = w or 150
         return [("body", poly((-w / 2, -520), (w / 2, -520), (w / 2, -236), (0, -200), (-w / 2, -236))), ("dark", rect(-w / 2 - 8, -444, w + 16, 8, 3))]
@@ -255,6 +284,8 @@ class Painter:
 
     def piece(self, c, piece, on_floor=False, front=False):
         kind, color = piece["kind"], piece.get("color") or COLORS[piece["kind"]]
+        if piece.get("depth") == "far":                                    # far off: paler, hazed toward the wall
+            color = mix(color, self.wall, 0.62)
         under, own = self.floor if on_floor else self.wall, piece.get("color")
         lit = self.window if kind == "window" else mix(under, self.shade, 0.28) if self.dark and kind != "lamp" else "#fffdf6"   # in the dark, only windows and lamps are bright
         for role, path in shapes(kind, piece.get("_w")):
@@ -265,6 +296,14 @@ class Painter:
                 c.drawPath(path, paint("#ffffff" if role == "light" else self.ink if role == "dark" else self.wall))
                 c.drawPath(path, pen(self.ink, 2.5))
             elif self.style == "paper":
+                if front:                                                   # between us and the scene: a dark shape, nothing more
+                    if role != "line":
+                        c.drawPath(path, paint(mix(self.floor, "#0f0d10", 0.55)))
+                    continue
+                if piece.get("depth") == "far":
+                    if role != "line":
+                        c.drawPath(path, paint(mix(color, self.wall, 0.25) if role == "dark" else mix(color, "#fbf8ef", 0.12) if role == "light" else color))
+                    continue
                 if role == "line":
                     c.drawPath(path, pen(mix(color, "#3a332a", 0.25), 2, 150))
                     continue
@@ -273,7 +312,7 @@ class Painter:
                     c.translate(7, 9)
                     c.drawPath(path, paint("#3a332a", 20))                   # cut paper sits a little off the wall
                     c.restore()
-                c.drawPath(path, paint("#fbf8ef" if role == "light" else mix(color, "#3a332a", 0.28) if role == "dark" else color))
+                c.drawPath(path, paint(("#fbf8ef" if not self.dark else mix("#fbf8ef", self.wall, 0.22)) if role == "light" else mix(color, "#3a332a", 0.28) if role == "dark" else color))
             else:                                                           # wash: one hue, a step darker for what is solid, lighter for what is lit
                 if front:
                     c.drawPath(path, paint(mix(self.floor, "#2e2a24", 0.42 if role != "light" else 0.34)) if role != "line" else pen(self.floor, 0, 0))
@@ -310,8 +349,9 @@ def prepare(place, W):
     for raw in place.get("pieces") or []:
         piece = dict(raw, _x=slot_x(float(raw.get("at", 0)), W), _w=float(raw["wide"]) * spacing if raw.get("wide") else None)
         shapes(piece["kind"], piece["_w"])                                 # an unknown kind is refused here, once
-        layer = "front" if raw.get("depth") == "front" else "floor" if piece["kind"] in ON_FLOOR else "wall" if piece["kind"] in ON_WALL else "back"
+        layer = "front" if raw.get("depth") == "front" else "floor" if piece["kind"] in ON_FLOOR else "wall" if piece["kind"] in ON_WALL or raw.get("depth") == "far" else "back"
         layers[layer].append(piece)
+    layers["wall"].sort(key=lambda p: p.get("depth") != "far")                # what is far is drawn first
     return layers
 
 
@@ -338,6 +378,22 @@ def draw_behind(c, stage, cam):
             if piece["kind"] == "lamp":
                 painter.light(c, piece, 0)
             c.restore()
+        lamp = place.get("light")
+        if lamp and name in ("wall", "floor"):                              # the room's one light: a pool on the wall, and a longer one on the floor
+            r, g, b = rgb(lamp.get("color", "#f6c26b"))
+            x, reach, k = slot_x(float(lamp.get("at", 4)), stage.W), float(lamp.get("reach", 520)), float(lamp.get("strength", 0.7))
+            glow = skia.Paint(AntiAlias=True, BlendMode=skia.BlendMode.kScreen)
+            if name == "wall":
+                y = base - float(lamp.get("up", 240))
+                glow.setShader(skia.GradientShader.MakeRadial(skia.Point(x, y), reach, [skia.Color(r, g, b, int(200 * k)), skia.Color(r, g, b, int(70 * k)), skia.Color(r, g, b, 0)], [0.0, 0.55, 1.0]))
+                c.drawCircle(x, y, reach, glow)
+            else:
+                c.save()
+                c.translate(x, gy + 60)
+                c.scale(1.0, 0.28)
+                glow.setShader(skia.GradientShader.MakeRadial(skia.Point(0, 0), reach * 1.1, [skia.Color(r, g, b, int(120 * k)), skia.Color(r, g, b, 0)]))
+                c.drawCircle(0, 0, reach * 1.1, glow)
+                c.restore()
         c.restore()
     return True
 

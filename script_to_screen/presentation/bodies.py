@@ -335,10 +335,21 @@ def draw_body(c, ent, o, t, x, y, blur=0.0):
     f = 1 if o["facing"] >= 0 else -1
     c.save()
     c.translate(x, y)
+    lit = o.get("lit")                                                   # (side the light comes from, how strong, its colour)
+    if lit:
+        c.saveLayer(skia.Rect.MakeLTRB(-170 * size, -330 * size, 170 * size, 30), None)
     v = traits(ent)
     c.scale(o["sx"] * size * (0.95 + 0.10 * v[0]), o["sy"] * size * (0.96 + 0.08 * v[1]))          # a touch wider or taller than the next one
     k = Ink(_mix(ent["color"], PAPER if v[2] > 0.5 else "#1d1d1f", 0.16 * abs(v[2] - 0.5) * 2), a, blur)    # a shade lighter or darker
     DRAW[body](c, k, dict(o, going=o.get("going", 1.0)), t, f, ent)
     _mark(c, k, body, v, ent)
     _outfit(c, k, ent, body, v)
+    if lit:                                                              # a lit side and a shadow side, on whatever was just drawn
+        side, strength, glow = lit
+        r, g, b = _rgb(glow)
+        shade = skia.Paint(BlendMode=skia.BlendMode.kSrcATop, Shader=skia.GradientShader.MakeLinear(
+            [skia.Point(side * 46, 0), skia.Point(-side * 46, 0)],
+            [skia.Color(r, g, b, int(70 * strength)), skia.Color(r, g, b, 0), skia.Color(24, 18, 30, 0), skia.Color(24, 18, 30, int(120 * strength))], [0.0, 0.38, 0.5, 1.0]))
+        c.drawRect(skia.Rect.MakeLTRB(-400, -500, 400, 100), shade)
+        c.restore()
     c.restore()

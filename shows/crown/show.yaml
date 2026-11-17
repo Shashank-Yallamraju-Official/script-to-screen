@@ -17,6 +17,7 @@ credits:
 
 # How things are drawn, where there is a choice of kind (amounts are in library/feel.yaml).
 style:
+  grain: 0.16                # a little paper grain over every scene (0 = none)
   place: paper               # a room: wash, paper (muted cut paper), line, none. Paper gives each home its own colours
   camera: film               # film (cut to a new subject, ease a reframing), drift (ease everything), cut, still
   indicator: fill            # the voice in a bubble: fill (words take ink), dot, trace, pill

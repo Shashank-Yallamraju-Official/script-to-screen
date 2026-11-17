@@ -1,13 +1,28 @@
-# The crown, rebuilt exactly as it was, except for the flags: three now, Mallet's on the left and Hasp's on the right.
+# The crown, rebuilt exactly as it was. Everything is where it stood. What has changed is the light, which is cold
+# and comes from the other side, the flags, of which there are three, and Mallet's nails and Hasp's hasp in the woodwork.
 name: The crown, rebuilt
-wall: "#e6ddd6"
-floor: "#cdbfb6"
-bench: {from: 0.65, to: 7.35, rise: 58, front: 30, color: "#a08a70"}
+wall: "#4f5661"
+floor: "#2b3037"
+light: {at: 5.6, up: 250, color: "#dfe9f2", reach: 640, strength: 0.5, side: right}       # flat and cold, from the other side
+grade: {color: "#8ea3b8", amount: 0.22}
+vignette: 0.65
+bench: {from: 0.65, to: 7.35, rise: 58, front: 30, color: "#6f6058"}
 pieces:
-  - {kind: banner, at: 2.2, wide: 1.5, color: "#6b5a4a"}
-  - {kind: hammermark, at: 2.2, color: "#6b5a4a"}
-  - {kind: banner, at: 4.0, wide: 1.5, color: "#7a2e3b"}
-  - {kind: crownmark, at: 4.0, color: "#e9dcc8"}
-  - {kind: crest, at: 4.0, color: "#7a2e3b"}
-  - {kind: banner, at: 5.8, wide: 1.5, color: "#7f868c"}
-  - {kind: lockmark, at: 5.8, color: "#7f868c"}
+  - {kind: bookwall, at: 0.2, wide: 3.4, depth: far, color: "#6f6468"}
+  - {kind: bookwall, at: 7.9, wide: 3.2, depth: far, color: "#65636e"}
+  - {kind: pen, at: 6.5, depth: far, color: "#3a3d48"}
+  - {kind: desklamp, at: 2.4, color: "#8b8f96"}
+  - {kind: page, at: 0.7, wide: 1.2}
+  - {kind: page, at: 7.7, wide: 1.2}
+  - {kind: nails, at: 4.0, wide: 6.4, color: "#a59a8a"}
+  - {kind: hasplate, at: 6.85, color: "#9aa3aa"}
+  - {kind: banner, at: 2.2, wide: 1.5, color: "#7c684f"}
+  - {kind: hammermark, at: 2.2, color: "#7c684f"}
+  - {kind: banner, at: 4.0, wide: 1.5, color: "#8a3443"}
+  - {kind: crownmark, at: 4.0, color: "#ece3d0"}
+  - {kind: crest, at: 4.0, color: "#8a3443"}
+  - {kind: banner, at: 5.8, wide: 1.5, color: "#7f8b96"}
+  - {kind: lockmark, at: 5.8, color: "#7f8b96"}
+  - {kind: inkwell, at: -0.5, color: "#262b36"}
+  - {kind: inkwell, at: 8.5, color: "#262b36"}
+  - {kind: books, at: -1.2, depth: front}

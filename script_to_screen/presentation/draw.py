@@ -425,6 +425,26 @@ def hits(stage, F):
     return out
 
 
+def grade(c, stage, W, H):
+    """The last pass over the picture, under the lettering: the scene's tint, darker corners, and a little paper grain."""
+    room = stage.look.place or {}
+    tint = room.get("grade")
+    if tint:
+        c.drawRect(skia.Rect.MakeWH(W, H), skia.Paint(Color=col(place.mix("#ffffff", tint.get("color", "#8aa0b8"), float(tint.get("amount", 0.2)))), BlendMode=skia.BlendMode.kMultiply))
+    dark = float(room.get("vignette", 0))
+    if dark > 0:
+        c.drawRect(skia.Rect.MakeWH(W, H), skia.Paint(Shader=skia.GradientShader.MakeRadial(
+            skia.Point(W / 2, H * 0.48), W * 0.72, [skia.Color(10, 6, 12, 0), skia.Color(10, 6, 12, 0), skia.Color(10, 6, 12, int(210 * dark))], [0.0, 0.5, 1.0])))
+    grain = float(stage.look.style.get("grain", 0))
+    if grain > 0:
+        img = getattr(stage.look, "_grain", None)
+        if img is None:
+            import numpy as np
+            v = np.random.default_rng(2).integers(96, 160, (H // 2, W // 2), dtype=np.uint8)
+            img = stage.look._grain = skia.Image.fromarray(np.dstack([v, v, v, np.full_like(v, 255)]), colorType=skia.kRGBA_8888_ColorType)
+        c.drawImageRect(img, skia.Rect.MakeWH(W, H), skia.SamplingOptions(), skia.Paint(BlendMode=skia.BlendMode.kOverlay, Alphaf=min(1.0, grain)))
+
+
 def draw_frame(c, stage, F, xray=False, slate=False):
     W, H, t, feel = stage.W, stage.H, F / stage.fps, stage.look.feel
     c.clear(col(PAPER))
@@ -449,6 +469,17 @@ def draw_frame(c, stage, F, xray=False, slate=False):
             if float(bench["from"]) <= s["slot"] <= float(bench["to"]):
                 states[e] = dict(s, rise=float(bench.get("rise", 58)))
                 seated.append(e)
+    lamp = (stage.look.place or {}).get("light") if housed else None
+    if lamp:                                                     # one light: everything gets a lit side, and throws a shadow away from it
+        side = -1 if lamp.get("side", "left") == "left" else 1
+        k = float(lamp.get("strength", 0.7))
+        for e, s in states.items():
+            states[e] = dict(s, lit=(side, k, lamp.get("color", "#f6c26b")))
+            x, y = slot_x(s["slot"], W), ground(H) - s.get("rise", 0.0)
+            soft = skia.Paint(AntiAlias=True, Color=col("#120c14", 95 * k * s["alpha"]), MaskFilter=skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 10))
+            c.drawOval(skia.Rect.MakeXYWH(x - side * 26 - 44, y - 150, 88, 150), soft)            # on the wall behind it
+            if not s.get("rise"):
+                c.drawOval(skia.Rect.MakeXYWH(x - side * 30 - 46, y - 7, 92, 18), soft)           # and on the floor under it
     burst = next(((at, who) for at, name, who, _ in stage.score.events if name == "blast" and at <= t), None)     # an explosion, once it has gone off
     if burst:
         age = t - burst[0]
@@ -488,6 +519,8 @@ def draw_frame(c, stage, F, xray=False, slate=False):
     c.restore()
     if housed:
         place.draw_in_front(c, stage, cam)
+    if housed:
+        grade(c, stage, W, H)
     for said, there in bubbles_showing(stage, t):                # a bubble that has ended is still fading as the next one grows
         if said["who"] in states:
             draw_bubble(c, stage, said, t, states[said["who"]], stage.look.cast[said["who"]], cam, there)
