@@ -108,8 +108,8 @@ def riser(hz0, hz1, dur, vol, timbre=None):
     return music.riser(hz0, hz1, dur, vol)
 
 
-def mix(stage):
-    """The whole scene's sound. Voices (one note per syllable), effects (one per event) and music (the score's
+def mix(stage, only=None):
+    """The whole scene's sound, or (`only`: voices, sounds or music) one of its three layers alone. Voices (one note per syllable), effects (one per event) and music (the score's
     cues, voiced in the mode their meaning calls for) are made as three buses, then mixed and mastered together."""
     n = int((stage.score.dur + 1.6) * RATE)                      # room for the last note and the room's tail to die away
     voices, effects = np.zeros(n), np.zeros(n)
@@ -151,4 +151,6 @@ def mix(stage):
     cues = stage.score.music if vol > 0 else []                  # the score names the cue; the look says what it sounds like
     tune = music.render(cues, stage.score.step, n, settings) * vol
     room = dict(settings.get("mix") or {}, **{k: float(feel.get(k, master.DEFAULTS[k])) for k in ("reverb", "duck", "warmth")})
+    if only:                                                     # one layer alone, as it sits in the mix
+        voices, effects, tune = (x if name == only else np.zeros(n) for name, x in (("voices", voices), ("sounds", effects), ("music", tune)))
     return wav_bytes(master.master(voices, effects, tune, room))

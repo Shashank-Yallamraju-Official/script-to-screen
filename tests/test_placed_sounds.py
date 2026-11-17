@@ -96,3 +96,14 @@ def test_a_cards_music_can_be_moved_and_turned_down_and_the_film_follows(sess):
         sess.patch([dict(path=["turns", 0, "hold"], value=3)], commit=True)                     # a card has no turns to drag
     sess.open_part("room")
     assert sess.state()["turns"][2]["sfx"]
+
+
+def test_one_layer_can_be_heard_alone_and_the_sound_has_a_shape(sess):
+    everything, sounds, voices = (np.frombuffer(sess.audio(only), dtype=np.int16).astype(float) for only in (None, "sounds", "voices"))
+    assert np.abs(sounds).max() > 1000 and np.abs(voices).max() > 1000 and not np.array_equal(everything, sounds)
+    bang = int(sess.state()["turns"][2]["start"] * sess.scene.step * sound.RATE) + 2000
+    assert np.abs(voices[bang:bang + 20000]).max() < np.abs(sounds[bang:bang + 20000]).max() * 0.2      # the explosion is not in the voices
+    shape = sess.wave("sounds")
+    assert shape["per"] == 4 and len(shape["peaks"]) >= int(sess.scene.steps * 4) and 0 < max(shape["peaks"]) <= 1
+    at = int(np.argmax(shape["peaks"])) / 4
+    assert sess.state()["turns"][2]["start"] - 1 <= at                                                 # and its tallest point is the explosion

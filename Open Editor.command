@@ -3,6 +3,10 @@
 # The first time, it sets up what the editor needs inside this folder (.venv); that takes a minute or two.
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 cd "$(dirname "$0")" || exit 1
+if [ -d .git ] && git --version >/dev/null 2>&1; then          # fetch the latest work; nudges made here are kept on top of it
+  echo "Fetching the latest..."
+  git pull -q --rebase --autostash origin main 2>/dev/null || echo "Could not fetch the latest (offline, or a change here clashes with one there). Opening what is here."
+fi
 PY=""
 for c in python3.13 python3.12 python3.11 python3.10 python3; do
   if command -v "$c" >/dev/null 2>&1 && "$c" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)'; then PY="$c"; break; fi

@@ -19,7 +19,7 @@ from types import SimpleNamespace
 from urllib.parse import parse_qs, urlparse
 
 
-from ..commands import Refused, address, edit, tune
+from ..commands import Refused, address, edit, notes, tune
 from ..performance import Scene, carry_into
 import numpy as np
 import skia
@@ -279,9 +279,47 @@ class Session:
         self.rev += 1
         return None
 
+    LAYERS = ("voices", "sounds", "music")
+
+    def audio(self, only=None, before=False):
+        """The sound of the part that is open: all of it, or one layer alone. Kept until the scene changes."""
+        if self.card:
+            return self.card_audio()
+        only = only if only in self.LAYERS else None
+        key = (id(self.before[0] if before else self.stage), only)
+        if getattr(self, "_heard", (None,))[0] != key:
+            self._heard = (key, sound.mix(self.before[0] if before else self.stage, only))
+        return self._heard[1]
+
+    def wave(self, only=None, per=4):
+        """The shape of that sound: its loudest moment in every quarter of a step, from 0 to 1."""
+        import io
+        import wave as wav
+        with wav.open(io.BytesIO(self.audio(only))) as w:
+            x = np.abs(np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).astype(np.float32)) / 32767.0
+        st = self.card_state() if self.card else dict(step=self.scene.step, steps=self.scene.steps)
+        size = max(1, int(st["step"] / per * sound.RATE))
+        n = min(len(x) // size, int(st["steps"] * per) + 1)
+        return dict(per=per, peaks=[round(float(v), 3) for v in x[: n * size].reshape(n, size).max(axis=1)])
+
+    def pins(self):
+        """The writer's notes on the part that is open, each where it is now."""
+        return notes.placed(notes.read(self.root), self.card or self.seg["id"], () if self.card else self.scene.turns)
+
+    def pin(self, F, text, nid=None):
+        """Drop a note at frame F, or change one's words, or (with no words) take it away."""
+        if self.card:
+            st = self.card_state()
+            notes.put(self.root, self.card, F / st["fps"] / st["step"], text, nid=nid)
+        else:
+            steps = F / self.stage.fps / self.scene.step
+            t = next((t for t in self.scene.turns if t["start"] <= steps + 1e-6 < t["start"] + t["length"]), self.scene.turns[-1])
+            notes.put(self.root, self.seg["id"], steps, text, turn=t["id"], into=steps - t["start"], nid=nid)
+        self.info_rev += 1
+
     def state(self):
         if self.card:
-            return self.card_state()
+            return dict(self.card_state(), notes=self.pins())
         sc, look, stage = self.scene, self.stage.look, self.stage
         turns = []
         for t in sc.turns:
@@ -309,7 +347,7 @@ class Session:
         mine = [p for p in self.problems if p["scene"] == sc.id]
         done, undone = edit.stacks(self.root, by="hand")
         return dict(rev=self.rev, info_rev=self.info_rev, id=sc.id, can_undo=bool(done), can_redo=bool(undone), status=self.seg["status"], fps=stage.fps, step=sc.step, tempo=sc.tempo,
-                    spb=sc.grid["steps_per_beat"], scale=list(sc.grid["scale"]), lead=self.lead,
+                    spb=sc.grid["steps_per_beat"], scale=list(sc.grid["scale"]), lead=self.lead, notes=self.pins(),
                     bar=sc.grid["steps_per_beat"] * int(load_yaml(self.root / "show.yaml").get("beats_per_bar") or 0),       # steps in a bar, or 0 if the show has no bars
                     bars=self.doc.get("bars"),
                     width=stage.W, height=stage.H, total=stage.total, steps=sc.steps,
@@ -538,10 +576,10 @@ def make_handler(sess):
                         return self.send(sess.frame(int(q["f"][0]), flag("full"), flag("xray"), q.get("build") == ["A"]), "image/jpeg")
                     if url.path == "/episode":               # every part of the episode this scene is in
                         return self.send(sess.episode())
-                    if url.path == "/audio" and sess.card:
-                        return self.send(sess.card_audio(), "audio/wav")
-                    if url.path == "/audio":
-                        return self.send(sound.mix(sess.before[0] if q.get("build") == ["A"] else sess.stage), "audio/wav")
+                    if url.path == "/audio":                 # only=voices|sounds|music is one layer alone
+                        return self.send(sess.audio(q.get("only", [None])[0], q.get("build") == ["A"]), "audio/wav")
+                    if url.path == "/wave":                  # the shape of the sound, for the lane under the timeline
+                        return self.send(sess.wave(q.get("only", [None])[0]))
                     if url.path == "/video":
                         return self.send(out_path(sess.stage).read_bytes(), "video/mp4")
                 self.send(dict(error="not found"), status=404)
@@ -584,6 +622,8 @@ def make_handler(sess):
                     elif self.path in ("/undo", "/redo"):
                         sess.step(self.path[1:])
                         out["dirty_from"] = 0
+                    elif self.path == "/note":                # a note pinned to a moment
+                        sess.pin(int(body.get("f", 0)), body.get("text"), body.get("id"))
                     elif self.path == "/open" and body.get("part"):      # open a part of the episode by name: a scene, or a card
                         sess.open_part(body["part"])
                     elif self.path == "/open":                # step to the previous or next scene

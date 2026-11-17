@@ -40,3 +40,19 @@ To apply saved timings (the page's store: `episodes/<episode>` is what the show 
     5. set   edits/<episode>            to {moves: {}}
 
 The map sequence (camera stops and the days) is not on the timeline yet.
+
+## Two copies of the show, kept in step
+
+The writer tunes on their own computer (`Open Editor.command`); the assistant builds in the repository.
+
+- **Repository to the writer's computer:** the launcher runs `git pull --rebase --autostash` before it opens the editor,
+  so the editor always starts from the latest work with the writer's own nudges on top.
+- **The writer's computer to the repository:** the assistant does this before any other work whenever the writer says
+  they have tuned something, or gives feedback after using the editor. In the linked computer's shell:
+
+      cd ~/mnt/Projects/script-to-screen
+      GIT_OPTIONAL_LOCKS=0 git -c safe.directory='*' diff HEAD -- shows
+
+  That patch is applied in the repository with `git apply --3way`, committed as "Nudges from the editor", and pushed.
+  Pins come with it (`shows/<show>/notes.yaml`); read them with `s2s notes`, and mark each with `s2s notes --done N` once dealt with.
+- If both sides changed the same value, the writer's wins, and the assistant says which value it was.
