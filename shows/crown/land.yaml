@@ -29,7 +29,7 @@ history:
   - {day: 30, signet: {smoke: false}}                                 # it is out
   - {day: 38, over: 47, signet: {ruin: 0}}                            # rebuilt as it was: Mallet's work
   - {day: 100, over: 12, signet: {ring: 1}}                           # a wall closed round it: Hasp's
-  - {day: 114, signet: {flags: [mallet, signet, hasp]}}               # three flags
+  - {day: 114, signet: {flags: [mallet, signet, hasp], worn: [signet]}}      # three flags; Signet's is the one that came through the fire
 roads:                       # [from, to, the bar it starts to draw]
   - [signet, lode, 1]
   - [lode, [460, 0], 2]

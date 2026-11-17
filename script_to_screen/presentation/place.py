@@ -39,14 +39,14 @@ from .view import ground, slot_x
 
 WALL_DEPTH, BACK_DEPTH, FRONT_DEPTH = 0.3, 0.15, -0.2
 FLOOR_UP = 46                                 # how far behind the entities' feet the wall meets the floor, in pixels
-ON_WALL = ("door", "window", "picture", "shelf", "thermostat", "vault", "sign", "page", "dome", "pegboard", "chain", "hooks", "ghost", "crest", "hammermark", "lockmark", "crownmark", "banner", "bookwall", "pen", "desklamp", "nails", "hasplate", "arch", "cornice", "vine", "patch")
+ON_WALL = ("door", "window", "picture", "shelf", "thermostat", "vault", "sign", "page", "dome", "pegboard", "chain", "hooks", "ghost", "crest", "hammermark", "lockmark", "crownmark", "banner", "bookwall", "pen", "desklamp", "nails", "hasplate", "arch", "cornice", "vine", "patch", "wornbanner", "roughcrest", "soot")
 ON_FLOOR = ("rug", "shards", "crumbs", "mark")
 COLORS = dict(door="#cdbb9d", window="#b9c2c4", picture="#b7a58c", sofa="#9fb0aa", lamp="#b9a98c", plant="#8fa58a", table="#b49f84",
               shelf="#b49f84", rug="#c9b6a6", counter="#b9b3a2", fridge="#c5cbcc", thermostat="#d8d2c4", pedestal="#c2b8a6", vase="#5b7fa6",
               shards="#5b7fa6", plate="#f4f1e8", vault="#9aa3a8", sign="#b9b3a2",
               rack="#a89784", inkpad="#4a4a52", page="#efe9dc", dome="#c7d3d6", post="#9aa3a8", pegboard="#b49f84", crate="#b49f84",
               chain="#8f969b", gate="#8f969b", hooks="#8f969b", bag="#9c5a48", ropes="#b7a58c", crumbs="#d9a3ae", ghost="#c9c5bb",
-              gantry="#a8906c", wallstub="#b9b3a2", mark="#8f969b", parts="#9fb0aa", crest="#7a2e3b", hammermark="#6b5a4a", lockmark="#7f868c", crownmark="#b7a58c", bench="#b49f84", banner="#7a2e3b", bookwall="#7b5a4c", pen="#2e3440", desklamp="#c9a45a", nails="#8f969b", hasplate="#8f969b", inkwell="#27303f", books="#7b5a4c", pot="#8a5f47", tree="#5d8a55", sapling="#7fb069", arch="#3a2a2e", patch="#e3677c", cornice="#3a2a2e", vine="#6aa85c")
+              gantry="#a8906c", wallstub="#b9b3a2", mark="#8f969b", parts="#9fb0aa", crest="#7a2e3b", hammermark="#6b5a4a", lockmark="#7f868c", crownmark="#b7a58c", bench="#b49f84", banner="#7a2e3b", bookwall="#7b5a4c", pen="#2e3440", desklamp="#c9a45a", nails="#8f969b", hasplate="#8f969b", inkwell="#27303f", books="#7b5a4c", pot="#8a5f47", tree="#5d8a55", sapling="#7fb069", arch="#3a2a2e", patch="#e3677c", wornbanner="#a23a4c", roughcrest="#a23a4c", soot="#120c14", cornice="#3a2a2e", vine="#6aa85c")
 
 
 def rgb(h):
@@ -86,6 +86,13 @@ def poly(*pts):
         p.lineTo(*q)
     p.close()
     return p
+
+
+def _worn(w):
+    """The outline of a flag that has been burnt: the banner's shape, with its point torn ragged and a rip up from the bottom."""
+    h = w / 2
+    return poly((-h, -520), (h, -520), (h, -268), (h - 9, -250), (h - 20, -262), (h - 30, -238), (h - 44, -246), (14, -216), (7, -232), (3, -264), (-3, -226), (-10, -206),
+                (-h + 34, -228), (-h + 24, -252), (-h + 12, -236), (-h, -256))
 
 
 def oval(cx, cy, rx, ry, turn=0):
@@ -292,6 +299,19 @@ def shapes(kind, w):
         stitches = [("line", poly((x, y), (x + dx, y + dy), (x, y))) for x, y, dx, dy in
                     [(-19 + 8 * i, -322, 0, 6) for i in range(6)] + [(-19 + 8 * i, -284, 0, 6) for i in range(6)] + [(-24, -317 + 8 * i, 6, 0) for i in range(5)] + [(18, -317 + 8 * i, 6, 0) for i in range(5)]]
         return [("body", poly((-20, -319), (19, -321), (21, -281), (-19, -279)))] + stitches
+    if kind == "wornbanner":                                         # a flag that has been through a fire: mostly whole, its tail ragged, a rip up from the bottom, burnt through in places
+        w = w or 150
+        return [("body", _worn(w)), ("gap", oval(w / 2 - 21, -322, 7, 10, 15)), ("gap", oval(-w / 2 + 19, -412, 6, 8)), ("dark", rect(-w / 2 - 8, -444, w + 16, 8, 3))]
+    if kind == "soot":                                               # what the fire left on such a flag: darkest at the bottom and the edges. Kept to the cloth
+        w = w or 150
+        cloth, h = _worn(w), w / 2
+        marks = [poly((-h, -300), (h, -288), (h, -190), (-h, -190)), poly((-h, -262), (h, -254), (h, -190), (-h, -190)), oval(-h + 5, -400, 13, 70), oval(h - 4, -352, 11, 56), oval(-16, -374, 24, 12)]
+        return [("soot", skia.Op(m, cloth, skia.PathOp.kIntersect_PathOp)) for m in marks]
+    if kind == "roughcrest":                                         # Signet's emblem, made again by a rougher hand over the mend: the rings uneven and off centre
+        stitches = [("line", poly((x, y), (x + dx, y + dy), (x, y))) for x, y, dx, dy in
+                    [(-17 + 9 * i, -322, 0, 6) for i in range(5)] + [(-17 + 9 * i, -284, 0, 6) for i in range(5)] + [(-24, -315 + 9 * i, 6, 0) for i in range(4)] + [(18, -315 + 9 * i, 6, 0) for i in range(4)]]
+        return ([("body", oval(-3, -299, 45, 48, 6)), ("light", oval(-1, -301, 35, 32, -10)), ("body", poly((-20, -319), (19, -321), (21, -281), (-19, -279)))] + stitches +
+                [("light", oval(3, -298, 13, 11, 14)), ("body", oval(4, -297, 5, 6))])
     if kind == "crownmark":                                          # the crown itself, over the chamber
         return [("body", poly((-34, -366), (-40, -398), (-18, -382), (0, -404), (18, -382), (40, -398), (34, -366)))]
     if kind == "bench":                                              # the council's bench
@@ -353,6 +373,13 @@ class Painter:
                     continue
                 if role == "line":
                     c.drawPath(path, pen(self.line, 2.2) if self.line else pen(mix(color, "#3a332a", 0.25), 2, 150))
+                    continue
+                if role == "soot":                                          # a stain, not a thing: soft, see-through, no line round it
+                    c.drawPath(path, skia.Paint(AntiAlias=True, Color=skia.Color(*rgb(color), 104), MaskFilter=skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 7)))
+                    continue
+                if role == "gap":                                           # a hole burnt through: the sky shows, and its edge is charred
+                    c.drawPath(path, paint(mix(*self.sky, 0.7) if isinstance(self.sky, list) else self.sky))
+                    c.drawPath(path, pen(mix(self.line or "#3a332a", "#120c14", 0.5), 3))
                     continue
                 if role == "body" and not on_floor and not self.line:
                     c.save()
@@ -436,7 +463,7 @@ QUIET = ("arch", "cornice", "vine")            # the wall itself: in an inked pl
 SHADE = 0.5                                   # how dark a cast shadow is, at full light
 
 
-HANGS = ("banner", "crest", "crownmark", "hammermark", "lockmark", "patch")       # a flag and what is on it: they swing together
+HANGS = ("banner", "wornbanner", "crest", "roughcrest", "crownmark", "hammermark", "lockmark", "patch", "soot")       # a flag and what is on it: they swing together
 ROD = -444                                     # where a flag hangs from, above its foot
 
 
@@ -490,8 +517,9 @@ def sunlit(stage, torn=None):
         if piece["kind"] == "arch":
             holes = skia.Op(holes, on_wall(piece, "light"), skia.PathOp.kUnion_PathOp)
     for piece in stage._place["wall"]:
-        if piece["kind"] == "banner":
-            holes = skia.Op(holes, on_wall(piece, "body"), skia.PathOp.kDifference_PathOp)
+        if piece["kind"] in ("banner", "wornbanner"):                       # what the cloth covers is dark; what is torn or burnt out of it is not
+            cloth = skia.Op(on_wall(piece, "body"), on_wall(piece, "gap"), skia.PathOp.kDifference_PathOp)
+            holes = skia.Op(holes, cloth, skia.PathOp.kDifference_PathOp)
     if torn is not None:
         opening = skia.Path()
         hole(0, -300).offset(slot_x(torn, stage.W), base, opening)

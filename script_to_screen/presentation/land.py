@@ -278,8 +278,12 @@ class Land:
                     fx = x + (i - (len(flags) - 1) / 2) * 30
                     (ax, ay, s2), (qx, qy, _) = proj(fx, y + 34, lift), proj(fx, y + 34, lift + 58 * up)
                     c.drawLine(ax, ay, qx, qy, stroke(self.PALE, 2.5 * s2))
-                    c.drawPath(skia.Path().addPoly([skia.Point(qx, qy), skia.Point(qx + 20 * s2, qy + 7 * s2), skia.Point(qx, qy + 15 * s2)], True),
-                               fill(land["places"][who].get("color") or self.sheets[land["places"][who]["entity"]]["color"], 255 * up))
+                    hue = land["places"][who].get("color") or self.sheets[land["places"][who]["entity"]]["color"]
+                    if who in (p.get("worn") or []):                  # a flag that came through the fire: darker, and its edge torn
+                        shape, hue = [(0, 0), (11, 2), (8, 5), (17, 7), (9, 9), (12, 12), (0, 15)], place_mix(hue, "#120c14", 0.35)
+                    else:
+                        shape = [(0, 0), (20, 7), (0, 15)]
+                    c.drawPath(skia.Path().addPoly([skia.Point(qx + a * s2, qy + b * s2) for a, b in shape], True), fill(hue, 255 * up))
             if p.get("smoke") or p.get("_since", {}).get("smoke") is not None:      # it burned; once it is out, the smoke thins and goes
                 k = k if p.get("smoke") else 1 - smooth((day - p["_since"]["smoke"]) / 12.0)
                 for i in range(7):
