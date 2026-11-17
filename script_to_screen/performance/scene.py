@@ -351,7 +351,7 @@ class Scene:
                     self.lines.append(bub)
                     self.events.append((bub["start"], "bubble", who))
             for fx in raw.get("sfx") or []:          # explicit sounds: [{at: steps, sound: name}], and `on: <entity>` to say whose it is
-                self.events.append(((t0 + float(fx.get("at", 0))) * sec, str(fx["sound"]), fx.get("on")))
+                self.events.append(((t0 + float(fx.get("at", 0))) * sec, str(fx["sound"]), fx.get("on", fx.get(True))))        # YAML reads a bare `on:` as true
             self.turns.append(dict(id=tid, index=i, start=t0, length=length, who=who, why=str(raw.get("why") or ""),
                                    pause=pause, hold=hold, latency=a[who]["latency"] if say else 0, say_at=say_at,
                                    reveal=reveal, react=react if late else 0, line=line, sylls=sylls,

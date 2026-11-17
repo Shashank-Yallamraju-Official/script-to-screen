@@ -111,7 +111,10 @@ def shots(turns, pose, focus, music, drama, step, written=None, cfg=None, things
     out = [dict(wide, t=0.0, kind="open", why="a scene opens wide, to show the place")]
     moments = [(c["t"], 1, c, None) for c in music if c["kind"] == "rise"]
     for turn in turns[1:]:
-        for k, (t, who) in enumerate(changes(turn, pose, step, cfg["together"], things)):
+        found = list(changes(turn, pose, step, cfg["together"], things))
+        if not found and written.get(turn["index"]):             # a turn where nothing changes can still ask for a shot
+            found = [(turn["start"] * step, set())]
+        for k, (t, who) in enumerate(found):
             moments.append((t, 0, turn, (k, who)))
     for t, is_rise, x, extra in sorted(moments, key=lambda m: (m[0], m[1])):
         cur = out[-1]

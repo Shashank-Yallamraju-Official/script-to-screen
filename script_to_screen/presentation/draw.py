@@ -425,6 +425,9 @@ def hits(stage, F):
     return out
 
 
+SWELL = 3.2                                                      # seconds a thing swells for before it bursts
+
+
 def grade(c, stage, W, H):
     """The last pass over the picture, under the lettering: the scene's tint, darker corners, and a little paper grain."""
     room = stage.look.place or {}
@@ -484,6 +487,16 @@ def draw_frame(c, stage, F, xray=False, slate=False):
             if not s.get("rise"):
                 c.drawOval(skia.Rect.MakeXYWH(x - side * 30 - 46, y - 7, 92, 18), soft)           # and on the floor under it
     burst = next(((at, who) for at, name, who, _ in stage.score.events if name == "blast" and at <= t), None)     # an explosion, once it has gone off
+    coming = next(((at, who) for at, name, who, _ in stage.score.events if name == "blast" and t < at <= t + SWELL and who in states), None)
+    if coming:                                                   # before it goes off it swells: slowly, shaking harder as it fills
+        k = 1 - (coming[0] - t) / SWELL
+        grow, shake = 1 + 1.5 * k ** 1.4, 1 + 0.035 * k * math.sin(t * 70)
+        s = states[coming[1]]
+        states[coming[1]] = dict(s, sx=s["sx"] * grow * shake, sy=s["sy"] * grow / shake)
+        gx, gy, gr = slot_x(s["slot"], W), ground(H) - 110 * grow, 60 + 330 * k
+        c.drawCircle(gx, gy, gr, skia.Paint(AntiAlias=True, Shader=skia.GradientShader.MakeRadial(
+            skia.Point(gx, gy), gr, [col("#fff3c4", 200 * k), col("#f2a33a", 110 * k), col("#f2a33a", 0)], [0.0, 0.45, 1.0])))
+        c.translate(5 * k * k * math.sin(t * 83), 4 * k * k * math.cos(t * 71))
     if burst:
         age = t - burst[0]
         c.translate(22 * math.exp(-age / 0.12) * math.sin(age * 95), 16 * math.exp(-age / 0.12) * math.cos(age * 81))    # the frame is thrown
@@ -518,7 +531,7 @@ def draw_frame(c, stage, F, xray=False, slate=False):
             else:                                                # no name yet: the plate carries the house's colour
                 c.drawCircle(px, y0 + 29, 7, fill(ent["color"], 255 * states[e]["alpha"]))
     if burst and burst[1] in states:                             # the fireball, from where it started, out past the edges of the frame
-        bx, by, r = slot_x(states[burst[1]]["slot"], W), ground(H) - 140, 40 + 2300 * (t - burst[0])
+        bx, by, r = slot_x(states[burst[1]]["slot"], W), ground(H) - 200, 230 + 2300 * (t - burst[0])
         ball = skia.Paint(AntiAlias=True, Shader=skia.GradientShader.MakeRadial(
             skia.Point(bx, by), r, [col("#fffdf6"), col("#fffdf6"), col("#fbe6a2"), col("#f2a33a"), col("#f2a33a", 0)], [0.0, 0.5, 0.72, 0.9, 1.0]))
         c.drawCircle(bx, by, r, ball)

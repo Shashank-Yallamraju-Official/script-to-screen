@@ -342,7 +342,8 @@ def draw_body(c, ent, o, t, x, y, blur=0.0):
         if edge:
             grown = skia.ImageFilters.ColorFilter(skia.ColorFilters.Blend(skia.Color(*_rgb(edge)), skia.BlendMode.kSrcIn), skia.ImageFilters.Dilate(3, 3, None))
             outline = skia.Paint(ImageFilter=skia.ImageFilters.Merge([grown, None]))
-        c.saveLayer(skia.Rect.MakeLTRB(-180 * size, -340 * size, 180 * size, 40), outline)
+        g = size * max(1.0, o["sx"], o["sy"])                              # room for one that has swollen
+        c.saveLayer(skia.Rect.MakeLTRB(-180 * g, -340 * g, 180 * g, 40), outline)
     v = traits(ent)
     c.scale(o["sx"] * size * (0.95 + 0.10 * v[0]), o["sy"] * size * (0.96 + 0.08 * v[1]))          # a touch wider or taller than the next one
     k = Ink(_mix(ent["color"], PAPER if v[2] > 0.5 else "#1d1d1f", 0.16 * abs(v[2] - 0.5) * 2), a, blur)    # a shade lighter or darker

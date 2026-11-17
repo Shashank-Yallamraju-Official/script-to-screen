@@ -58,6 +58,15 @@ def blast():
     return np.tanh(x * 1.2) * 1.6
 
 
+def swell(seconds):
+    """What comes before an explosion: a low hum that rises and tightens, and stops dead as it goes off."""
+    t = np.arange(int(seconds * RATE)) / RATE
+    k = t / seconds
+    hum = np.sin(2 * np.pi * np.cumsum(46 + 95 * k ** 2) / RATE) + 0.5 * np.sin(2 * np.pi * np.cumsum(92 + 230 * k ** 2) / RATE)
+    hiss = np.convolve(np.random.default_rng(12).standard_normal(len(t)), np.ones(30) / 30, "same") * 3
+    return (hum * (1 + 0.4 * k * np.sin(2 * np.pi * (5 + 14 * k) * t)) + hiss * k) * k ** 1.5 * 0.55
+
+
 def wav_bytes(samples):
     buf = io.BytesIO()
     with wave.open(buf, "wb") as wv:
@@ -100,6 +109,8 @@ def mix(stage):
     for at, name, _, quiet in stage.score.events:
         if name == "blast":                                      # an explosion: not one of the small sounds, and never quiet
             add(effects, at, blast())
+            lead = min(3.2, at)
+            add(effects, at - lead, swell(lead))
             continue
         p = sound_for(stage.look.sounds, name)
         if p and float(p.get("vol", 0)) > 0:

@@ -55,6 +55,10 @@ turns:
     why: It tips, strikes its head, and is alight.
     hold: 7
   - id: 12
+    camera: wide
+    why: Back to the whole room. It swells, slowly, and nobody moves.
+    hold: 22
+  - id: 13
     sfx: [{at: 0, sound: blast, on: match}]
     why: It goes off. The frame is thrown, fills with light, and the light is all that is left.
     hold: 12
