@@ -341,6 +341,9 @@ def check(a):
         problems += [dict(level="warning", scene="(show)", turn=None, msg=msg) for msg in _stray_keys(root)]
     from ..readers import bible                                  # where the film veers from one of the show's own rules (bible.yaml)
     problems += [p for p in bible.veers(root) if only is None or p["scene"] == only]
+    if only is None:                                             # each episode's outline, against the bible and against the film
+        from ..readers import outline
+        problems += outline.problems(root)
     nerr = sum(p["level"] == "error" for p in problems)
     text = [f"{p['level']:5} {p['scene']}" + (f":{p['turn']}" if p.get("turn") is not None else "") + f"  {p['msg']}" for p in problems]
     return dict(ok=nerr == 0, errors=nerr, warnings=len(problems) - nerr, problems=problems,

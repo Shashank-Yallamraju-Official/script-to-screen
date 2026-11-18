@@ -1,4 +1,5 @@
 kind: "House Signet's head: the great seal, its crest worn nearly smooth"
+house: signet          # which house it belongs to (the land gives the house its colour and its place)
 body: seal          # drawn as this object: no face, and it moves the way the object can
 size: 1.25
 outfit: robe

@@ -1,4 +1,5 @@
 kind: "a seal of House Signet, bearing the old crest"
+house: signet          # which house it belongs to (the land gives the house its colour and its place)
 body: seal          # drawn as this object: no face, and it moves the way the object can
 size: 0.9
 outfit: robe

@@ -32,6 +32,7 @@ look:
 
 # What the viewer is not told yet. `words` are the words that would give it away if a line said them; with none, it is not checked.
 kept:
-  - {what: What the vote is on, where: Both scenes, words: []}
-  - {what: "Who shot the match, and who helped", where: Scene one, words: []}
-  - {what: Whether the second vote is on the same matter, where: Scene two, words: []}
+# An outline's beat says `reveals: [shooter]` when it tells the viewer one of these.
+  - {id: matter, what: What the vote is on, where: Both scenes, words: []}
+  - {id: shooter, what: "Who shot the match, and who helped", where: Scene one, words: []}
+  - {id: same-matter, what: Whether the second vote is on the same matter, where: Scene two, words: []}

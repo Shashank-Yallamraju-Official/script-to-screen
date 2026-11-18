@@ -1,4 +1,5 @@
 kind: "House Brim's head: the deepest cup, always full for someone else"
+house: brim          # which house it belongs to (the land gives the house its colour and its place)
 body: cup          # drawn as this object: no face, and it moves the way the object can
 size: 1.15
 color: "#5f9a8c"

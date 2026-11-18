@@ -656,7 +656,7 @@ A show can keep its bible in its own folder, so there is one place to update and
 
 | File | Holds |
 |---|---|
-| `bible.md` | What only the writer knows, as markdown, with a slot wherever something the film already knows belongs: `{{rules}}`, `{{look}}`, `{{kept}}`, `{{motions}}`, `{{houses}}`, `{{days}}`, `{{rooms}}`, `{{episodes}}`, `{{board}}` |
+| `bible.md` | What only the writer knows, as markdown, with a slot wherever something the film already knows belongs: `{{rules}}`, `{{look}}`, `{{kept}}`, `{{motions}}`, `{{outlines}}`, `{{houses}}`, `{{days}}`, `{{rooms}}`, `{{episodes}}`, `{{board}}` |
 | `bible.yaml` | The rules (`rules:` and `look:`), each with a name, what it means and, where a machine can judge it, a `check:`; and `kept:`, what the viewer is not told yet, with the words that would give it away |
 
 `s2s bible` prints the whole thing, assembled now: the written text, each slot filled from the film (the houses on the land,
@@ -687,6 +687,31 @@ there is a new type and has to be built. A show sorts the ones it uses in `bible
 is possible but unused.
 
 A house says its colour once, on the land (`places: {signet: {color: ...}}`), and a place takes it by name: `color: "@signet"`.
+
+**Outlines.** An episode can have an outline, `outlines/<episode>.yaml`: its beats in order, written before any scene is.
+
+    beats:
+      - id: arrow
+        what: A lit match is shot through Signet's flag, sticks in the bench, and goes off.
+        for: The rupture. Everything after is aftermath.
+        motions: [shot, through, lit, swell, burst]      # from `s2s motions`
+        houses: [signet, cinder]                         # who is on screen
+        reveals: [shooter]                               # a kept secret this beat tells the viewer (bible.yaml `kept:` ids)
+        new: [{lowered: comes down slowly from above}]   # a movement the tool cannot do yet: it will be reported as work to build
+        part: the-council                                # once it is written: which part of the episode plays it,
+        from: 9                                          # and from which turn
+        bars: 4
+
+A beat needs only `what` and `for`. `s2s outline <episode>` lists the beats with what is filmed and what is still to
+write, and `s2s check` warns about: a motion, house or secret that does not exist (with the nearest that does); a reserved
+motion planned more often than it is kept to; a motion with no tier; a beat with no `for`. Once a beat has a `part`, the film
+is held to it: a motion or house the film shows there that the beat did not plan, one it planned that the film lacks, a scene
+no beat is played by, bars that do not add up. `s2s outline <episode> --draft --write` starts an outline from a film that
+exists. The bible's `{{outlines}}` slot shows each as a strip of cards as wide as their bars, reserved motions standing out,
+and a grid of when the viewer meets each motion across the season.
+
+What a beat can list is a set of *facets* (`readers/outline.py`, `FACETS`): each says which values exist, how to read what the
+film shows of it, and how to mark it. Motions, houses and reveals are the first three; another is one more entry.
 
 `s2s board` is the season from above, one row per episode: what it is, how long, which days, how finished its scenes are,
 open notes and problems. `s2s storyboard <episode>` draws one frame per beat with its reason underneath
@@ -823,6 +848,7 @@ command takes `--json`; a command that changes something also takes `--dry-run`,
 | Read the notes pinned in the editor | `s2s notes`, `s2s notes --done 3` |
 | Read the bible, the season, an episode as pictures | `s2s bible`, `s2s board`, `s2s storyboard the-vote` |
 | See which motions exist, which are used, which are kept in reserve | `s2s motions` |
+| Outline an episode before writing it, and hold the film to it | `s2s outline the-vote`, `s2s outline the-siege --draft --write` |
 | Change a line, a feeling, a timing, a reason | `set-line`, `set-feeling`, `set-timing`, `set-why` |
 | Add or remove | `add-scene`, `add-turn`, `add-reaction`, `remove-turn` |
 | Reorder, or mark how finished a scene is | `move`, `set-status` |

@@ -1,4 +1,5 @@
 kind: "a hammer of House Mallet, sent to the council"
+house: mallet          # which house it belongs to (the land gives the house its colour and its place)
 body: hammer          # drawn as this object: no face, and it moves the way the object can
 size: 0.95
 outfit: robe

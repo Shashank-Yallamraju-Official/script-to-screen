@@ -1,4 +1,5 @@
 kind: "a magnifying glass of House Glass"
+house: glass          # which house it belongs to (the land gives the house its colour and its place)
 body: glass          # drawn as this object: no face, and it moves the way the object can
 size: 1.1
 color: "#3f8f8a"

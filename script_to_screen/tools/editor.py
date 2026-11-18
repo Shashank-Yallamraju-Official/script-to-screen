@@ -883,6 +883,11 @@ BIBLE_PAGE = """<!doctype html><html><head><meta charset="utf-8"><title>{{title}
   table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 13px; display: block; overflow-x: auto; } th, td { text-align: left; vertical-align: top; padding: 6px 10px; border-bottom: 1px solid var(--line); }
   th { color: var(--dim); font-weight: 500; } ul, ol { padding-left: 22px; } li { margin: 3px 0; } li.task { list-style: none; margin-left: -18px; }
   main > p:first-of-type { padding: 10px 14px; border: 1px solid var(--accent); border-radius: 8px; background: #5e6ad214; } main > p:first-of-type + ul { border-left: 2px solid #e0a43a; }
+  .outline { display: flex; gap: 6px; margin: 12px 0 4px; align-items: stretch; } .beat { flex-basis: 0; min-width: 86px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); overflow: hidden; }
+  .beat.towrite { border-style: dashed; background: none; } .beat b { font-size: 12px; } .beat i { float: right; font-style: normal; font-size: 11px; color: var(--dim); } .beat p { margin: 4px 0 6px; font-size: 11px; line-height: 1.35; color: var(--dim); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .chip { display: inline-block; margin: 0 3px 3px 0; padding: 0 6px; border-radius: 9px; font: 10px/16px Inter, system-ui, sans-serif; border: 1px solid var(--line); color: var(--dim); }
+  .chip.reserved { background: #e0a43a; border-color: #e0a43a; color: #16171b; font-weight: 600; } .chip.familiar { color: var(--text); } .chip.unsorted, .chip.missing, .chip.new { border-style: dashed; border-color: #e0a43a; color: #e0a43a; }
+  .chip.house { border-color: var(--c, var(--line)); color: var(--text); } .chip.house::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--c, var(--dim)); margin-right: 4px; } .chip.reveal { border-color: var(--accent); color: #aab1ee; }
   img { max-width: 100%; border-radius: 8px; border: 1px solid var(--line); margin-top: 8px; } details summary { cursor: pointer; color: var(--dim); margin: 30px 0 6px; }
 </style></head><body><main>{{body}}
 <details><summary title="One frame per beat, with its reason underneath. Drawn when opened; it takes a few seconds.">Storyboard</summary><img loading="lazy" alt="The episode as a storyboard" src="/storyboard.png?episode={{episode}}"></details>
@@ -927,7 +932,7 @@ def make_handler(sess):
                     if url.path == "/frame":                 # build=A is the scene as it stood when the knob was put on a value
                         return self.send(sess.frame(int(q["f"][0]), flag("full"), flag("xray"), q.get("build") == ["A"]), "image/jpeg")
                     if url.path == "/bible":                  # the show's bible, assembled now, as a page
-                        return self.send(BIBLE_PAGE.replace("{{body}}", bible.to_html(bible.build(sess.root))).replace("{{title}}", str(load_yaml(sess.root / "show.yaml").get("title", "Bible")))
+                        return self.send(BIBLE_PAGE.replace("{{body}}", bible.to_html(bible.build(sess.root, page=True))).replace("{{title}}", str(load_yaml(sess.root / "show.yaml").get("title", "Bible")))
                                          .replace("{{episode}}", sess.seg["episode"]).encode(), "text/html; charset=utf-8")
                     if url.path == "/storyboard.png":
                         from ..presentation import readings

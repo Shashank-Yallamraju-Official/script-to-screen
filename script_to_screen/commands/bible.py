@@ -49,3 +49,34 @@ def motions_(a):
     found = motions.problems(root)
     lines += [""] + [f"warn  {p}" + (f":{t}" if t is not None else "") + f"  {m}" for p, t, m in found] if found else lines[:0]
     return dict(motions=rows, problems=[dict(part=p, turn=t, msg=m) for p, t, m in found], text="\n".join(lines))
+
+
+@command("outline", "An episode's outline: its beats in order, what each is for and what it uses, checked against the bible and against the film. --draft writes a first one from a film that exists.",
+         [A("episode", "an episode's id", nargs="?"), A("--draft", "print a first outline written from the film, to correct", action="store_true"),
+          A("--write", "with --draft: save it to outlines/<episode>.yaml (refused if one is there)", action="store_true")], "s2s outline the-vote", group="read")
+def outline_(a):
+    from ..readers import outline
+    root = address.show_root(a.show)
+    if a.draft:
+        if not a.episode:
+            raise Refused("which episode?", hint="s2s outline the-vote --draft")
+        text = "# A first outline, written from the film. Correct `what`, and say what each beat is `for`.\n" + outline.draft(root, a.episode)
+        if a.write:
+            if outline.path(root, a.episode).exists():
+                raise Refused(f"outlines/{a.episode}.yaml is already there", hint="edit it, or remove it first")
+            outline.path(root, a.episode).parent.mkdir(exist_ok=True)
+            outline.path(root, a.episode).write_text(text)
+        return dict(text=text)
+    eps = [a.episode] if a.episode else outline.episodes(root)
+    if a.episode and outline.load(root, a.episode) is None:
+        raise Refused(f"{a.episode} has no outline", hint=f"s2s outline {a.episode} --draft --write   starts one from the film; or write outlines/{a.episode}.yaml")
+    found = [p for p in outline.problems(root) if not a.episode or p["scene"] == f"(outline {a.episode})"]
+    lines = []
+    for e in eps:
+        lines.append(e)
+        for r in outline.rows(root, e):
+            b = r["beat"]
+            uses = "  ".join(f"{f.key}: {', '.join(map(str, b[f.key]))}" for f in outline.FACETS if b.get(f.key))
+            lines.append(f"  {str(b.get('id')):12} {str(b.get('bars', '')):>4}  {r['state']:9} {b.get('what', '')}" + (f"\n{'':30}{uses}" if uses else ""))
+    lines += [""] + [f"warn  {p['scene']}" + (f":{p['turn']}" if p["turn"] is not None else "") + f"  {p['msg']}" for p in found] if found else []
+    return dict(outlines={e: outline.rows(root, e) for e in eps}, problems=found, text="\n".join(lines) or "no outlines yet: s2s outline <episode> --draft --write starts one")

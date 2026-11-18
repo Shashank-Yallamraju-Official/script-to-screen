@@ -1,4 +1,5 @@
 kind: "a match of House Cinder. Each burns once"
+house: cinder          # which house it belongs to (the land gives the house its colour and its place)
 body: match          # drawn as this object: no face, and it moves the way the object can
 size: 0.95
 climbs: true         # it does not sit at a bench: it is up on it

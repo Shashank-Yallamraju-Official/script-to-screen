@@ -1,4 +1,5 @@
 kind: "a padlock of House Hasp, sent to the council"
+house: hasp          # which house it belongs to (the land gives the house its colour and its place)
 body: padlock          # drawn as this object: no face, and it moves the way the object can
 size: 0.95
 outfit: robe

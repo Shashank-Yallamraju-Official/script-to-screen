@@ -1,4 +1,5 @@
 kind: "House Plumb's head: the heaviest bob, which never swings"
+house: plumb          # which house it belongs to (the land gives the house its colour and its place)
 body: bob          # drawn as this object: no face, and it moves the way the object can
 size: 1.2
 line: 0.9

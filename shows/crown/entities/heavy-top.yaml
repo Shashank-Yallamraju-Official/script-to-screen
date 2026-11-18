@@ -1,4 +1,5 @@
 kind: "House Whirl's head: the heaviest top, which spins longest"
+house: whirl          # which house it belongs to (the land gives the house its colour and its place)
 body: top          # drawn as this object: no face, and it moves the way the object can
 size: 1.1
 color: "#d1a23a"

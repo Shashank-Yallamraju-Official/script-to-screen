@@ -1,4 +1,5 @@
 kind: "an eraser of House Rue"
+house: rue          # which house it belongs to (the land gives the house its colour and its place)
 body: eraser          # drawn as this object: no face, and it moves the way the object can
 size: 1.0
 color: "#d9879a"

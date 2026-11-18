@@ -1,4 +1,5 @@
 kind: "a boxing glove of House Bout"
+house: bout          # which house it belongs to (the land gives the house its colour and its place)
 body: glove          # drawn as this object: no face, and it moves the way the object can
 size: 0.9
 color: "#c2572b"

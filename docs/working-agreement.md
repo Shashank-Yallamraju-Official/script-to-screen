@@ -53,6 +53,15 @@ drawing library, so it runs the commands that read and change scripts (tune, ret
 that draws (render, frames, moments) is run in the repository. At the end of the session the changes are brought into the
 repository as under "Two copies of the show".
 
+## An episode starts as an outline
+
+A new episode, or a new scene in one, is outlined before it is scripted: the maker gives the idea in their own words, the
+builder writes the beats into `outlines/<episode>.yaml` (what happens, what it is for, the motions, the houses, anything
+revealed, a guess at the bars), and `s2s outline` says what the bible makes of it: what exists, what is new, which reserved
+motions it spends. That outline, with its warnings, is the plan the maker says OK to. Lines, timing and camera come after.
+When a scene is written, its beats get a `part:` and the film is held to them; if the film should differ, the outline is
+changed first.
+
 ## Motion has a vocabulary
 
 Every kind of movement the tool can show has a name (`s2s motions`), and the show sorts the ones it uses into familiar and

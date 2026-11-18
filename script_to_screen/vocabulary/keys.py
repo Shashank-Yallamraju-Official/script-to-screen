@@ -14,7 +14,7 @@ KNOWN = dict(
     piece=("kind", "at", "up", "wide", "color", "depth", "sun", "id", "aka", "serves"),
     land=("bars", "palette", "title_bar", "days_by_bar", "credit", "places", "history", "roads", "wall", "camera"),
     # an entity's sheet: who it is, and (for an object) what it is made of and how it carries itself
-    sheet=("color", "voice", "timbre", "kind", "status", "profile", "tells", "bonds", "regards", "reflex", "sympathy", "arc", "body", "size", "pair", "wrapped", "sprung",
+    sheet=("house", "color", "voice", "timbre", "kind", "status", "profile", "tells", "bonds", "regards", "reflex", "sympathy", "arc", "body", "size", "pair", "wrapped", "sprung",
            "swinging", "line", "claw", "outfit", "outfit_color", "trim", "plate", "upright", "climbs", "shot", "alight", "point"),
 )
 

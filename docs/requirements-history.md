@@ -86,6 +86,8 @@ changed, what is wrong, how to look.*
 | 32 | Nudge micro-timings of dialogue, sound and music myself, inside the tool, on my own computer | Round 3 again, at a finer grain: sounds, bars, cards and the camera all became things to drag |
 | 33 | What do professional tools have? Build what would help you (the assistant) most | The assistant is a user whose needs can be asked about. Its answers were all about the hand-off: notes, a picture of the sound, the two copies in step |
 | 34 | Let me watch you edit | Round 21's "seeing what the assistant changed", asked for outright. The editor became the place both loops are visible |
+| 35 | Why two places to update? Put the bible in the tool, so we can see when we veer | The show's own rules are data the film can be checked against, not a document beside it |
+| 36 | Name the kinds of motion; keep some for critical moments; say them in the storyboard before the details | The author is designing the viewer's experience over time: what becomes familiar, and what is held back. The level above the scene (outline, season) is where that is decided |
 
 ## How the first predictions did
 

@@ -1,4 +1,5 @@
 kind: "a plumb bob of House Plumb, on a long line and still swinging"
+house: plumb          # which house it belongs to (the land gives the house its colour and its place)
 body: bob          # drawn as this object: no face, and it moves the way the object can
 size: 0.95
 line: 1.15

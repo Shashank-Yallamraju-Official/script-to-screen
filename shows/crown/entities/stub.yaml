@@ -1,4 +1,5 @@
 kind: "House Rue's head: the smallest stub, honoured for having erased the most"
+house: rue          # which house it belongs to (the land gives the house its colour and its place)
 body: eraser          # drawn as this object: no face, and it moves the way the object can
 size: 0.6
 color: "#d9879a"

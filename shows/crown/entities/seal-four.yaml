@@ -1,4 +1,5 @@
 kind: "a seal of House Signet, on the council"
+house: signet          # which house it belongs to (the land gives the house its colour and its place)
 body: seal          # drawn as this object: no face, and it moves the way the object can
 size: 0.85
 outfit: robe

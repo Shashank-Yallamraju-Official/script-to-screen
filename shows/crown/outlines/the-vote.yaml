@@ -1,0 +1,56 @@
+# One: the vote, as beats. Written before the detail: what happens, what it is for, and what it uses.
+# `s2s outline the-vote` checks it against the bible, and against the film where a beat has been written (`part:`).
+beats:
+  - id: sitting
+    where: the crown, day 1
+    what: Five seals open a sitting and read a matter nobody names.
+    for: The viewer learns the room, the ritual, and the two motions they will settle into.
+    motions: [speak, hold]
+    houses: [signet]
+    part: the-council
+    bars: 28
+
+  - id: arrow
+    what: A lit match is shot through Signet's flag, sticks in the bench, and goes off.
+    for: The rupture. Everything after is aftermath.
+    motions: [shot, through, lit, swell, burst]
+    houses: [signet, cinder]
+    part: the-council
+    from: 9
+    bars: 4
+
+  - id: days
+    what: A hundred and twenty days pass over the land. The crown burns; Mallet and Hasp reach it; it is rebuilt, walled, and flies three flags.
+    for: Shows who moved in while the crown was down, without a word.
+    part: the-vote-title
+    bars: 20
+
+  - id: descent
+    what: The camera comes down to the rebuilt crown.
+    for: Brings the viewer back into the same room.
+    part: months-later
+    bars: 4
+
+  - id: same-room
+    where: the crown, rebuilt, day 120
+    what: The same sitting, word for word, with hammers and locks on the bench and three flags on the wall.
+    for: The viewer sees what changed by what did not.
+    motions: [speak, hold]
+    houses: [signet, mallet, hasp]
+    part: the-council-again
+    bars: 16
+
+  - id: refusal
+    what: The vote is called. Seals and hammers vote for; the locks say no, and it cannot be carried.
+    for: The old story is still in place, and now needs everyone's permission.
+    motions: [speak]
+    houses: [signet, mallet, hasp]
+    part: the-council-again
+    from: 7
+    bars: 24
+
+  - id: credits
+    what: The credits.
+    for: Lets it land.
+    part: the-vote-credits
+    bars: 20

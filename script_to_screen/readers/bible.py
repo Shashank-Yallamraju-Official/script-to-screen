@@ -244,16 +244,30 @@ def part_motions(root):
     return motions.markdown(root)
 
 
-PARTS = dict(motions=part_motions, rules=part_rules, look=lambda root: part_rules(root, "look"), kept=part_kept, houses=part_houses, days=part_days, rooms=part_rooms, board=part_board, episodes=part_episodes)
+def part_outlines(root):
+    from . import outline
+    eps = outline.episodes(root)
+    if not eps:
+        return "No episode has an outline yet. `s2s outline <episode> --draft --write` starts one from a film."
+    out = []
+    for e in eps:
+        out += [f"### {e}", ""] + ([outline.strip(root, e), ""] if _PAGE[0] else []) + [outline.markdown(root, e), ""]
+    return "\n".join(out + ["**When the viewer meets each motion.** A number is how often the film uses it; in brackets, how often an outline plans it where there is no film yet.", "", outline.grid(root)])
 
 
-def build(root):
+_PAGE = [False]                                                  # is the bible being built as a page (which can show a strip of cards)?
+
+PARTS = dict(outlines=part_outlines, motions=part_motions, rules=part_rules, look=lambda root: part_rules(root, "look"), kept=part_kept, houses=part_houses, days=part_days, rooms=part_rooms, board=part_board, episodes=part_episodes)
+
+
+def build(root, page=False):
     """The bible as markdown: the written file with every `{{slot}}` filled from the film; and, first, where the film veers."""
     f = Path(root) / "bible.md"
     text = f.read_text() if f.exists() else "# " + str(load_yaml(Path(root) / "show.yaml").get("title", "Bible")) + "\n\n" + "\n\n".join(f"## {k.capitalize()}\n\n{{{{{k}}}}}" for k in PARTS)
     unknown = sorted(set(re.findall(r"\{\{(\w+)\}\}", text)) - set(PARTS))
     if unknown:
         raise ValueError(f"bible.md has a slot the tool cannot fill: {{{{{unknown[0]}}}}}. The slots are: " + ", ".join(PARTS))
+    _PAGE[0] = page
     found = veers(root)
     track = ("**On track.** The film keeps every rule that can be checked." if not found else
              f"**{len(found)} place{'s' if len(found) > 1 else ''} where the film veers from a rule:**\n\n" + "\n".join(f"- {v['scene']}" + (f", turn {v['turn']}" if v["turn"] is not None else "") + f": {v['msg']}" for v in found))
@@ -277,6 +291,9 @@ def to_html(md):
     while i < len(lines):
         line = lines[i]
         if not line.strip():
+            i += 1
+        elif line.startswith("<div"):                                # a block made as HTML already (an outline's strip of cards)
+            out.append(line)
             i += 1
         elif line.startswith("#"):
             n = len(line) - len(line.lstrip("#"))
@@ -302,7 +319,7 @@ def to_html(md):
             out.append(f"<{tag}>" + "".join(items) + f"</{tag}>")
         else:
             para = []
-            while i < len(lines) and lines[i].strip() and not re.match(r"(#|\||\d+\. |- )", lines[i]):
+            while i < len(lines) and lines[i].strip() and not re.match(r"(#|\||\d+\. |- |<div)", lines[i]):
                 para.append(lines[i])
                 i += 1
             out.append("<p>" + _inline(" ".join(para)) + "</p>")

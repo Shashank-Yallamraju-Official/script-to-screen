@@ -1,4 +1,5 @@
 kind: "House Lode's head: the longest needle. It swings slowest, and the rest swing when it does"
+house: lode          # which house it belongs to (the land gives the house its colour and its place)
 body: needle          # drawn as this object: no face, and it moves the way the object can
 size: 1.2
 color: "#6f8aa3"

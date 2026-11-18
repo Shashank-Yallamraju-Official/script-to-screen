@@ -240,7 +240,11 @@ Mallet's reach is long and loose: everything it holds or draws is down a road or
 
 The show opens on a council of Signet's seals, about to vote. As the vote is called, a single lit match from Cinder is shot into the chamber, and it tries to blow up the council and itself. A hundred and twenty days later the crown has been rebuilt exactly as it was, with three flags on the wall and a council of seals, hammers and padlocks that cannot agree.
 
-Each scene's beats, read from its script:
+Each episode as beats, from its outline: what happens, what it is for, and what it uses. A beat that has been written is checked against the film.
+
+{{outlines}}
+
+Each scene's turns and their reasons, read from its script:
 
 {{episodes}}
 
