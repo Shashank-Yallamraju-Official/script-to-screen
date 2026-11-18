@@ -53,6 +53,14 @@ drawing library, so it runs the commands that read and change scripts (tune, ret
 that draws (render, frames, moments) is run in the repository. At the end of the session the changes are brought into the
 repository as under "Two copies of the show".
 
+## Motion has a vocabulary
+
+Every kind of movement the tool can show has a name (`s2s motions`), and the show sorts the ones it uses into familiar and
+reserved. A plan that involves movement says, in those names, **Uses:** the motions it draws on that exist, their tier, and
+whether a reserved one has already been spent in that episode; and **Needs new:** any movement that is not in the list, which
+is built once, as a kind, and named in `vocabulary/motions.py`, never as a switch for one scene. A new motion on screen is
+sorted (familiar or reserved) by the maker before the scene is called done; the check warns until it is.
+
 ## The bible is in the show
 
 The show's bible is `bible.md` and `bible.yaml` in its folder, not a separate document. Before a new idea is planned, the builder

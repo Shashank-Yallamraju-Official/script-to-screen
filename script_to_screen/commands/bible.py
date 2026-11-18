@@ -35,3 +35,17 @@ def storyboard(a):
     root = address.show_root(a.show)
     png = readings.storyboard(root, a.episode, a.cols)
     return dict(file=str(png), text=str(png))
+
+
+@command("motions", "Every kind of movement the tool can show: which the film has used and how often, which the show keeps in reserve, and which are possible but unused. A movement on neither list is a new type.",
+         [], "s2s motions", group="read")
+def motions_(a):
+    from ..readers import motions
+    root = address.show_root(a.show)
+    rows = motions.table(root)
+    used = [r for r in rows if r["times"]]
+    lines = [f"{r['name']:9} {r['tier'] or 'no tier':9} {r['times']:3}x  first {r['first']:24} {r['sees']}" for r in sorted(used, key=lambda r: (r["tier"] != "reserved", -r["times"]))]
+    lines += ["", "possible, not used yet:"] + [f"  {r['name']:9} {r['sees']}  ({r['ask']})" for r in rows if not r["times"]]
+    found = motions.problems(root)
+    lines += [""] + [f"warn  {p}" + (f":{t}" if t is not None else "") + f"  {m}" for p, t, m in found] if found else lines[:0]
+    return dict(motions=rows, problems=[dict(part=p, turn=t, msg=m) for p, t, m in found], text="\n".join(lines))

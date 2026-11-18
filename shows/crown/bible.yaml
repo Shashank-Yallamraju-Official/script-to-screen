@@ -10,6 +10,16 @@ rules:
   - {id: crown, name: The crown never moves, says: "Houses claim it and lose it."}
   - {id: nobody, name: Nobody is good or bad, says: "Each house is a reasonable response to what happened."}
   - {id: unscripted, name: Nothing is scripted, says: "Each house acts as its personality would. The writers set them going and watch."}
+  - {id: reserve, name: Some motions are kept in reserve, check: reserved_is_rare,
+     says: "The viewer gets comfortable with a few motions. The rest are kept for critical moments, so that when one happens it is unlike anything shown before."}
+
+# Every motion the tool has is named in the tool (`s2s motions`). Here the show sorts the ones it uses:
+#   familiar   what the viewer is meant to settle into
+#   reserved   kept for critical moments: once an episode, unless a number says otherwise ({shot: 2})
+# The first sorting is read off episode one: what happens all the time, and what happens once, at the arrow.
+motions:
+  familiar: [speak, hold]
+  reserved: [shot, through, lit, swell, burst]
 
 # The three rules of the council chamber (also at the top of places/crown.yaml).
 look:

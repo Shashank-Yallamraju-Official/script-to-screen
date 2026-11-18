@@ -47,6 +47,7 @@ the phase before. A phase that does mean to change it re-records the reference a
 | N9 | **The episode in the editor.** A strip of the episode's parts; cards open like scenes (music moved, levelled and faded; the credits' and the title's length; the camera's stops over the land moved by dragging the picture); the whole episode as one timeline | Unchanged | Done |
 | N10 | **The two loops meet.** Notes pinned to moments (`M`, `s2s notes`), tied to their turn. A Mac launcher that fetches the latest work. Changes the assistant makes while the editor is open are shown: a caption with the reason, the playhead on the moment, the knob on the value | Unchanged | Done (`docs/working-agreement.md`) |
 | B1 | **The bible in the show.** `bible.md` (the written parts, with slots) and `bible.yaml` (rules, and what is kept from the viewer) live in the show's folder. `s2s bible` assembles them with what the film already knows; five checks report where the film veers from a rule, as warnings in `s2s check`. `s2s board` is the season from above and `s2s storyboard` an episode as pictures. A place takes a house's colour by name | The crown's kept frames are unchanged | Done |
+| B2 | **A vocabulary of motion.** Every kind of movement is named once (`vocabulary/motions.py`); `s2s motions` reads from the film which are used, how often and where first. A show sorts its motions into familiar and reserved, and a reserved one used too often, or an unsorted one on screen, is a warning | Nothing drawn changes: this names what exists | Done |
 
 ## Where the nudging loop ended up
 

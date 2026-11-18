@@ -94,7 +94,12 @@ def mirrored(root, rule, scenes):
                 yield name, None, f"the {kind} at {at:g} has no mirror at {2 * middle - at:g}"
 
 
-CHECKS = dict(no_gendered_words=no_gendered_words, cast_are_objects=cast_are_objects, kept_words=kept_words, colour_is_owned=colour_is_owned, mirrored=mirrored)
+def reserved_is_rare(root, rule, scenes):
+    from . import motions
+    yield from motions.problems(root)
+
+
+CHECKS = dict(reserved_is_rare=reserved_is_rare, no_gendered_words=no_gendered_words, cast_are_objects=cast_are_objects, kept_words=kept_words, colour_is_owned=colour_is_owned, mirrored=mirrored)
 
 
 def rules(root):
@@ -234,7 +239,12 @@ def part_episodes(root):
     return "\n\n".join(out)
 
 
-PARTS = dict(rules=part_rules, look=lambda root: part_rules(root, "look"), kept=part_kept, houses=part_houses, days=part_days, rooms=part_rooms, board=part_board, episodes=part_episodes)
+def part_motions(root):
+    from . import motions
+    return motions.markdown(root)
+
+
+PARTS = dict(motions=part_motions, rules=part_rules, look=lambda root: part_rules(root, "look"), kept=part_kept, houses=part_houses, days=part_days, rooms=part_rooms, board=part_board, episodes=part_episodes)
 
 
 def build(root):

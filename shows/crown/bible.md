@@ -266,6 +266,12 @@ News of the attack then travels, and no two houses hear the same thing.
 | Whirl | Forgets most of it on the way |
 | Cinder | Burns it before it arrives |
 
+## Motion
+
+The viewer settles into a few motions, and the rest are kept for the moments that matter. Read from the film:
+
+{{motions}}
+
 ## The look
 
 Every detail on screen means something, so the screen is bare. There are no people and no faces: the cast are objects, drawn with an ink outline, in wide shots that rarely cut. Three rules decide everything in the council chamber.

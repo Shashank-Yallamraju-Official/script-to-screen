@@ -64,3 +64,23 @@ def test_a_slot_the_tool_cannot_fill_is_refused_by_name(root):
     (root / "bible.md").write_text("# X\n\n{{weather}}\n")
     with pytest.raises(ValueError, match="weather"):
         bible.build(root)
+
+
+def test_the_film_is_read_for_its_motions_and_a_reserved_one_spent_twice_is_a_warning(root):
+    from script_to_screen.readers import motions
+    rows = {r["name"]: r for r in motions.table(root)}
+    assert (rows["shot"]["tier"], rows["shot"]["times"], rows["shot"]["first"]) == ("reserved", 1, "the-council:9")
+    assert rows["speak"]["tier"] == "familiar" and rows["speak"]["times"] > 20 and rows["walk"]["times"] == 0
+    assert motions.problems(root) == [] and "`through`" in bible.build(root) and "Possible but not used yet" in bible.build(root)
+    again = root / "episodes" / "e01" / "02-the-council-again.yaml"
+    text = again.read_text()
+    again.write_text(text.replace("sfx: [{at: 10, sound: swell}]", "sfx: [{at: 10, sound: blast, on: great-seal}]", 1))
+    assert text != again.read_text()
+    found = {v["scene"]: v["msg"] for v in bible.veers(root) if v["rule"] == "reserve"}
+    assert "use 2 of it in this episode" in found["the-council-again"]
+    b = yaml.safe_load((root / "bible.yaml").read_text())
+    b["motions"]["reserved"] = {"shot": 1, "through": 1, "lit": 1, "swell": 2, "burst": 2}          # two a show, said outright
+    b["motions"]["familiar"] = ["hold"]                                                           # and speaking left unsorted
+    (root / "bible.yaml").write_text(yaml.safe_dump(b, sort_keys=False))
+    msgs = [v["msg"] for v in bible.veers(root) if v["rule"] == "reserve"]
+    assert len(msgs) == 1 and "'speak'" in msgs[0] and "has no tier yet" in msgs[0]

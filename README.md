@@ -656,7 +656,7 @@ A show can keep its bible in its own folder, so there is one place to update and
 
 | File | Holds |
 |---|---|
-| `bible.md` | What only the writer knows, as markdown, with a slot wherever something the film already knows belongs: `{{rules}}`, `{{look}}`, `{{kept}}`, `{{houses}}`, `{{days}}`, `{{rooms}}`, `{{episodes}}`, `{{board}}` |
+| `bible.md` | What only the writer knows, as markdown, with a slot wherever something the film already knows belongs: `{{rules}}`, `{{look}}`, `{{kept}}`, `{{motions}}`, `{{houses}}`, `{{days}}`, `{{rooms}}`, `{{episodes}}`, `{{board}}` |
 | `bible.yaml` | The rules (`rules:` and `look:`), each with a name, what it means and, where a machine can judge it, a `check:`; and `kept:`, what the viewer is not told yet, with the words that would give it away |
 
 `s2s bible` prints the whole thing, assembled now: the written text, each slot filled from the film (the houses on the land,
@@ -672,6 +672,19 @@ render, because a rule may be broken on purpose, but not by accident.
 | `kept_words` | A line says a word listed under something kept from the viewer |
 | `colour_is_owned` | A piece in the places named has a strong colour that is no house's, and is not green |
 | `mirrored` | A piece in the places named has no twin on the other side of the middle |
+| `reserved_is_rare` | A motion the show keeps in reserve is used more often in an episode than it is kept to; or a motion is on screen that the show has not sorted |
+
+**Motions.** Every kind of movement the tool can show is named once, in `vocabulary/motions.py`: how something gets there
+(walk, jump, shot, leave, approach), what it does to what is in its way (through), the state it is in (lit, swell, burst), what
+it does where it stands (speak, turn, look, lean, tell), and what the camera does (hold, cut, push). A movement that is not
+there is a new type and has to be built. A show sorts the ones it uses in `bible.yaml`:
+
+    motions:
+      familiar: [speak, hold]                        # what the viewer settles into
+      reserved: [shot, through, lit, swell, burst]   # kept for critical moments: once an episode, or {shot: 2}
+
+`s2s motions` (and the `{{motions}}` slot in the bible) lists what the film has used, how often and where first, then what
+is possible but unused.
 
 A house says its colour once, on the land (`places: {signet: {color: ...}}`), and a place takes it by name: `color: "@signet"`.
 
@@ -809,6 +822,7 @@ command takes `--json`; a command that changes something also takes `--dry-run`,
 | See and move beats on the bar grid | `s2s beats the-vote`, `s2s retime the-council 8=25 bars=34` |
 | Read the notes pinned in the editor | `s2s notes`, `s2s notes --done 3` |
 | Read the bible, the season, an episode as pictures | `s2s bible`, `s2s board`, `s2s storyboard the-vote` |
+| See which motions exist, which are used, which are kept in reserve | `s2s motions` |
 | Change a line, a feeling, a timing, a reason | `set-line`, `set-feeling`, `set-timing`, `set-why` |
 | Add or remove | `add-scene`, `add-turn`, `add-reaction`, `remove-turn` |
 | Reorder, or mark how finished a scene is | `move`, `set-status` |
